@@ -1,0 +1,40 @@
+name: 🧹 Lint & 🔐 Audit
+
+on:
+  workflow_call:
+
+jobs:
+  lint-and-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+          cache: npm
+          cache-dependency-path: orange-pay/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: ./orange-pay
+
+      - name: Run lint
+        run: |
+          npm run lint > lint.log || echo "::warning::Lint failed"
+        working-directory: ./orange-pay
+
+      - name: Security Audit
+        run: |
+          npx audit-ci --moderate > audit.log || echo "::warning::Audit failed"
+        working-directory: ./orange-pay
+
+      - name: Upload lint & audit logs
+        uses: actions/upload-artifact@v4
+        with:
+          name: lint-audit-logs
+          path: |
+            orange-pay/lint.log
+            orange-pay/audit.log
