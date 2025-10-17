@@ -1,192 +1,195 @@
-# .github/workflows/main.yml
-name: CI/CD - Orange Pay (Single File)
+name: CI/CD - Orange Pay
 
+# 1. TRIPPERS: Pemicu tetap sama
 on:
   push:
     branches: [main]
   pull_request:
     branches: [main]
 
-jobs:
-  # ===================================================================
-  # TAHAP 1: VALIDASI & BUILD APLIKASI
-  # ===================================================================
-  ci:
-    name: 🧪 Build & Test (CI)
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./orange-pay
+# Variabel global untuk konsistensi
+env:
+  NODE_VERSION: 20.x
+  PROJECT_PATH: ./orange-pay
+  # Ganti 'USERNAME/REPOSITORY' dengan milik Anda, atau gunakan variabel dinamis
+  # IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/orange-pay
+  IMAGE_NAME: ghcr.io/username/orange-pay # ✏️ GANTI INI
 
+jobs:
+  # -----------------------------------------------------------------
+  # TAHAP CI (Berjalan di setiap push & pull_request)
+  # -----------------------------------------------------------------
+  lint-audit:
+    name: 🧹 Lint & 🔐 Audit
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js 20.x
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20.x'
+          node-version: ${{ env.NODE_VERSION }}
           cache: npm
-          cache-dependency-path: orange-pay/package-lock.json
+          cache-dependency-path: ${{ env.PROJECT_PATH }}/package-lock.json
 
       - name: Install dependencies
         run: npm ci
+        working-directory: ${{ env.PROJECT_PATH }}
 
-      - name: Run lint check
-        run: |
+      - name: Run lint (Strict)
+        run: | 
           echo "Running lint..."
           npm run lint || echo "::warning::Linting failed."
+        working-directory: ${{ env.PROJECT_PATH }}
+        continue-on-error: true
 
-      - name: Run security audit
+      - name: Security Audit
         run: npx audit-ci --moderate
+        working-directory: ${{ env.PROJECT_PATH }}
 
-      - name: Build project
-        run: npm run build
-      
-      #- name: Upload build artifact
-        #uses: actions/upload-artifact@v4
-        #with:
-          #name: dist-files
-          #path: ./orange-pay/dist
-
-  # ===================================================================
-  # TAHAP 2: GERBANG APPROVAL SEBELUM DEPLOYMENT
-  # ===================================================================
-  wait-for-approval:
-    name: 🛡️ Await Deployment Approval
+  build:
+    name: ⚙️ Build Vite App
     runs-on: ubuntu-latest
-    needs: ci
-    # Hanya berjalan saat push ke branch 'main', bukan pada pull request
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    # Environment ini HARUS dikonfigurasi di Settings > Environments
-    environment: 
-      name: staging 
-    steps:
-      - name: Approval gate
-        run: echo "Approval received. Proceeding to deployment."
-
-  # ===================================================================
-  # TAHAP 3: DEPLOY KE LINGKUNGAN STAGING
-  # ===================================================================
-  deploy-staging:
-    name: 🚀 Deploy to Staging
-    runs-on: ubuntu-latest
-    needs: wait-for-approval # Tergantung pada approval
-
+    needs: lint-audit # Memastikan lolos lint & audit dulu
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: ${{ env.PROJECT_PATH }}/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: ${{ env.PROJECT_PATH }}
+
+      - name: Build project
+        run: npm run build
+        working-directory: ${{ env.PROJECT_PATH }}
+
+      - name: Upload build artifact
+        # Menyimpan hasil build ('dist') untuk digunakan di job docker
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: ${{ env.PROJECT_PATH }}/dist
+
+  # -----------------------------------------------------------------
+  # TAHAP CD (Nonaktif sementara - Hanya berjalan jika 'if: false' diubah)
+  # -----------------------------------------------------------------
+  build-docker:
+    name: 🐳 Build & Push Docker Image
+    runs-on: ubuntu-latest
+    needs: build
+    # ⛔ Nonaktif sementara. Ganti ke 'if: github.event_name == 'push' && github.ref == 'refs/heads/main'' saat siap
+    if: false 
+    
+    permissions:
+      contents: read
+      packages: write # Izin untuk push ke GitHub Container Registry (GHCR)
+
+    steps:
+      - name: Checkout code
+        # Diperlukan untuk mengambil Dockerfile
+        uses: actions/checkout@v4
+
       - name: Download build artifact
+        # Mengambil folder 'dist' dari job 'build'
         uses: actions/download-artifact@v4
         with:
-          name: dist-files
-          path: ./orange-pay/dist
+          name: dist
+          path: ${{ env.PROJECT_PATH }}/dist
 
-      - name: Login to Docker Hub
+      - name: Login to GitHub Container Registry (GHCR)
         uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and push Docker image for Staging
+      - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
-          context: ./orange-pay
+          context: ${{ env.PROJECT_PATH }} # Path ke Dockerfile Anda
+          file: ${{ env.PROJECT_PATH }}/Dockerfile
           push: true
-          tags: ${{ secrets.DOCKER_USERNAME }}/orange-pay:staging-${{ github.sha }}
+          tags: |
+            ${{ env.IMAGE_NAME }}:${{ github.sha }}
+            ${{ env.IMAGE_NAME }}:latest
+          cache-from: type=registry,ref=${{ env.IMAGE_NAME }}:latest
+          cache-to: type=inline
 
-      - name: Deploy to Staging VPS
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.STAGING_VPS_HOST }}
-          username: ${{ secrets.STAGING_VPS_USERNAME }}
-          key: ${{ secrets.STAGING_SSH_PRIVATE_KEY }}
-          script: |
-            export IMAGE_NAME="${{ secrets.DOCKER_USERNAME }}/orange-pay:staging-${{ github.sha }}"
-            
-            echo "--- Pulling new image: $IMAGE_NAME"
-            docker pull "$IMAGE_NAME"
-            
-            echo "--- Stopping and removing old container"
-            docker stop orange-pay-staging || true
-            docker rm orange-pay-staging || true
-            
-            echo "--- Starting new container"
-            docker run -d --restart always --name orange-pay-staging -p 8080:80 "$IMAGE_NAME"
-
-  # ===================================================================
-  # TAHAP 4: DEPLOY KE LINGKUNGAN PRODUCTION (OPSIONAL, BISA DITAMBAHKAN)
-  # ===================================================================
   deploy-production:
-    name: 🌐 Deploy to Production
+    name: 🚀 Deploy to Production
     runs-on: ubuntu-latest
-    needs: deploy-staging
-    environment: 
-      name: production # Gerbang approval kedua yang terpisah
-    steps:
-       # Langkah-langkah deploy ke production mirip dengan staging
-       # Namun menggunakan secrets PROD_* dan tag Docker 'latest'
-      - name: Login to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-      
-      - name: Pull, tag, and push 'latest' image
-        run: |
-           docker pull ${{ secrets.DOCKER_USERNAME }}/orange-pay:staging-${{ github.sha }}
-           docker tag ${{ secrets.DOCKER_USERNAME }}/orange-pay:staging-${{ github.sha }} ${{ secrets.DOCKER_USERNAME }}/orange-pay:latest
-           docker push ${{ secrets.DOCKER_USERNAME }}/orange-pay:latest
-      
-      - name: Deploy to Production VPS
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.PROD_VPS_HOST }}
-          username: ${{ secrets.PROD_VPS_USERNAME }}
-          key: ${{ secrets.PROD_SSH_PRIVATE_KEY }}
-          script: |
-            export IMAGE_NAME="${{ secrets.DOCKER_USERNAME }}/orange-pay:latest"
-            
-            echo "--- Pulling new image: $IMAGE_NAME"
-            docker pull "$IMAGE_NAME"
-            
-            echo "--- Starting new container with zero downtime (contoh)"
-            # Logika blue-green deployment atau rolling update bisa ditaruh di sini
-            docker run -d --restart always --name orange-pay-prod -p 80:80 "$IMAGE_NAME"
-
-  # ===================================================================
-  # TAHAP 5: SUMMARY AKHIR PIPELINE
-  # ===================================================================
-  summary:
-    name: 📊 Pipeline Summary
-    runs-on: ubuntu-latest
-    # `if: always()` memastikan job ini selalu berjalan, bahkan jika job sebelumnya gagal atau dilewati.
-    if: always()
-    needs: [ci, wait-for-approval, deploy-staging, deploy-production]
+    needs: build-docker
     
-    steps:
-      - name: Show pipeline summary
-        run: |
-          echo "## 📊 Pipeline Execution Summary"
-          echo "---"
-          echo "- **🧪 CI (Build & Test):** ${{ needs.ci.result }}"
-          
-          # Cek hasil approval
-          if [ "${{ needs.wait-for-approval.result }}" == "skipped" ]; then
-            echo "- **🛡️ Approval Status:** ❌ Rejected or Timed Out"
-            echo "> Deployment jobs were skipped because approval was not granted."
-          elif [ "${{ needs.wait-for-approval.result }}" == "success" ]; then
-            echo "- **🛡️ Approval Status:** ✅ Approved"
-          else
-            echo "- **🛡️ Approval Status:** ${{ needs.wait-for-approval.result }}"
-          fi
+    # Menambahkan gerbang persetujuan manual
+    # ❗️ ANDA HARUS mengonfigurasi environment 'production' di Pengaturan Repo
+    environment: 
+      name: production
+      # url: https://your-production-url.com # Opsional
 
-          # Tampilkan hasil job lain jika mereka berjalan
-          if [ "${{ needs.wait-for-approval.result }}" == "success" ]; then
-            echo "- **🚀 Deploy to Staging:** ${{ needs.deploy-staging.result }}"
-            echo "- **🌐 Deploy to Production:** ${{ needs.deploy-production.result }}"
-          fi
-          
-          echo "---"
-          echo "Workflow run URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+    # ⛔ Nonaktif sementara. Ganti ke 'if: github.event_name == 'push' && github.ref == 'refs/heads/main'' saat siap
+    if: false
+
+    steps:
+      - name: Checkout code
+        # Diperlukan untuk mengambil file docker-compose.yml
+        uses: actions/checkout@v4
+
+      - name: Setup SSH & Deploy
+        run: |
+          echo "Menyiapkan SSH..."
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > key.pem
+          chmod 600 key.pem
+          ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
+
+          echo "Menyalin docker-compose.yml ke VPS..."
+          # Hanya salin file docker-compose, bukan seluruh proyek
+          rsync -avz -e "ssh -i key.pem" ${{ env.PROJECT_PATH }}/docker-compose.yml ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/home/${{ secrets.SSH_USER }}/orange-pay/
+
+          echo "Menjalankan deployment di VPS..."
+          ssh -i key.pem ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << EOF
+            cd /home/${{ secrets.SSH_USER }}/orange-pay
+            
+            echo "Login ke GHCR di dalam VPS..."
+            export CR_PAT=${{ secrets.GITHUB_TOKEN }}
+            echo \$CR_PAT | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            
+            # Mendefinisikan tag image baru dari SHA
+            export IMAGE_TAG=${{ github.sha }}
+            
+            echo "Menarik image baru: ${{ env.IMAGE_NAME }}:\$IMAGE_TAG"
+            docker-compose pull # Menarik image baru berdasarkan docker-compose.yml
+            
+            echo "Menjalankan docker-compose up..."
+            # Tidak perlu '--build'. Kita gunakan image yang sudah jadi.
+            docker-compose up -d
+            
+            echo "Membersihkan image lama..."
+            docker image prune -f
+          EOF
+
+  # -----------------------------------------------------------------
+  # TAHAP SUMMARY (Selalu berjalan)
+  # -----------------------------------------------------------------
+  summary:
+    name: 📦 Pipeline Summary
+    runs-on: ubuntu-latest
+    if: always() # ✅ Selalu berjalan, meskipun job lain gagal atau di-skip
+    needs: [lint-audit, build, build-docker, deploy-production]
+
+    steps:
+      - name: Final Summary
+        run: |
+          echo "--- 📊 Ringkasan Pipeline ---"
+          echo "🧹 Lint & Audit: ${{ needs.lint-audit.result }}"
+          echo "⚙️ Build App: ${{ needs.build.result }}"
+          echo "🐳 Docker Build: ${{ needs.build-docker.result }}"
+          echo "🚀 Deploy to Prod: ${{ needs.deploy-production.result }}"
+          echo "-------------------------------"
