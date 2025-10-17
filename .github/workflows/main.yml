@@ -1,42 +1,20 @@
-name: CI/CD - Orange Pay
+name: 🚦 CI/CD - Orange Pay (Main Workflow)
 
 on:
   push:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:
 
 jobs:
-  run-ci:
-    uses: ./.github/workflows/reusable.yml
-    with:
-      node-version: '20.x'
-      working-directory: './orange-pay'
+  lint-and-audit:
+    uses: ./.github/workflows/lint-and-audit.yml
 
-  preview-vercel:
-    name: 🌐 Preview Deploy to Vercel
-    runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
-    needs: run-ci
-
-    steps:
-      - name: Deploy to Vercel
-        uses: amondnet/vercel-action@v25
-        with:
-          vercel-token: ${{ secrets.VERCEL_TOKEN }}
-          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
-          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
-          working-directory: ./orange-pay
-          vercel-args: '--prebuilt'
+  build-app:
+    uses: ./.github/workflows/build-app.yml
+    needs: lint-and-audit
 
   summary:
-    name: 📦 Pipeline Summary
-    runs-on: ubuntu-latest
-    if: always()
-    needs: [run-ci, preview-vercel]
-
-    steps:
-      - name: Final Summary
-        run: |
-          echo "✅ CI Pipeline: Completed"
-          echo "🌐 Preview Deploy: Skipped or Completed"
+    uses: ./.github/workflows/summary.yml
+    needs: [lint-and-audit, build-app]
