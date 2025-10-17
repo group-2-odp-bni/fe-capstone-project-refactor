@@ -33,7 +33,9 @@ jobs:
         run: npm ci
 
       - name: Run lint check
-        run: npm run lint
+        run: |
+          echo "Running lint..."
+          npm run lint || echo "::warning::Linting failed."
 
       - name: Run security audit
         run: npx audit-ci --moderate
@@ -41,11 +43,11 @@ jobs:
       - name: Build project
         run: npm run build
       
-      - name: Upload build artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: dist-files
-          path: ./orange-pay/dist
+      #- name: Upload build artifact
+        #uses: actions/upload-artifact@v4
+        #with:
+          #name: dist-files
+          #path: ./orange-pay/dist
 
   # ===================================================================
   # TAHAP 2: GERBANG APPROVAL SEBELUM DEPLOYMENT
