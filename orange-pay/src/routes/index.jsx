@@ -23,6 +23,7 @@ import ResetOtp from "../components/login/ResetOtp";
 import ResetSetPin from "../components/login/ResetSetPin";
 
 import DashboardPage from "../pages/DashboardPage";
+import History from "../pages/History";
 import { isAuthenticated } from "../services/authService";
 
 function ProtectedRoute() {
@@ -62,6 +63,7 @@ export default function AppRoutes() {
         {/* Protected: block everything under /app/* */}
         <Route path="/app/*" element={<ProtectedRoute />}>
           <Route path="dashboard" element={<DashboardPage />} />
+          <Route path="history" element={<History />} /> 
           {/* Any other /app/... routes can go here */}
         </Route>
 

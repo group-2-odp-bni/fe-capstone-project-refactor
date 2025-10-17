@@ -9,7 +9,7 @@ export default function useRecentTransfer() {
   // Mock data
   const mockData = [
     { name: "Safu", amount: 100000, date: "7 Oct 2025", type: "Pemasukan" },
-    { name: "Fufu", amount: 100000, date: "7 Oct 2025", type: "Pemasukan" },
+    { name: "Fufu", amount: 100000, date: "7 Oct 2025", type: "Expense" },
     { name: "Hong", amount: 100000, date: "7 Oct 2025", type: "Pemasukan" },
     { name: "Raka", amount: 100000, date: "7 Oct 2025", type: "Expense" },
     { name: "Bel", amount: 100000, date: "7 Oct 2025", type: "Expense" },
