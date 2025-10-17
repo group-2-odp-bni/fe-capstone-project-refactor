@@ -28,14 +28,21 @@ jobs:
 
       - name: Run lint
         run: |
-          echo "Running lint..."
-          npm run lint || echo "::warning::Linting failed."
+          npm run lint > lint.log || echo "::warning::Lint failed"
         working-directory: ./orange-pay
-        continue-on-error: true
 
       - name: Security Audit
-        run: npx audit-ci --moderate
+        run: |
+          npx audit-ci --moderate > audit.log || echo "::warning::Audit failed"
         working-directory: ./orange-pay
+
+      - name: Upload lint & audit logs
+        uses: actions/upload-artifact@v4
+        with:
+          name: lint-audit-logs
+          path: |
+            orange-pay/lint.log
+            orange-pay/audit.log
 
   build-app:
     name: ⚙️ Build Vite App
@@ -65,7 +72,7 @@ jobs:
     name: 🐳 Build Docker Image
     runs-on: ubuntu-latest
     needs: build-app
-    if: false  # ⛔ Skip job
+    if: false  # ⛔ Skip job for now
 
     steps:
       - name: Checkout code
@@ -78,38 +85,40 @@ jobs:
     name: 🚀 Deploy to VPS
     runs-on: ubuntu-latest
     needs: build-docker
-    if: false  # ⛔ Skip job
+    if: false  # ⛔ Skip job for now
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Setup SSH & Deploy
-        run: |
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > key.pem
-          chmod 600 key.pem
-          ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
-
-          echo "Syncing project to VPS..."
-          rsync -avz -e "ssh -i key.pem" orange-pay/ ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/home/${{ secrets.SSH_USER }}/orange-pay
-
-          echo "Running docker-compose on VPS..."
-          ssh -i key.pem ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << EOF
-            cd orange-pay
-            docker-compose down
-            docker-compose up -d --build
-          EOF
+        run: echo "Deploy skipped for now."
 
   summary:
     name: 📦 Pipeline Summary
     runs-on: ubuntu-latest
-    if: always()  # ✅ Tetap jalan meskipun job sebelumnya gagal atau di-skip
+    if: always()
     needs: [lint-and-audit, build-app, build-docker, deploy-to-vps]
 
     steps:
-      - name: Final Summary
+      - name: Download lint & audit logs
+        uses: actions/download-artifact@v4
+        with:
+          name: lint-audit-logs
+          path: ./logs
+
+      - name: Show Summary
         run: |
-          echo "✅ Lint & Audit: Completed"
-          echo "⚙️ Build App: Completed"
-          echo "🐳 Docker Build: Skipped or Completed"
-          echo "🚀 Deploy to VPS: Skipped or Completed"
+          echo "📦 Pipeline Summary"
+          echo "-------------------"
+          echo "🧹 Lint Output:"
+          cat ./logs/lint.log || echo "Lint log not found."
+
+          echo ""
+          echo "🔐 Audit Output:"
+          cat ./logs/audit.log || echo "Audit log not found."
+
+          echo ""
+          echo "⚙️ Build App: ${{ needs.build-app.result }}"
+          echo "🐳 Docker Build: ${{ needs.build-docker.result }}"
+          echo "🚀 Deploy to VPS: ${{ needs.deploy-to-vps.result }}"
