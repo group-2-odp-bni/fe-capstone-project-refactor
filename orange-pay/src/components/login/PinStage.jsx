@@ -21,7 +21,7 @@ export default function PinStage() {
         } catch {}
         nav("/app/dashboard");
       } else {
-        setErr("PIN salah, coba lagi!");
+        setErr("PIN salah, coba lagi!");  
         setPin("");
       }
     }

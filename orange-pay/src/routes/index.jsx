@@ -1,5 +1,12 @@
 import React from "react";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  Navigate,
+  Outlet,
+  useLocation,
+} from "react-router-dom";
 
 import SplashPage from "../pages/SplashPage";
 import RegisterPage from "../pages/RegisterPage";
@@ -15,16 +22,34 @@ import ResetPhone from "../components/login/ResetPhone";
 import ResetOtp from "../components/login/ResetOtp";
 import ResetSetPin from "../components/login/ResetSetPin";
 
-const AppRoutes = () => {
+import DashboardPage from "../pages/DashboardPage";
+import { isAuthenticated } from "../services/authService";
+
+function ProtectedRoute() {
+  const loc = useLocation();
+  return isAuthenticated() ? (
+    <Outlet />
+  ) : (
+    <Navigate to="/login" replace state={{ from: loc }} />
+  );
+}
+
+function NotFound() {
+  return <div>404 Not Found</div>;
+}
+
+export default function AppRoutes() {
   return (
     <BrowserRouter>
       <Routes>
+        {/* Public */}
         <Route index element={<SplashPage />} />
         <Route path="/welcome" element={<WelcomePage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/register/otp" element={<OtpRegisterPage />} />
         <Route path="/register/setpin" element={<SetPinPage />} />
 
+        {/* Login flow */}
         <Route path="/login" element={<LoginPage />}>
           <Route index element={<LoginPhone />} />
           <Route path="otp" element={<OtpStage />} />
@@ -34,10 +59,15 @@ const AppRoutes = () => {
           <Route path="reset/setpin" element={<ResetSetPin />} />
         </Route>
 
-        <Route path="*" element={<div>404 Not Found</div>} />
+        {/* Protected: block everything under /app/* */}
+        <Route path="/app/*" element={<ProtectedRoute />}>
+          <Route path="dashboard" element={<DashboardPage />} />
+          {/* Any other /app/... routes can go here */}
+        </Route>
+
+        {/* 404 */}
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </BrowserRouter>
   );
-};
-
-export default AppRoutes;
+}

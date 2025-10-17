@@ -55,3 +55,20 @@ export const completeRegistrationApi = async (finalData) => {
     }, 1500);
   });
 };
+
+export const loginWithPin = (pin) => {
+  if (pin === "123456") {
+    localStorage.setItem("isLoggedIn", "true");
+    try { sessionStorage.setItem("token", "dummy-token"); } catch {}
+    return true;
+  }
+  return false;
+};
+
+export const logout = () => {
+  localStorage.removeItem("isLoggedIn");
+  try { sessionStorage.removeItem("token"); } catch {}
+};
+
+export const isAuthenticated = () =>
+  localStorage.getItem("isLoggedIn") === "true";
