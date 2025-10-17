@@ -103,6 +103,7 @@ jobs:
   summary:
     name: 📦 Pipeline Summary
     runs-on: ubuntu-latest
+    if: always()  # ✅ Tetap jalan meskipun job sebelumnya gagal atau di-skip
     needs: [lint-and-audit, build-app, build-docker, deploy-to-vps]
 
     steps:
@@ -110,5 +111,5 @@ jobs:
         run: |
           echo "✅ Lint & Audit: Completed"
           echo "⚙️ Build App: Completed"
-          echo "🐳 Docker Build: Completed"
-          echo "🚀 Deploy to VPS: Completed"
+          echo "🐳 Docker Build: Skipped or Completed"
+          echo "🚀 Deploy to VPS: Skipped or Completed"
