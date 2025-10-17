@@ -7,8 +7,8 @@ on:
     branches: [main]
 
 jobs:
-  ci_pipeline:
-    name: Build
+  build:
+    name: Build & Deploy
     runs-on: ubuntu-latest
 
     steps:
@@ -18,7 +18,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 18.x
+          node-version: 20.x
           cache: 'npm'
           cache-dependency-path: orange-pay/package-lock.json
 
@@ -37,21 +37,18 @@ jobs:
         run: npx audit-ci --moderate
         working-directory: ./orange-pay
 
-      #- name: Run tests
-        #run: npm run test -- --coverage
+      #- name: Deploy to VPS
+        #run: |
+          #echo "${{ secrets.SSH_PRIVATE_KEY }}" > key.pem
+          #chmod 600 key.pem
+          #ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
 
-      - name: Build project
-        run: npm run build
-        working-directory: ./orange-pay
+          #echo "Syncing project to VPS..."
+          #rsync -avz -e "ssh -i key.pem" orange-pay/ ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/home/${{ secrets.SSH_USER }}/orange-pay
 
-      - name: Upload build artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-files
-          path: ./dist
-
-      - name: Upload coverage report
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-report
-          path: ./coverage
+          #echo "Running docker-compose on VPS..."
+          #ssh -i key.pem ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << EOF
+            #cd orange-pay
+            #docker-compose down
+            #docker-compose up -d --build
+          #EOF
