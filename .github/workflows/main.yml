@@ -1,0 +1,190 @@
+# .github/workflows/main.yml
+name: CI/CD - Orange Pay (Single File)
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # ===================================================================
+  # TAHAP 1: VALIDASI & BUILD APLIKASI
+  # ===================================================================
+  ci:
+    name: 🧪 Build & Test (CI)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./orange-pay
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: npm
+          cache-dependency-path: orange-pay/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run lint check
+        run: npm run lint
+
+      - name: Run security audit
+        run: npx audit-ci --moderate
+
+      - name: Build project
+        run: npm run build
+      
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-files
+          path: ./orange-pay/dist
+
+  # ===================================================================
+  # TAHAP 2: GERBANG APPROVAL SEBELUM DEPLOYMENT
+  # ===================================================================
+  wait-for-approval:
+    name: 🛡️ Await Deployment Approval
+    runs-on: ubuntu-latest
+    needs: ci
+    # Hanya berjalan saat push ke branch 'main', bukan pada pull request
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    # Environment ini HARUS dikonfigurasi di Settings > Environments
+    environment: 
+      name: staging 
+    steps:
+      - name: Approval gate
+        run: echo "Approval received. Proceeding to deployment."
+
+  # ===================================================================
+  # TAHAP 3: DEPLOY KE LINGKUNGAN STAGING
+  # ===================================================================
+  deploy-staging:
+    name: 🚀 Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: wait-for-approval # Tergantung pada approval
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: dist-files
+          path: ./orange-pay/dist
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build and push Docker image for Staging
+        uses: docker/build-push-action@v5
+        with:
+          context: ./orange-pay
+          push: true
+          tags: ${{ secrets.DOCKER_USERNAME }}/orange-pay:staging-${{ github.sha }}
+
+      - name: Deploy to Staging VPS
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.STAGING_VPS_HOST }}
+          username: ${{ secrets.STAGING_VPS_USERNAME }}
+          key: ${{ secrets.STAGING_SSH_PRIVATE_KEY }}
+          script: |
+            export IMAGE_NAME="${{ secrets.DOCKER_USERNAME }}/orange-pay:staging-${{ github.sha }}"
+            
+            echo "--- Pulling new image: $IMAGE_NAME"
+            docker pull "$IMAGE_NAME"
+            
+            echo "--- Stopping and removing old container"
+            docker stop orange-pay-staging || true
+            docker rm orange-pay-staging || true
+            
+            echo "--- Starting new container"
+            docker run -d --restart always --name orange-pay-staging -p 8080:80 "$IMAGE_NAME"
+
+  # ===================================================================
+  # TAHAP 4: DEPLOY KE LINGKUNGAN PRODUCTION (OPSIONAL, BISA DITAMBAHKAN)
+  # ===================================================================
+  deploy-production:
+    name: 🌐 Deploy to Production
+    runs-on: ubuntu-latest
+    needs: deploy-staging
+    environment: 
+      name: production # Gerbang approval kedua yang terpisah
+    steps:
+       # Langkah-langkah deploy ke production mirip dengan staging
+       # Namun menggunakan secrets PROD_* dan tag Docker 'latest'
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+      
+      - name: Pull, tag, and push 'latest' image
+        run: |
+           docker pull ${{ secrets.DOCKER_USERNAME }}/orange-pay:staging-${{ github.sha }}
+           docker tag ${{ secrets.DOCKER_USERNAME }}/orange-pay:staging-${{ github.sha }} ${{ secrets.DOCKER_USERNAME }}/orange-pay:latest
+           docker push ${{ secrets.DOCKER_USERNAME }}/orange-pay:latest
+      
+      - name: Deploy to Production VPS
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.PROD_VPS_HOST }}
+          username: ${{ secrets.PROD_VPS_USERNAME }}
+          key: ${{ secrets.PROD_SSH_PRIVATE_KEY }}
+          script: |
+            export IMAGE_NAME="${{ secrets.DOCKER_USERNAME }}/orange-pay:latest"
+            
+            echo "--- Pulling new image: $IMAGE_NAME"
+            docker pull "$IMAGE_NAME"
+            
+            echo "--- Starting new container with zero downtime (contoh)"
+            # Logika blue-green deployment atau rolling update bisa ditaruh di sini
+            docker run -d --restart always --name orange-pay-prod -p 80:80 "$IMAGE_NAME"
+
+  # ===================================================================
+  # TAHAP 5: SUMMARY AKHIR PIPELINE
+  # ===================================================================
+  summary:
+    name: 📊 Pipeline Summary
+    runs-on: ubuntu-latest
+    # `if: always()` memastikan job ini selalu berjalan, bahkan jika job sebelumnya gagal atau dilewati.
+    if: always()
+    needs: [ci, wait-for-approval, deploy-staging, deploy-production]
+    
+    steps:
+      - name: Show pipeline summary
+        run: |
+          echo "## 📊 Pipeline Execution Summary"
+          echo "---"
+          echo "- **🧪 CI (Build & Test):** ${{ needs.ci.result }}"
+          
+          # Cek hasil approval
+          if [ "${{ needs.wait-for-approval.result }}" == "skipped" ]; then
+            echo "- **🛡️ Approval Status:** ❌ Rejected or Timed Out"
+            echo "> Deployment jobs were skipped because approval was not granted."
+          elif [ "${{ needs.wait-for-approval.result }}" == "success" ]; then
+            echo "- **🛡️ Approval Status:** ✅ Approved"
+          else
+            echo "- **🛡️ Approval Status:** ${{ needs.wait-for-approval.result }}"
+          fi
+
+          # Tampilkan hasil job lain jika mereka berjalan
+          if [ "${{ needs.wait-for-approval.result }}" == "success" ]; then
+            echo "- **🚀 Deploy to Staging:** ${{ needs.deploy-staging.result }}"
+            echo "- **🌐 Deploy to Production:** ${{ needs.deploy-production.result }}"
+          fi
+          
+          echo "---"
+          echo "Workflow run URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
