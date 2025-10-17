@@ -1,0 +1,80 @@
+@import "tailwindcss";
+
+:root {
+  color-scheme: light;
+}
+body {
+  @apply bg-slate-50 text-slate-900;
+}
+@keyframes splash-pop {
+  0% {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.03);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+.animate-splash-pop {
+  animation: splash-pop 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+/* Progress bar 3s */
+@keyframes splash-progress {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+.animate-splash-progress {
+  animation: splash-progress 3s linear forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-splash-pop,
+  .animate-splash-progress {
+    animation: none !important;
+  }
+}
+
+@keyframes splash-pop {
+  0% {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.03);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+.animate-splash-pop {
+  animation: splash-pop 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+@keyframes splash-progress {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+.animate-splash-progress {
+  animation: splash-progress 3s linear forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-splash-pop,
+  .animate-splash-progress {
+    animation: none !important;
+  }
+}
