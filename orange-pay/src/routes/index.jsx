@@ -22,6 +22,8 @@ import PinStage from "../components/login/PinStage";
 import ResetPhone from "../components/login/ResetPhone";
 import ResetOtp from "../components/login/ResetOtp";
 import ResetSetPin from "../components/login/ResetSetPin";
+import ResetPin from "../components/login/ResetPin";
+import ResetPinOtp from "../components/login/ResetPinOtp";
 
 import DashboardPage from "../pages/DashboardPage";
 import History from "../pages/History";
@@ -105,6 +107,12 @@ export default function AppRoutes() {
         >
           {/* index — enter phone */}
           <Route index element={<LoginPhone />} />
+          {/* reset (forgot PIN) - enter phone to reset PIN */}
+          <Route path="reset" element={<ResetPin />} />
+          {/* reset OTP under login (reset flow) */}
+          <Route path="reset/otp" element={<RequireLoginStep step="otp"><ResetPinOtp /></RequireLoginStep>} />
+          {/* reset set-pin (after OTP) under login reset flow */}
+          <Route path="reset/pin" element={<RequireLoginStep step="pin"><ResetSetPin /></RequireLoginStep>} />
           {/* OTP / PIN require login flow steps */}
           <Route path="otp" element={<RequireLoginStep step="otp"><OtpStage /></RequireLoginStep>} />
           <Route path="pin" element={<RequireLoginStep step="pin"><PinStage /></RequireLoginStep>} />

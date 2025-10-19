@@ -38,7 +38,13 @@ function RegisterContent() {
       <div className="bg-[#FF9A25] h-28 w-full rounded-t-[28px]">
         <div className="pt-[env(safe-area-inset-top)] px-4">
           <div className="pt-4">
-            <BackButton onClick={() => history.back()} />
+            <button
+              onClick={() => history.back()}
+              aria-label="Back"
+              className="absolute left-4 top-4 w-9 h-9 grid place-items-center rounded-full bg-white text-[#FF9A25] shadow-md font-semibold"
+            >
+              🡨
+            </button>
           </div>
         </div>
       </div>
