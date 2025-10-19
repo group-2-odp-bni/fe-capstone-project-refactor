@@ -1,22 +1,59 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { useLoginFlow } from "../../context/LoginFlowContext";
+import { verifyOtpApi } from "../../services/authService";
+
+const STORAGE_KEY = "app:login_flow";
+
+function readPhoneFromSession() {
+  try {
+    const raw = sessionStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return parsed?.phone ?? null;
+  } catch {
+    return null;
+  }
+}
 
 export default function OtpStage() {
   const nav = useNavigate();
   const { state } = useLocation();
-  const phone = state?.phone;
+
+  // prefer context, fallback to sessionStorage or route state
+  let phoneFromState = state?.phone ?? null;
+  const { loginFlow, markOtpVerified } = (() => {
+    try {
+      return useLoginFlow();
+    } catch (e) {
+      // provider missing => return safe stubs
+      return { loginFlow: null, markOtpVerified: () => {} };
+    }
+  })();
+
+  const phone = loginFlow?.phone ?? phoneFromState ?? readPhoneFromSession();
 
   const [otp, setOtp] = useState(["", "", "", ""]);
   const [error, setError] = useState("");
   const [time, setTime] = useState(60);
   const [expired, setExpired] = useState(false);
+  const [loading, setLoading] = useState(false);
   const refs = useRef([]);
 
+  // countdown
   useEffect(() => {
-    if (time <= 0) return setExpired(true);
+    if (time <= 0) {
+      setExpired(true);
+      return;
+    }
     const t = setTimeout(() => setTime((s) => s - 1), 1000);
     return () => clearTimeout(t);
   }, [time]);
+
+  // initial focus on first input
+  useEffect(() => {
+    refs.current[0]?.focus();
+  }, []);
 
   const handleChange = (val, i) => {
     if (!/^\d?$/.test(val)) return;
@@ -24,22 +61,66 @@ export default function OtpStage() {
     next[i] = val;
     setOtp(next);
     setError("");
-    if (val && i < 3) refs.current[i + 1]?.focus();
+    if (val && i < refs.current.length - 1) {
+      refs.current[i + 1]?.focus();
+    }
+    // allow backspace focus handled by onKeyDown in input below
   };
 
-  const verify = () => {
-    const code = otp.join("");
-    if (code === "1234") {
-      nav("/login/pin", { state: { phone } });
-    } else {
-      setError("Kode OTP salah");
-      refs.current[0]?.focus();
-      setOtp(["", "", "", ""]);
+  const handleKeyDown = (e, i) => {
+    if (e.key === "Backspace" && !otp[i] && i > 0) {
+      refs.current[i - 1]?.focus();
     }
   };
 
+  const resend = () => {
+    setOtp(["", "", "", ""]);
+    setTime(60);
+    setExpired(false);
+    setError("");
+    refs.current[0]?.focus();
+    // TODO: call resendOtpApi(phone) if you have an endpoint
+  };
+
+  const submitOtp = async (code) => {
+    if (!phone) {
+      setError("Nomor telepon tidak ditemukan. Kembali ke halaman login.");
+      return nav("/login", { replace: true });
+    }
+    setLoading(true);
+    setError("");
+    try {
+      // Call the verify API (mock or real). If mock, it should resolve on correct code.
+      await verifyOtpApi(phone, code);
+
+      // mark as verified in login flow (persist to session)
+      try {
+        markOtpVerified();
+      } catch (e) {
+        console.warn("markOtpVerified failed (provider missing?), continuing", e);
+        // still continue to navigate to pin; session fallback should be present
+      }
+
+      // navigate to pin step
+      nav("/login/pin", { replace: true });
+    } catch (err) {
+      console.error("OTP verification failed:", err);
+      setError(err?.message || "Gagal verifikasi OTP");
+      setOtp(["", "", "", ""]);
+      refs.current[0]?.focus();
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // auto-submit when all digits entered
   useEffect(() => {
-    if (otp.every((d) => d)) verify();
+    if (otp.every((d) => d && d.length > 0)) {
+      const code = otp.join("");
+      // small timeout to let UI update before verifying
+      const id = setTimeout(() => submitOtp(code), 100);
+      return () => clearTimeout(id);
+    }
   }, [otp]);
 
   return (
@@ -60,16 +141,18 @@ export default function OtpStage() {
         <div className="flex justify-center gap-3 mt-6">
           {otp.map((d, i) => (
             <input
-              key={i}
-              ref={(el) => (refs.current[i] = el)}
-              value={d}
-              maxLength={1}
-              inputMode="numeric"
-              pattern="\d*"
-              onChange={(e) => handleChange(e.target.value.slice(-1), i)}
-              className={`w-12 h-12 text-center text-xl rounded-lg border ${
-                error ? "border-red-500" : "border-gray-300"
-              } focus:outline-none focus:border-[#1C6C79]`}
+             key={i}
+             ref={(el) => (refs.current[i] = el)}
+             value={d}
+             maxLength={1}
+             inputMode="numeric"
+             pattern="\d*"
+             onChange={(e) => handleChange(e.target.value.slice(-1), i)}
+             onKeyDown={(e) => handleKeyDown(e, i)}
+             disabled={loading}
+             className={`w-12 h-12 text-center text-xl rounded-lg border ${
+               error ? "border-red-500" : "border-gray-300"
+             } focus:outline-none focus:border-[#1C6C79]`}
             />
           ))}
         </div>
@@ -87,6 +170,7 @@ export default function OtpStage() {
           ) : (
             <button
               onClick={() => {
+                resend
                 setOtp(["", "", "", ""]);
                 setTime(60);
                 setExpired(false);
