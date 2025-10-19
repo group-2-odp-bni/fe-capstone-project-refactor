@@ -10,6 +10,7 @@ import Button from "../components/common/Button";
 import InputField from "../components/common/InputField";
 import PhoneNumberField from "../components/common/PhoneNumberField";
 import BrandLogo from "../components/common/BrandLogo";
+import { useNavigate } from "react-router-dom";
 
 export default function RegisterPage() {
   return (
@@ -31,6 +32,8 @@ export default function RegisterPage() {
 
 function RegisterContent() {
   const { values, errors, onChange, onSubmit } = useRegisterForm();
+  const [recaptchaToken, setRecaptchaToken] = React.useState(null);
+  const navigate = useNavigate();
 
   return (
     <div className="relative">
@@ -64,7 +67,23 @@ function RegisterContent() {
         </p>
 
         {/* Form */}
-        <form onSubmit={onSubmit} className="space-y-5 mt-6">
+        <form
+          onSubmit={(e) => {
+            const ok = onSubmit(e, recaptchaToken);
+            if (ok) {
+              // Navigate via react-router and pass the registration data to OTP page
+              navigate("/register/otp", {
+                state: {
+                  fullName: values.fullName.trim(),
+                  email: values.email.trim(),
+                  phoneNumber: `+62${values.phoneNumber.replace(/^0+/, "")}`,
+                },
+                replace: true,
+              });
+            }
+          }}
+          className="space-y-5 mt-6"
+        >
           <div>
             <InputField
               id="fullName"
@@ -100,22 +119,12 @@ function RegisterContent() {
             error={errors.phoneNumber}
           />
 
-          {/* Fake reCAPTCHA */}
-          <div className="border border-slate-300 rounded-xl px-3 py-2">
-            <div className="flex items-center gap-3">
-              <input
-                type="checkbox"
-                className="h-5 w-5 rounded border-slate-300 text-orange-500 focus:ring-orange-500"
-              />
-              <span className="text-sm text-slate-700">I am not a robot</span>
-              <img
-                src="/recaptcha-logo.png"
-                alt=""
-                className="ml-auto h-5 opacity-70"
-                onError={(e) => (e.currentTarget.style.display = "none")}
-              />
-            </div>
-          </div>
+          <br />
+          <br />
+          <br />
+          <br />
+          <br />
+          <br />
 
           <Button
             type="submit"
