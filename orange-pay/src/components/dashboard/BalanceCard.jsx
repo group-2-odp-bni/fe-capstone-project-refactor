@@ -451,7 +451,7 @@ export default function AtomicBalanceCard() {
         links: {
           history: "/app/transactions",
           split: "/app/main/split-bill",
-          topup: "/app/main/top-up",
+          topup: "/app/topup",
           transfer: "/app/main/transfer",
         },
       },
@@ -464,7 +464,7 @@ export default function AtomicBalanceCard() {
         links: {
           history: "/app/transactions",
           split: "/app/family/split-bill",
-          topup: "/app/family/top-up",
+          topup: "/app/topup",
           transfer: "/app/family/transfer",
         },
       },
@@ -477,7 +477,7 @@ export default function AtomicBalanceCard() {
         links: {
           history: "/app/transactions",
           split: "/app/personal/split-bill",
-          topup: "/app/personal/top-up",
+          topup: "/app/topup",
           transfer: "/app/personal/transfer",
         },
       },

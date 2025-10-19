@@ -1,4 +1,3 @@
-import React from "react";
 import {
   BrowserRouter,
   Routes,
@@ -8,7 +7,7 @@ import {
   useLocation,
 } from "react-router-dom";
 
-import SplashPage from "../pages/SplashPage";
+import SplashPage from "../pages/SplashPage";'='
 import RegisterPage from "../pages/RegisterPage";
 import OtpRegisterPage from "../pages/OtpRegisterPage";
 import SetPinPage from "../pages/SetPinPage";
@@ -24,6 +23,7 @@ import ResetSetPin from "../components/login/ResetSetPin";
 
 import DashboardPage from "../pages/DashboardPage";
 import HistoryTransactionPage from "../pages/HistoryTransactionPage";
+import TopUpPage from "../pages/TopUpPage";
 import { isAuthenticated } from "../services/authService";
 
 function ProtectedRoute() {
@@ -64,6 +64,7 @@ export default function AppRoutes() {
         <Route path="/app/*" element={<ProtectedRoute />}>
           <Route path="dashboard" element={<DashboardPage />} />
           <Route path="transactions" element={<HistoryTransactionPage />} />
+          <Route path="topup" element={<TopUpPage />} />
           {/* Any other /app/... routes can go here */}
         </Route>
 

@@ -1,11 +1,12 @@
+// HeaderSection.jsx
 import React from 'react'
 import BellIcon from '@heroicons/react/24/outline/BellIcon'
 
-// HeaderSection.jsx — responsive fix: align text properly on mobile with custom color for Welcome back
 export default function HeaderSection({
   name = 'Ahong',
   avatarSrc = '/avatar.png',
   onBellClick,
+  unreadCount = 0, // <— NEW
 }) {
   return (
     <div className="relative flex items-center justify-between sm:py-6 sm:px-8">
@@ -32,7 +33,11 @@ export default function HeaderSection({
         >
           <div className="indicator">
             <BellIcon className="w-8 h-8 sm:w-10 sm:h-10 text-base-content/70" />
-            <span className="indicator-item badge badge-sm bg-base-content/70 border-none" />
+            {unreadCount > 0 && (
+              <span className="indicator-item badge badge-sm bg-base-content/70 border-none">
+                {unreadCount > 99 ? '99+' : unreadCount}
+              </span>
+            )}
           </div>
         </button>
       </div>
