@@ -11,7 +11,7 @@ export default function HeaderSection() {
           <p className="text-xs text-brand-subtext">Welcome back</p>
         </div>
       </div>
-      <Link to="/app/transactions" className="text-sm font-medium text-brand-subtext hover:text-black">
+      <Link to="/app/dashboard" className="text-sm font-medium text-brand-subtext hover:text-black">
         Riwayat
       </Link>
     </div>

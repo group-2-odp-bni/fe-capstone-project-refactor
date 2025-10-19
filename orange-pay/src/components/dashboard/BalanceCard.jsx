@@ -127,7 +127,7 @@ import {
   
         {/* === CTA === */}
         <div className="flex justify-end">
-          <Link to="/app/transactions">
+          <Link to="/app/history">
             <button className="bg-amber-400 text-black px-2 py-1 rounded-full font-medium text-[10px] hover:bg-amber-300 transition flex items-center space-x-1 scale-100">
               <span>How much you’ve spent</span>
               <ArrowRightIcon className="w-3 h-3" />
