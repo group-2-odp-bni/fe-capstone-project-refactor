@@ -1,9 +1,11 @@
 import React, { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useLoginFlow } from "../../context/LoginFlowContext";
 
 export default function LoginPhone() {
   const nav = useNavigate();
   const inputRef = useRef(null);
+  const { startLogin } = useLoginFlow();
 
   const [phone, setPhone] = useState("");
   const [err, setErr] = useState("");
@@ -18,7 +20,18 @@ export default function LoginPhone() {
   const next = () => {
     if (!phone.startsWith("8")) return setErr("Nomor harus dimulai dengan 8");
     if (phone.length < 9) return setErr("Minimal 9 digit setelah +62");
-    nav("/login/otp", { state: { phone: `+62${phone}` } });
+    const fullPhone = `+62${phone}`;
+    try {
+      // persist login flow state (step -> otp) and phone into sessionStorage
+      startLogin(fullPhone);
+      console.log("startLogin called:", fullPhone);
+    } catch (e) {
+      console.error("startLogin failed", e);
+      // still navigate to OTP if you want, but better to surface error
+      setErr("Gagal memulai proses login. Coba lagi.");
+      return;
+    }
+    nav("/login/otp", { state: { phone: `+62${phone}` }, replace: true});
   };
 
   return (

@@ -1,11 +1,25 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useLoginFlow } from "../../context/LoginFlowContext";
+import { loginWithPin } from "../../services/authService";
+
 
 export default function PinStage() {
   const nav = useNavigate();
   const [pin, setPin] = useState("");
   const [err, setErr] = useState("");
-
+  let loginFlowCtx;
+  try {
+    loginFlowCtx = useLoginFlow();
+  } catch (e) {
+    loginFlowCtx = {
+      loginFlow: readFlowFromSession(),
+      clearLoginFlow: () => {},
+    };
+  }
+  const { loginFlow, clearLoginFlow } = loginFlowCtx;
+  const phone = loginFlow?.phone ?? null;
+  
   const input = (d) => {
     setErr("");
     setPin((p) => (p.length < 6 ? p + d : p));
