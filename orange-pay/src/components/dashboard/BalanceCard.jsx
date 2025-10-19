@@ -426,34 +426,183 @@ const CarouselViewport = forwardRef(function CarouselViewport(
       onPointerCancel={onPointerUp}
     >
       <div className="flex" style={{ width: "100%" }}>
-  {items.map((item) => (
-    <div key={item.id} className="snap-center shrink-0 p-0" style={{ width: "100%" }}>
-      {renderItem(item)}
-    </div>
-  ))}
-
-  {!loading && (
-    <button onClick={() => setIsHidden(!isHidden)}>
-      {isHidden ? (
-        <EyeSlashIcon className="w-6 h-4 text-white/70" />
-      ) : (
-        <EyeIcon className="w-6 h-4 text-white/70" />
-      )}
-    </button>
-  )}
-</div>
-
-  
-        {/* === CTA === */}
-        <div className="flex justify-end">
-          <Link to="/app/transactions">
-            <button className="bg-amber-400 text-black px-2 py-1 rounded-full font-medium text-[10px] hover:bg-amber-300 transition flex items-center space-x-1 scale-100">
-              <span>How much you’ve spent</span>
-              <ArrowRightIcon className="w-3 h-3" />
-            </button>
-          </Link>
-        </div>
+        {items.map((item) => (
+          <div key={item.id} className="snap-center shrink-0 p-0" style={{ width: "100%" }}>
+            {renderItem(item)}
+          </div>
+        ))}
       </div>
+    </div>
+  );
+});
+
+/* ===================== TEMPLATE / PAGE ===================== */
+
+export default function AtomicBalanceCard() {
+  // meta kartu (statis, termasuk link CTA dan initialBalance sebagai fallback)
+  const cards = useMemo(
+    () => [
+      {
+        id: "utama",
+        title: "Utama",
+        initialBalance: 385000,
+        bg: "linear-gradient(101.06deg, #2F5755 23.71%, #1A3A38 60.76%, #041D1C 97.82%)",
+        accent: "#2F5755",
+        links: {
+          history: "/app/transactions",
+          split: "/app/main/split-bill",
+          topup: "/app/topup",
+          transfer: "/app/main/transfer",
+        },
+      },
+      {
+        id: "family",
+        title: "Family",
+        initialBalance: 120000,
+        bg: "linear-gradient(101.06deg, #8B138D 23.71%, #591467 50.68%, #25062B 97.82%)",
+        accent: "#8B138D",
+        links: {
+          history: "/app/transactions",
+          split: "/app/family/split-bill",
+          topup: "/app/topup",
+          transfer: "/app/family/transfer",
+        },
+      },
+      {
+        id: "shared",
+        title: "Shared",
+        initialBalance: 765000,
+        bg: "linear-gradient(101.06deg, #135B82 23.71%, #0F435F 60.76%, #0F2835 97.82%)",
+        accent: "#135B82",
+        links: {
+          history: "/app/transactions",
+          split: "/app/personal/split-bill",
+          topup: "/app/topup",
+          transfer: "/app/personal/transfer",
+        },
+      },
+    ],
+    []
+  );
+
+  // data saldo dari API (dummy/real tergantung implementasi hook)
+  const { data, loading: apiLoading, error, refetch } = useCardBalances();
+
+  // map id -> balance
+  const balancesMap = useMemo(() => {
+    if (!Array.isArray(data)) return {};
+    return data.reduce((acc, { id, balance }) => {
+      acc[id] = Number(balance) || 0;
+      return acc;
+    }, {});
+  }, [data]);
+
+  // state UI
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [balance, setBalance] = useState(cards[0]?.initialBalance ?? 0);
+  const [isHidden, setIsHidden] = useState(false);
+
+  // sinkronkan angka kartu aktif dengan data API
+  useEffect(() => {
+    const currentId = cards[activeIndex]?.id;
+    const apiValue = currentId ? balancesMap[currentId] : undefined;
+    const fallback = cards[activeIndex]?.initialBalance ?? 0;
+    setBalance(
+      typeof apiValue === "number" && !Number.isNaN(apiValue) ? apiValue : fallback
     );
-  }
-)
+  }, [activeIndex, balancesMap, cards]);
+
+  // viewport imperative
+  const viewportRef = useRef(null);
+  const goTo = (i) => {
+    setActiveIndex(i);
+    viewportRef.current?.scrollToIndex?.(i);
+  };
+
+  // loading per card (aktif prioritas skeleton)
+  const isCardLoading = (cardId, i) => {
+    const hasApi = typeof balancesMap[cardId] === "number";
+    return apiLoading || (!hasApi && i === activeIndex);
+  };
+
+  return (
+    <div className="w-full mx-auto md:px-4">
+      {/* Tabs */}
+      <div className="flex flex-wrap items-center justify-center gap-2 mb-3">
+        {cards.map((c, i) => (
+          <SegmentedTab
+            key={c.id}
+            title={c.title}
+            accent={c.accent}
+            active={i === activeIndex}
+            onClick={() => goTo(i)}
+          />
+        ))}
+      </div>
+
+      {/* Viewport */}
+      <CarouselViewport
+        ref={viewportRef}
+        items={cards}
+        activeIndex={activeIndex}
+        setActiveIndex={setActiveIndex}
+        renderItem={(card, i = activeIndex) => {
+          // jumlah yg ditampilkan:
+          // - kartu aktif: gunakan state `balance` yg sudah difusi dari API/fallback
+          // - kartu non-aktif: gunakan API jika ada, kalau belum ada pakai initialBalance
+          const raw = i === activeIndex ? balance : balancesMap[card.id];
+          const amount =
+            typeof raw === "number" && !Number.isNaN(raw)
+              ? raw
+              : card.initialBalance ?? 0;
+
+          return (
+            <div className="p-0" style={{ width: "100%" }}>
+              <BalanceCardOrganism
+                card={card}
+                active={i === activeIndex}
+                amount={amount}
+                loading={isCardLoading(card.id, i)}
+                isHidden={isHidden}
+                onToggleHidden={() => setIsHidden((v) => !v)}
+                onBadgeClick={() => goTo(i)}
+              />
+            </div>
+          );
+        }}
+      />
+
+      {/* Dots */}
+      <div className="flex justify-center items-center gap-2 mt-4">
+        {cards.map((c, i) => (
+          <Dot
+            key={c.id}
+            active={i === activeIndex}
+            accent={c.accent}
+            onClick={() => goTo(i)}
+          />
+        ))}
+      </div>
+
+      {/* Error */}
+      {error && (
+        <p className="text-center text-red-600 text-xs mt-3">
+          Gagal memuat saldo.{" "}
+          <button className="underline" onClick={refetch}>
+            Coba lagi
+          </button>
+        </p>
+      )}
+
+      <style>{`
+        /* hide webkit scrollbar */
+        div::-webkit-scrollbar { height: 0; width: 0; }
+
+        /* outer glow heavier on larger screens */
+        @media (min-width: 768px) {
+          .card-outer-glow { filter: drop-shadow(0 24px 60px rgba(0,0,0,0.12)); }
+        }
+      `}</style>
+    </div>
+  );
+}

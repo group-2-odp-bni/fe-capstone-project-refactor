@@ -1,5 +1,3 @@
-// src/pages/LoginPage.jsx
-import React from "react";
 import { Outlet } from "react-router-dom";
 import MobileShell from "../components/layout/MobileShell";
 
