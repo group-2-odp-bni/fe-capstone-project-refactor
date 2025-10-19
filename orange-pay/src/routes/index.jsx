@@ -9,7 +9,7 @@ import {
   useLocation,
 } from "react-router-dom";
 
-import SplashPage from "../pages/SplashPage";
+import SplashPage from "../pages/SplashPage";'='
 import RegisterPage from "../pages/RegisterPage";
 import OtpRegisterPage from "../pages/OtpRegisterPage";
 import SetPinPage from "../pages/SetPinPage";
@@ -19,12 +19,11 @@ import LoginPage from "../pages/LoginPage";
 import LoginPhone from "../components/login/LoginPhone";
 import OtpStage from "../components/login/OtpStage";
 import PinStage from "../components/login/PinStage";
-import ResetPhone from "../components/login/ResetPhone";
-import ResetOtp from "../components/login/ResetOtp";
-import ResetSetPin from "../components/login/ResetSetPin";
 
 import DashboardPage from "../pages/DashboardPage";
-import History from "../pages/History";
+import HistoryTransactionPage from "../pages/HistoryTransactionPage";
+import TopUpPage from "../pages/TopUpPage";
+
 import { isAuthenticated } from "../services/authService";
 
 /* login flow context & step guard */
@@ -114,7 +113,8 @@ export default function AppRoutes() {
         {/* Protected: block everything under /app/* */}
         <Route path="/app/*" element={<ProtectedRoute />}>
           <Route path="dashboard" element={<DashboardPage />} />
-          <Route path="history" element={<History />} />
+          <Route path="transactions" element={<HistoryTransactionPage />} />
+          <Route path="topup" element={<TopUpPage />} />
 
           {/* ------------- Protected Reset flow ------------- 
               Reset pages require the user to be authenticated (sessionStorage token).
@@ -124,9 +124,7 @@ export default function AppRoutes() {
                 /app/reset/setpin     -> ResetSetPin
           */}
           <Route path="reset">
-            <Route index element={<ResetPhone />} />
-            <Route path="otp" element={<ResetOtp />} />
-            <Route path="setpin" element={<ResetSetPin />} />
+            
           </Route>
 
           {/* Any other /app/... routes can go here */}
