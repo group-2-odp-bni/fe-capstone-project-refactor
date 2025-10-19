@@ -124,9 +124,7 @@ export default function AppRoutes() {
                 /app/reset/setpin     -> ResetSetPin
           */}
           <Route path="reset">
-            <Route index element={<ResetPhone />} />
-            <Route path="otp" element={<ResetOtp />} />
-            <Route path="setpin" element={<ResetSetPin />} />
+            
           </Route>
 
           {/* Any other /app/... routes can go here */}
