@@ -1,11 +1,8 @@
 // src/pages/RegisterPage.jsx
 import React from "react";
 import { Link } from "react-router-dom";
-
 import { RegistrationProvider } from "../context/RegistrationContext";
 import useRegisterForm from "../hooks/useRegistrationForm";
-
-import BackButton from "../components/common/BackButton";
 import Button from "../components/common/Button";
 import InputField from "../components/common/InputField";
 import PhoneNumberField from "../components/common/PhoneNumberField";
@@ -33,6 +30,9 @@ export default function RegisterPage() {
 function RegisterContent() {
   const { values, errors, onChange, onSubmit } = useRegisterForm();
   const [recaptchaToken, setRecaptchaToken] = React.useState(null);
+  const [captchaLoading, setCaptchaLoading] = React.useState(false);
+  const [captchaChecked, setCaptchaChecked] = React.useState(false);
+  const [captchaError, setCaptchaError] = React.useState("");
   const navigate = useNavigate();
 
   return (
@@ -69,9 +69,13 @@ function RegisterContent() {
         {/* Form */}
         <form
           onSubmit={(e) => {
-            const ok = onSubmit(e, recaptchaToken);
+            e.preventDefault();
+            if (!captchaChecked) {
+              setCaptchaError("Silakan centang kotak 'I am not a robot'");
+              return;
+            }
+            const ok = onSubmit(e);
             if (ok) {
-              // Navigate via react-router and pass the registration data to OTP page
               navigate("/register/otp", {
                 state: {
                   fullName: values.fullName.trim(),
@@ -119,13 +123,51 @@ function RegisterContent() {
             error={errors.phoneNumber}
           />
 
-          <br />
-          <br />
-          <br />
-          <br />
-          <br />
-          <br />
+          {/* Simple checkbox captcha (simulated verification) */}
+          <div className="border border-slate-300 rounded-xl px-3 py-2">
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  if (captchaChecked) {
+                    setCaptchaChecked(false);
+                    setRecaptchaToken(null);
+                    return;
+                  }
+                  setCaptchaLoading(true);
+                  setCaptchaError("");
+                  // simulate verification delay
+                  setTimeout(() => {
+                    setCaptchaLoading(false);
+                    setCaptchaChecked(true);
+                    setRecaptchaToken("simulated-token");
+                  }, 800);
+                }}
+                className={`h-8 w-8 rounded grid place-items-center border ${captchaChecked ? "bg-[#1C6C79] text-white" : "bg-white"}`}
+                aria-pressed={captchaChecked}
+              >
+                {captchaLoading ? (
+                  <svg className="animate-spin h-4 w-4 text-gray-600" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                  </svg>
+                ) : captchaChecked ? (
+                  <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                ) : (
+                  <div />
+                )}
+              </button>
 
+              <div className="text-sm text-slate-700">I am not a robot</div>
+            </div>
+            {captchaError && <p className="text-red-500 text-xs mt-2">{captchaError}</p>}
+          </div>
+
+          <br />
+          <br />
+          <br />
           <Button
             type="submit"
             className="w-full !bg-[#1C6C79] hover:!bg-[#15555F] !rounded-xl !h-11"
