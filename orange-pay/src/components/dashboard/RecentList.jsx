@@ -5,34 +5,12 @@ export default function RecentList() {
 
   const formatRupiah = (v) => (v ?? 0).toLocaleString("id-ID");
 
-  const formatDate = (raw) => {
-    if (!raw) return "-";
-    try {
-      const d = new Date(raw);
-      if (isNaN(d.getTime())) return raw;
-      const day = d.toLocaleDateString("en-GB", {
-        day: "numeric",
-        month: "short",
-        year: "numeric",
-      });
-      const time = d.toLocaleTimeString("id-ID", {
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: true,
-      });
-      return `${day} · ${time}`;
-    } catch {
-      return raw;
-    }
-  };
-
   return (
     <section className="mt-6">
       <h3 className="px-3 font-semibold text-lg text-gray-900 mb-3 text-left">
         Recent
       </h3>
 
-      {/* Card container */}
       <div className="rounded-[24px] border border-gray-200 bg-white shadow-sm">
         <div className="p-4">
           {loading ? (
@@ -57,18 +35,19 @@ export default function RecentList() {
               Belum ada transaksi.
             </div>
           ) : (
-            // Scroll kebawah jika item banyak
             <div className="max-h-[300px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
               <ul className="mt-2.5 divide-y divide-gray-200">
-                {users.map((user, index) => {
+                {users.map((user) => {
                   const isIncome = user.type?.toLowerCase() === "terima";
                   const sign = isIncome ? "+" : "−";
-                  const amountColor = isIncome ? "text-emerald-400" : "text-gray-700";
-                  const rightSub = formatDate(user.date);
+                  const amountColor = isIncome ? "text-emerald-500" : "text-red-600";
+
+                  // gunakan label yang sudah diformat dari hook
+                  const rightSub = `${user.dateLabel} · ${user.timeLabel}`;
 
                   return (
                     <li
-                      key={index}
+                      key={user.id}
                       className="py-2 first:pt-0 last:pb-0 hover:bg-gray-50/40 transition-colors"
                     >
                       <div className="flex items-center justify-between">
@@ -78,11 +57,7 @@ export default function RecentList() {
                             {user.name}
                           </p>
                           <p className="text-xs text-gray-500 truncate">
-                            {user.type?.toLowerCase() === "terima"
-                              ? "Transfer Masuk"
-                              : user.type?.toLowerCase() === "kirim"
-                              ? "Transfer"
-                              : user.type ?? "-"}
+                            {isIncome ? "Transfer Masuk" : user.type?.toLowerCase() === "kirim" ? "Transfer" : (user.type ?? "-")}
                           </p>
                         </div>
 

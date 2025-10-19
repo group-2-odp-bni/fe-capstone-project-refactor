@@ -12,96 +12,113 @@ const letterColorMap = {
 };
 
 const getColorForName = (name = "") => {
-  const first = name.charAt(0).toUpperCase();
+  const first = (name || "?").charAt(0).toUpperCase();
   return letterColorMap[first] || "bg-gray-200";
 };
 
-export default function QuickTransfer() {
-  const { users = [], loading } = useRecentTransfer();
+/**
+ * QuickTransfer
+ * - Menampilkan daftar penerima unik berdasarkan transaksi paling baru
+ * - Mobile: fixed 4 item
+ * - Desktop: jumlah sesuai lebar kontainer
+ * - Optional: onSelect(name) saat avatar diklik
+ */
+export default function QuickTransfer({ onSelect }) {
+  const { users = [], loading } = useRecentTransfer(); // gunakan mock/API dari hook
 
-  // ====== Konfigurasi ukuran minimum item & gap (sesuaikan kalau perlu) ======
-  // gap-6 = 24px (1.5rem default tailwind)
-  const GAP_PX = 24;
-  // lebar minimum 1 item (avatar + label): kira2 96–112 px aman. Sesuaikan kalau avatar dibesarkan.
-  const ITEM_MIN_PX = 112;
+  // ====== Konfigurasi tampilan ======
+  const GAP_PX = 24;       // gap-6 = 24px
+  const ITEM_MIN_PX = 112; // min lebar item
 
-  // Ref ke kontainer grid desktop
+  // ====== Dedupe per nama dan urutkan berdasarkan transaksi terbaru ======
+  const uniqueRecent = useMemo(() => {
+    // gunakan map: name -> transaksi terbaru
+    const latestByName = new Map();
+    for (const u of users) {
+      const name = (u.name || "").trim();
+      const when =
+        u.createdAt instanceof Date
+          ? u.createdAt.getTime()
+          : u.createdAtISO
+          ? Date.parse(u.createdAtISO)
+          : u.date
+          ? Date.parse(u.date)
+          : 0; // fallback
+
+      const existing = latestByName.get(name);
+      if (!existing || when > existing.when) {
+        latestByName.set(name, { name, when });
+      }
+    }
+    // sort desc by when (paling baru duluan)
+    return Array.from(latestByName.values())
+      .sort((a, b) => b.when - a.when)
+      .map((x) => x.name);
+  }, [users]);
+
+  // ====== Responsif: hitung berapa item muat di desktop ======
   const gridRef = useRef(null);
-  const [visibleCount, setVisibleCount] = useState(6); // default aman
+  const [visibleCount, setVisibleCount] = useState(6);
 
-const ProfileCard = ({ children }) => (
-  <div
-    className={[
-      "rounded-[14px]",                  // border-radius: 21px
-      "bg-white/25",                    // transparan putih 25%
-      "border border-gray-200",         // border abu muda
-      "shadow-[0_0_10px_rgba(0,0,0,0.08)]", // shadow di semua sisi
-      "p-3 flex flex-col items-center justify-center",
-      "w-full max-w-[92px] sm:max-w-[110px] md:max-w-none md:w-[120px]", // responsif
-    ].join(" ")}
-  >
-    {children}
-  </div>
-);
-
-
-
-  // Hitung kapasitas maksimal berdasarkan lebar kontainer
   useEffect(() => {
     if (!gridRef.current) return;
-
     const el = gridRef.current;
 
     const compute = () => {
       const width = el.clientWidth || 0;
       if (!width) return;
-
-      // Rumus kapasitas: banyak kolom yang muat dengan min width dan gap
-      // Total width ≈ n*ITEM_MIN_PX + (n-1)*GAP_PX  <= width
-      // => n <= (width + GAP_PX) / (ITEM_MIN_PX + GAP_PX)
       const raw = (width + GAP_PX) / (ITEM_MIN_PX + GAP_PX);
       const capacity = Math.max(1, Math.floor(raw));
       setVisibleCount(capacity);
     };
 
-    // ResizeObserver supaya responsif saat resize
-    const ro = new ResizeObserver(() => compute());
+    const ro = new ResizeObserver(compute);
     ro.observe(el);
-    // hitung awal
     compute();
-
     return () => ro.disconnect();
-  }, [GAP_PX, ITEM_MIN_PX]);
+  }, []);
 
-  // Data yang ditampilkan:
-  // - Mobile (sm-): tetap 4 (atau ubah sesuai keinginan)
-  // - Desktop (md+): sebanyak kapasitas yang muat
-  const mobileSlice = 4;
-  const desktopSlice = useMemo(() => {
-    // batasi sesuai kapasitas tapi jangan melebihi jumlah data nyata
-    return Math.min(visibleCount, users.length || 0);
-  }, [visibleCount, users.length]);
-
-const Avatar = ({ name = "" }) => (
-  <div className="flex flex-col items-center space-y-3">
+  const ProfileCard = ({ children }) => (
     <div
       className={[
-        "rounded-full flex items-center justify-center font-bold text-gray-700",
-        // 🔽 base lebih kecil, naik di md & lg
-        "w-12 h-12 text-lg",
-        "md:w-16 md:h-16 md:text-2xl",
-        "lg:w-20 lg:h-20 lg:text-3xl",
-        getColorForName(name),
+        "rounded-[14px]",
+        "bg-white",
+        "border border-gray-200",
+        "shadow-[0_0_10px_rgba(0,0,0,0.08)]",
+        "p-3 flex flex-col items-center justify-center",
+        "w-full max-w-[92px] sm:max-w-[110px] md:max-w-none md:w-[120px]",
       ].join(" ")}
-      style={{ minWidth: 48, minHeight: 48 }}
     >
-      {(name || "?").charAt(0).toUpperCase()}
+      {children}
     </div>
-    <span className="text-xs sm:text-sm md:text-base text-gray-800 font-medium truncate max-w-[120px]">
-      {name || "—"}
-    </span>
-  </div>
-);
+  );
+
+  const AvatarButton = ({ name = "" }) => (
+    <button
+      type="button"
+      onClick={() => onSelect?.(name)}
+      className="flex flex-col items-center space-y-3 group focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 rounded-xl"
+      aria-label={`Transfer cepat ke ${name}`}
+      title={name}
+    >
+      <div
+        className={[
+          "rounded-full flex items-center justify-center font-bold text-gray-700",
+          "w-12 h-12 text-lg",
+          "md:w-16 md:h-16 md:text-2xl",
+          "lg:w-20 lg:h-20 lg:text-3xl",
+          "transition-transform group-active:scale-95",
+          getColorForName(name),
+        ].join(" ")}
+        style={{ minWidth: 48, minHeight: 48 }}
+      >
+        {(name || "?").charAt(0).toUpperCase()}
+      </div>
+      <span className="text-xs sm:text-sm md:text-base text-gray-800 font-medium truncate max-w-[120px]">
+        {name || "—"}
+      </span>
+    </button>
+  );
 
   return (
     <div className="mt-6">
@@ -119,31 +136,34 @@ const Avatar = ({ name = "" }) => (
               </div>
             ))}
           </div>
+        ) : uniqueRecent.length === 0 ? (
+          <div className="text-sm text-gray-500 px-3">Belum ada penerima.</div>
         ) : (
           <>
-<div className="block md:hidden">
-  <div className="grid grid-cols-4 gap-4 sm:gap-6 overflow-visible justify-items-center">
-    {users.slice(0, 4).map((u, i) => (
-      <ProfileCard key={`m-${i}`}>
-        <Avatar name={u.name} />
-      </ProfileCard>
-    ))}
-  </div>
-</div>
+            {/* Mobile: fixed 4 */}
+            <div className="block md:hidden">
+              <div className="grid grid-cols-4 gap-4 sm:gap-6 overflow-visible justify-items-center">
+                {uniqueRecent.slice(0, 4).map((name, i) => (
+                  <ProfileCard key={`m-${i}`}>
+                    <AvatarButton name={name} />
+                  </ProfileCard>
+                ))}
+              </div>
+            </div>
 
-<div className="hidden md:block">
-  <div
-    ref={gridRef}
-    className="grid grid-flow-col auto-cols-fr gap-6 justify-items-center overflow-visible"
-  >
-    {users.slice(0, visibleCount).map((u, i) => (
-      <ProfileCard key={`d-${i}`}>
-        <Avatar name={u.name} />
-      </ProfileCard>
-    ))}
-  </div>
-</div>
-
+            {/* Desktop: sesuai kapasitas kontainer */}
+            <div className="hidden md:block">
+              <div
+                ref={gridRef}
+                className="grid grid-flow-col auto-cols-fr gap-6 justify-items-center overflow-visible"
+              >
+                {uniqueRecent.slice(0, Math.min(visibleCount, uniqueRecent.length)).map((name, i) => (
+                  <ProfileCard key={`d-${i}`}>
+                    <AvatarButton name={name} />
+                  </ProfileCard>
+                ))}
+              </div>
+            </div>
           </>
         )}
       </div>
