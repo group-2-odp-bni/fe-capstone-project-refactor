@@ -51,6 +51,16 @@ export default function usePinSetupLogic() {
       return;
     }
 
+    // If we have registration state (fullName/email/phoneNumber), this
+    // Set PIN flow is part of registration — after confirming PIN we should
+    // route back to login so the user can sign in.
+    if (fullName || email || phoneNumber) {
+      // Optionally persist a registration flag or similar here
+      navigate("/login", { replace: true });
+      return;
+    }
+
+    // Otherwise, existing flow: set session token and go to dashboard
     sessionStorage.setItem("token", "dummy-token");
     navigate("/app/dashboard", {
       state: { fullName, email, phoneNumber, confirmPin },

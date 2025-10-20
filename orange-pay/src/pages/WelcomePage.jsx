@@ -15,10 +15,14 @@ export default function WelcomePage() {
             <BrandLogo size={12} />
           </div>
 
-          <h1 className="mt-8 text-2xl font-semibold text-slate-900 text-center">
+          <br />
+          <br />
+          <br />
+          <br />
+          <h1 className="mt-8 text-2xl font-semibold text-slate-900 text-left w-full">
             Welcome!
           </h1>
-          <p className="mt-2 text-sm text-slate-500 text-center">
+          <p className="mt-2 text-sm text-slate-500 text-left w-full">
             Sign in or Create new account
           </p>
 

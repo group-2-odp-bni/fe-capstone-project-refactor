@@ -1,5 +1,5 @@
 import React from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
 import BackButton from "../components/common/BackButton";
 import Button from "../components/common/Button";
@@ -9,7 +9,6 @@ import useOtpLogic from "../hooks/useOtpLogic";
 
 export default function OtpRegisterPage() {
   const navigate = useNavigate();
-
   const {
     fullName,
     email,
@@ -27,6 +26,17 @@ export default function OtpRegisterPage() {
     resendCode,
   } = useOtpLogic();
 
+  const location = useLocation();
+  const phone = location.state?.phoneNumber || phoneNumber || "";
+
+  const maskPhone = (p) => {
+    if (!p) return "";
+    const digits = p.replace(/\D/g, "");
+    const last2 = digits.slice(-2);
+    const masked = "x".repeat(Math.max(0, digits.length - 4));
+    return `+62${masked}${last2}`;
+  };
+
   return (
     <div className="min-h-dvh w-full flex items-center justify-center bg-slate-100 p-4">
       <div
@@ -38,14 +48,18 @@ export default function OtpRegisterPage() {
           <div className="bg-[#FF9A25] h-28 w-full rounded-t-[28px]">
             <div className="pt-[env(safe-area-inset-top)] px-4">
               <div className="pt-4">
-                <BackButton
+                <button
                   onClick={() =>
                     navigate("/register", {
                       replace: true,
                       state: { fromOtp: true, fullName, email, phoneNumber },
                     })
                   }
-                />
+                  aria-label="Back"
+                  className="absolute left-4 top-4 w-9 h-9 grid place-items-center rounded-full bg-white text-[#FF9A25] shadow-md font-semibold"
+                >
+                  🡨
+                </button>
               </div>
             </div>
           </div>
@@ -59,7 +73,7 @@ export default function OtpRegisterPage() {
             </div>
 
             <p className="text-center text-sm text-gray-600 mt-3">
-              Kode OTP telah dikirim ke WhatsApp Anda. Masukkan kode di bawah
+              Kode OTP telah dikirim ke {maskPhone(phone)}. Masukkan kode di bawah
               untuk melanjutkan.
             </p>
 

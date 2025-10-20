@@ -16,17 +16,15 @@ function readPhoneFromSession() {
   }
 }
 
-export default function OtpStage() {
+export default function ResetPinOtp() {
   const nav = useNavigate();
   const { state } = useLocation();
 
-  // prefer context, fallback to sessionStorage or route state
   let phoneFromState = state?.phone ?? null;
   const { loginFlow, markOtpVerified } = (() => {
     try {
       return useLoginFlow();
     } catch (e) {
-      // provider missing => return safe stubs
       return { loginFlow: null, markOtpVerified: () => {} };
     }
   })();
@@ -40,7 +38,6 @@ export default function OtpStage() {
   const [loading, setLoading] = useState(false);
   const refs = useRef([]);
 
-  // countdown
   useEffect(() => {
     if (time <= 0) {
       setExpired(true);
@@ -50,7 +47,6 @@ export default function OtpStage() {
     return () => clearTimeout(t);
   }, [time]);
 
-  // initial focus on first input
   useEffect(() => {
     refs.current[0]?.focus();
   }, []);
@@ -64,7 +60,6 @@ export default function OtpStage() {
     if (val && i < refs.current.length - 1) {
       refs.current[i + 1]?.focus();
     }
-    // allow backspace focus handled by onKeyDown in input below
   };
 
   const handleKeyDown = (e, i) => {
@@ -79,30 +74,26 @@ export default function OtpStage() {
     setExpired(false);
     setError("");
     refs.current[0]?.focus();
-    // TODO: call resendOtpApi(phone) if you have an endpoint
   };
 
   const submitOtp = async (code) => {
     if (!phone) {
-      setError("Nomor telepon tidak ditemukan. Kembali ke halaman login.");
-      return nav("/login", { replace: true });
+      setError("Nomor telepon tidak ditemukan. Kembali ke halaman reset.");
+      return nav("/login/reset", { replace: true });
     }
     setLoading(true);
     setError("");
     try {
-      // Call the verify API (mock or real). If mock, it should resolve on correct code.
       await verifyOtpApi(phone, code);
 
-      // mark as verified in login flow (persist to session)
       try {
         markOtpVerified();
       } catch (e) {
         console.warn("markOtpVerified failed (provider missing?), continuing", e);
-        // still continue to navigate to pin; session fallback should be present
       }
 
-      // navigate to pin step
-      nav("/login/pin", { replace: true });
+      // navigate to reset set-pin step (choose appropriate route)
+      nav("/login/reset/pin", { replace: true });
     } catch (err) {
       console.error("OTP verification failed:", err);
       setError(err?.message || "Gagal verifikasi OTP");
@@ -113,11 +104,9 @@ export default function OtpStage() {
     }
   };
 
-  // auto-submit when all digits entered
   useEffect(() => {
     if (otp.every((d) => d && d.length > 0)) {
       const code = otp.join("");
-      // small timeout to let UI update before verifying
       const id = setTimeout(() => submitOtp(code), 100);
       return () => clearTimeout(id);
     }
@@ -126,7 +115,7 @@ export default function OtpStage() {
   return (
     <div className="flex-1 bg-[#FF9A25]">
       <button
-        onClick={() => nav("/login")}
+        onClick={() => nav("/login/reset")}
         aria-label="Back"
         className="absolute left-4 top-4 w-9 h-9 grid place-items-center rounded-full bg-white text-[#FF9A25] shadow-md font-semibold"
       >
@@ -177,7 +166,7 @@ export default function OtpStage() {
           ) : (
             <button
               onClick={() => {
-                resend
+                resend();
                 setOtp(["", "", "", ""]);
                 setTime(60);
                 setExpired(false);
