@@ -41,10 +41,11 @@ const copy = async () => {
   }
 };
 
+
   return (
     <div className="min-h-screen w-full bg-white flex items-center justify-center px-4">
       {/* Card */}
-      <div className="w-full rounded-[28px] border border-gray-200 shadow-sm">
+      <div className="w-full max-w-sm rounded-[28px] border border-gray-200 shadow-sm ">
         <div className="p-6 md:p-8">
           {/* Top icon */}
           <div className="flex justify-center">
