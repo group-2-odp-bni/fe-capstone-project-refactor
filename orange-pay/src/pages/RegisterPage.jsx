@@ -1,4 +1,3 @@
-// src/pages/RegisterPage.jsx
 import React from "react";
 import { Link } from "react-router-dom";
 import { RegistrationProvider } from "../context/RegistrationContext";
@@ -8,12 +7,12 @@ import InputField from "../components/common/InputField";
 import PhoneNumberField from "../components/common/PhoneNumberField";
 import BrandLogo from "../components/common/BrandLogo";
 import { useNavigate } from "react-router-dom";
+import PhoneLayoutBackground from "../components/PhoneLayoutBackground";
 
 export default function RegisterPage() {
   return (
     <RegistrationProvider>
-      {/* Latar luar + pusatkan phone frame */}
-      <div className="min-h-dvh w-full flex items-center justify-center bg-slate-100 p-4">
+      <PhoneLayoutBackground>
         {/* PHONE FRAME (sama seperti OTP) */}
         <div
           className="relative w-full h-dvh max-w-[393px] max-h-[852px]
@@ -22,7 +21,7 @@ export default function RegisterPage() {
         >
           <RegisterContent />
         </div>
-      </div>
+      </PhoneLayoutBackground>
     </RegistrationProvider>
   );
 }
@@ -55,14 +54,14 @@ function RegisterContent() {
       {/* Card putih overlap → menyatu dgn header */}
       <div
         className="relative -mt-4 z-10 bg-white rounded-t-3xl
-                   px-6 pb-[env(safe-area-inset-bottom)]"
+                   px-6 pt-4 pb-[env(safe-area-inset-bottom)]"
       >
         {/* Brand */}
         <div className="flex justify-center pt-6">
           <BrandLogo size="sm" align="center" />
         </div>
 
-        <p className="text-sm text-gray-600 text-center mt-3">
+        <p className="text-sm text-gray-600 text-center mt-6 relative z-20">
           Masukkan nama dan email aktif Anda untuk menikmati semua layanan kami.
         </p>
 
@@ -98,7 +97,7 @@ function RegisterContent() {
               variant="float"
             />
             {errors.fullName && (
-              <p className="text-red-500 text-xs -mt-3">{errors.fullName}</p>
+              <p className="text-red-500 text-xs mt-1 relative z-30">{errors.fullName}</p>
             )}
           </div>
 
@@ -113,7 +112,7 @@ function RegisterContent() {
               variant="float"
             />
             {errors.email && (
-              <p className="text-red-500 text-xs -mt-3">{errors.email}</p>
+              <p className="text-red-500 text-xs mt-1 relative z-30">{errors.email}</p>
             )}
           </div>
 
@@ -165,7 +164,6 @@ function RegisterContent() {
             {captchaError && <p className="text-red-500 text-xs mt-2">{captchaError}</p>}
           </div>
 
-          <br />
           <br />
           <br />
           <Button

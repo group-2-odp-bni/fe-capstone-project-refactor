@@ -1,4 +1,3 @@
-// src/routes/index.jsx
 import React from "react";
 import {
   BrowserRouter,
@@ -24,12 +23,9 @@ import ResetOtp from "../components/login/ResetOtp";
 import ResetSetPin from "../components/login/ResetSetPin";
 import ResetPin from "../components/login/ResetPin";
 import ResetPinOtp from "../components/login/ResetPinOtp";
-
-
 import DashboardPage from "../pages/DashboardPage";
 import HistoryTransactionPage from "../pages/HistoryTransactionPage";
 import TopUpPage from "../pages/TopUpPage";
-
 import { isAuthenticated } from "../services/authService";
 
 /* login flow context & step guard */

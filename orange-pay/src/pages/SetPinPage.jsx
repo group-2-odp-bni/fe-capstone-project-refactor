@@ -1,12 +1,11 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 
-import BackButton from "../components/common/BackButton";
 import BrandLogo from "../components/common/BrandLogo";
-import Button from "../components/common/Button";
 import PinKeypad from "../components/register/PinKeypad";
 import PinDots from "../components/register/PinDots";
 import usePinSetupLogic from "../hooks/usePinSetupLogic";
+import PhoneLayoutBackground from "../components/PhoneLayoutBackground";
 
 export default function SetPinPage() {
   const navigate = useNavigate();
@@ -27,7 +26,7 @@ export default function SetPinPage() {
   const title = step === 1 ? "Enter your PIN" : "Confirm your PIN";
 
   return (
-    <div className="min-h-dvh w-full flex items-center justify-center bg-slate-100 p-4">
+    <PhoneLayoutBackground>
       <div
         className="relative w-full h-dvh max-w-[393px] max-h-[852px]
                    rounded-[28px] overflow-hidden shadow-[0_20px_60px_rgba(2,6,23,.18)]
@@ -67,6 +66,6 @@ export default function SetPinPage() {
 
         </section>
       </div>
-    </div>
+    </PhoneLayoutBackground>
   );
 }
