@@ -16,9 +16,9 @@ export default function TopUpMethod({ onSelect, defaultMethod }) {
 
       <button
         onClick={selectBNI}
-        className="w-full flex justify-between items-center p-4 border rounded-xl"
+        className="w-full flex justify-between items-center p-4 border rounded-xl border-gray-200"
       >
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 ">
           <img src="/logo-bni-46.webp" alt="BNI 46" className="w-6 h-6 rounded-sm" />
           <span className="font-medium">BNI Virtual Account</span>
         </div>

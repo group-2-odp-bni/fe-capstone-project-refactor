@@ -21,13 +21,23 @@ export default function TopUpAmount({ method, onBack, onConfirm, loading, error 
         <div className="w-6" />
       </div>
 
-      <div className="flex items-center gap-3 border rounded-xl p-3 mb-4">
-        <img src="/range-pay-logo.svg" alt="Range-Pay Logo" className="w-14 h-14 object-contain" />
-        <div className="leading-tight">
-          <p className="text-sm text-gray-600">0812 6754 9123 · Ahong</p>
-          <p className="text-xs text-gray-500">{method?.name}</p>
+      <div className="flex  gap-3 border border-gray-200 rounded-2xl bg-white p-4 shadow-sm">
+      {/* Logo */}
+      {/* Text block */}
+        <div className="leading-tight ">
+          <p className="flex gap-1 text-sm font-bold tracking-wide text-gray-900 uppercase">
+          <img
+            src="/orange.jpg"
+            alt="Range-Pay Logo"
+            className="w-5 h-5 object-contain"
+          />
+          Range-Pay
+          </p>
+          <p className="text-sm text-gray-600 px-6 mt-1 ">0812 6754 9123 · Ahong</p>
         </div>
       </div>
+
+
 
       <label className="block mb-2">Amount</label>
       <div className="flex items-end gap-2 mb-1">
