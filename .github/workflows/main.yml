@@ -1,16 +1,27 @@
 name: CI/CD - Orange Pay
 
+# 1. TRIPPERS: Pemicu tetap sama
 on:
   push:
     branches: [main]
   pull_request:
     branches: [main]
 
+# Variabel global untuk konsistensi
+env:
+  NODE_VERSION: 20.x
+  PROJECT_PATH: ./orange-pay
+  # Ganti 'USERNAME/REPOSITORY' dengan milik Anda, atau gunakan variabel dinamis
+  # IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/orange-pay
+  IMAGE_NAME: ghcr.io/username/orange-pay # ✏️ GANTI INI
+
 jobs:
-  lint-and-audit:
+  # -----------------------------------------------------------------
+  # TAHAP CI (Berjalan di setiap push & pull_request)
+  # -----------------------------------------------------------------
+  lint-audit:
     name: 🧹 Lint & 🔐 Audit
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -18,30 +29,29 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20.x
+          node-version: ${{ env.NODE_VERSION }}
           cache: npm
-          cache-dependency-path: orange-pay/package-lock.json
+          cache-dependency-path: ${{ env.PROJECT_PATH }}/package-lock.json
 
       - name: Install dependencies
         run: npm ci
-        working-directory: ./orange-pay
+        working-directory: ${{ env.PROJECT_PATH }}
 
-      - name: Run lint
-        run: |
+      - name: Run lint (Strict)
+        run: | 
           echo "Running lint..."
           npm run lint || echo "::warning::Linting failed."
-        working-directory: ./orange-pay
+        working-directory: ${{ env.PROJECT_PATH }}
         continue-on-error: true
 
       - name: Security Audit
         run: npx audit-ci --moderate
-        working-directory: ./orange-pay
+        working-directory: ${{ env.PROJECT_PATH }}
 
-  build-app:
+  build:
     name: ⚙️ Build Vite App
     runs-on: ubuntu-latest
-    needs: lint-and-audit
-
+    needs: lint-audit # Memastikan lolos lint & audit dulu
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -49,67 +59,137 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20.x
+          node-version: ${{ env.NODE_VERSION }}
           cache: npm
-          cache-dependency-path: orange-pay/package-lock.json
+          cache-dependency-path: ${{ env.PROJECT_PATH }}/package-lock.json
 
       - name: Install dependencies
         run: npm ci
-        working-directory: ./orange-pay
+        working-directory: ${{ env.PROJECT_PATH }}
 
       - name: Build project
         run: npm run build
-        working-directory: ./orange-pay
+        working-directory: ${{ env.PROJECT_PATH }}
 
+      - name: Upload build artifact
+        # Menyimpan hasil build ('dist') untuk digunakan di job docker
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: ${{ env.PROJECT_PATH }}/dist
+
+  # -----------------------------------------------------------------
+  # TAHAP CD (Nonaktif sementara - Hanya berjalan jika 'if: false' diubah)
+  # -----------------------------------------------------------------
   build-docker:
-    name: 🐳 Build Docker Image
+    name: 🐳 Build & Push Docker Image
     runs-on: ubuntu-latest
-    needs: build-app
-    if: false  # ⛔ Skip job
+    needs: build
+    # ⛔ Nonaktif sementara. Ganti ke 'if: github.event_name == 'push' && github.ref == 'refs/heads/main'' saat siap
+    if: false 
+    
+    permissions:
+      contents: read
+      packages: write # Izin untuk push ke GitHub Container Registry (GHCR)
 
     steps:
       - name: Checkout code
+        # Diperlukan untuk mengambil Dockerfile
         uses: actions/checkout@v4
 
-      - name: Build Docker image
-        run: docker build -t orange-pay ./orange-pay
+      - name: Download build artifact
+        # Mengambil folder 'dist' dari job 'build'
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: ${{ env.PROJECT_PATH }}/dist
 
-  deploy-to-vps:
-    name: 🚀 Deploy to VPS
+      - name: Login to GitHub Container Registry (GHCR)
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ${{ env.PROJECT_PATH }} # Path ke Dockerfile Anda
+          file: ${{ env.PROJECT_PATH }}/Dockerfile
+          push: true
+          tags: |
+            ${{ env.IMAGE_NAME }}:${{ github.sha }}
+            ${{ env.IMAGE_NAME }}:latest
+          cache-from: type=registry,ref=${{ env.IMAGE_NAME }}:latest
+          cache-to: type=inline
+
+  deploy-production:
+    name: 🚀 Deploy to Production
     runs-on: ubuntu-latest
     needs: build-docker
-    if: false  # ⛔ Skip job
+    
+    # Menambahkan gerbang persetujuan manual
+    # ❗️ ANDA HARUS mengonfigurasi environment 'production' di Pengaturan Repo
+    environment: 
+      name: production
+      # url: https://your-production-url.com # Opsional
+
+    # ⛔ Nonaktif sementara. Ganti ke 'if: github.event_name == 'push' && github.ref == 'refs/heads/main'' saat siap
+    if: false
 
     steps:
       - name: Checkout code
+        # Diperlukan untuk mengambil file docker-compose.yml
         uses: actions/checkout@v4
 
       - name: Setup SSH & Deploy
         run: |
+          echo "Menyiapkan SSH..."
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > key.pem
           chmod 600 key.pem
           ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
 
-          echo "Syncing project to VPS..."
-          rsync -avz -e "ssh -i key.pem" orange-pay/ ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/home/${{ secrets.SSH_USER }}/orange-pay
+          echo "Menyalin docker-compose.yml ke VPS..."
+          # Hanya salin file docker-compose, bukan seluruh proyek
+          rsync -avz -e "ssh -i key.pem" ${{ env.PROJECT_PATH }}/docker-compose.yml ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/home/${{ secrets.SSH_USER }}/orange-pay/
 
-          echo "Running docker-compose on VPS..."
+          echo "Menjalankan deployment di VPS..."
           ssh -i key.pem ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << EOF
-            cd orange-pay
-            docker-compose down
-            docker-compose up -d --build
+            cd /home/${{ secrets.SSH_USER }}/orange-pay
+            
+            echo "Login ke GHCR di dalam VPS..."
+            export CR_PAT=${{ secrets.GITHUB_TOKEN }}
+            echo \$CR_PAT | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            
+            # Mendefinisikan tag image baru dari SHA
+            export IMAGE_TAG=${{ github.sha }}
+            
+            echo "Menarik image baru: ${{ env.IMAGE_NAME }}:\$IMAGE_TAG"
+            docker-compose pull # Menarik image baru berdasarkan docker-compose.yml
+            
+            echo "Menjalankan docker-compose up..."
+            # Tidak perlu '--build'. Kita gunakan image yang sudah jadi.
+            docker-compose up -d
+            
+            echo "Membersihkan image lama..."
+            docker image prune -f
           EOF
 
+  # -----------------------------------------------------------------
+  # TAHAP SUMMARY (Selalu berjalan)
+  # -----------------------------------------------------------------
   summary:
     name: 📦 Pipeline Summary
     runs-on: ubuntu-latest
-    if: always()  # ✅ Tetap jalan meskipun job sebelumnya gagal atau di-skip
-    needs: [lint-and-audit, build-app, build-docker, deploy-to-vps]
+    if: always() # ✅ Selalu berjalan, meskipun job lain gagal atau di-skip
+    needs: [lint-audit, build, build-docker, deploy-production]
 
     steps:
       - name: Final Summary
         run: |
-          echo "✅ Lint & Audit: Completed"
-          echo "⚙️ Build App: Completed"
-          echo "🐳 Docker Build: Skipped or Completed"
-          echo "🚀 Deploy to VPS: Skipped or Completed"
+          echo "--- 📊 Ringkasan Pipeline ---"
+          echo "🧹 Lint & Audit: ${{ needs.lint-audit.result }}"
+          echo "⚙️ Build App: ${{ needs.build.result }}"
+          echo "🐳 Docker Build: ${{ needs.build-docker.result }}"
+          echo "🚀 Deploy to Prod: ${{ needs.deploy-production.result }}"
+          echo "-------------------------------"

@@ -43,8 +43,17 @@ export default function PinStage() {
 
   return (
     <div className="flex-1 flex flex-col bg-white">
+       <button
+        onClick={() => nav("/login")}
+        aria-label="Back"
+        className="absolute left-4 top-4 w-9 h-9 grid place-items-center rounded-full bg-white text-[#FF9A25] shadow-md font-semibold"
+      >
+        🡨
+      </button>
+      <br />
+      <br />
       <div className="flex-1 flex flex-col items-center justify-start pt-12">
-        <h2 className="text-lg font-semibold">Masukkan PIN</h2>
+        <h2 className="text-lg font-semibold">Enter your PIN</h2>
         <div className="flex gap-3 mt-6">
           {[0, 1, 2, 3, 4, 5].map((i) => (
             <div
@@ -62,7 +71,7 @@ export default function PinStage() {
           onClick={() => nav("/login/reset")}
           className="text-orange-600 text-sm underline mt-6"
         >
-          Lupa PIN
+          Forgot PIN
         </button>
       </div>
 
@@ -90,7 +99,7 @@ export default function PinStage() {
               pin.length === 6 ? "Enter" : "Isi PIN 6 digit terlebih dahulu"
             }
           >
-            ✓
+            ↵
           </button>
           <button
             onClick={() => input("0")}

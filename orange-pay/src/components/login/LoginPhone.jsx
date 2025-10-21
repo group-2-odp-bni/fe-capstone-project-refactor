@@ -35,9 +35,16 @@ export default function LoginPhone() {
   };
 
   return (
-    <div className="flex-1 bg-[#FF9A25]">
+    <div className="flex-1 bg-[#FF9A25]" relative>
+      <button
+        onClick={() => nav("/welcome")}
+        aria-label="Back"
+        className="absolute left-4 top-4 w-9 h-9 grid place-items-center rounded-full bg-white text-[#FF9A25] shadow-md font-semibold"
+      >
+        🡨
+      </button>
       <div className="h-28" />
-      <section className="flex-1 bg-white rounded-t-3xl px-6 pb-[env(safe-area-inset-bottom)] -mt-10">
+      <section className="flex-2 bg-white rounded-t-3xl px-6 pb-[env(safe-area-inset-bottom)] -mt-10 min-h-[100vh]">
         <div className="flex justify-center pt-6">
           <img src="/Orangepay.svg" alt="OrangePay" className="h-12" />
         </div>
@@ -67,8 +74,22 @@ export default function LoginPhone() {
           </div>
           {err ? <p className="text-red-500 text-xs mt-1">{err}</p> : null}
         </div>
-
-        <div className="mt-8 pb-6">
+        <br/>
+        <br/>
+        <br/>
+        <br/>
+        <br/>
+        <br/>
+        <br/>
+        <div className="mt-6 text-left text-xs text-gray-500 px-1">
+          <p>
+            Dengan masuk atau mendaftar, Anda menyetujui
+            <span className="underline font-bold mx-1 text-gray-700">Syarat dan Kebijakan Privasi</span>
+            Anda.
+          </p>
+        </div>
+        <br />
+        <div className="mt-2 pb-6">
           <button
             onClick={next}
             className="w-full bg-[#305856] hover:bg-[#15555F] text-white font-semibold py-3 rounded-xl transition"

@@ -1,12 +1,13 @@
 // TopUpPage.jsx (atau TopUp.jsx)
 import HeaderSection from "../components/dashboard/HeaderSection";
 import TopUpFlow from "../components/top-up/TopUpFlow";
+import DynamicShell from "../components/layout/dynamicShell";
+import PageHeader from "../components/page_header/PageHeader";
 
 export default function TopUpPage() {
   return (
-    <div className="space-y-6">
-      <HeaderSection />
-      <TopUpFlow />
-    </div>
+    <DynamicShell>
+      <PageHeader>Topup</PageHeader>
+    </DynamicShell>
   );
 }

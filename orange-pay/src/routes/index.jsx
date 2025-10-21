@@ -1,4 +1,3 @@
-// src/routes/index.jsx (full file — replace your current file with this)
 import React from "react";
 import {
   BrowserRouter,
@@ -9,7 +8,7 @@ import {
   useLocation,
 } from "react-router-dom";
 
-import SplashPage from "../pages/SplashPage";'='
+import SplashPage from "../pages/SplashPage";
 import RegisterPage from "../pages/RegisterPage";
 import OtpRegisterPage from "../pages/OtpRegisterPage";
 import SetPinPage from "../pages/SetPinPage";
@@ -22,18 +21,22 @@ import PinStage from "../components/login/PinStage";
 import ResetPhone from "../components/login/ResetPhone";
 import ResetOtp from "../components/login/ResetOtp";
 import ResetSetPin from "../components/login/ResetSetPin";
-
+import ResetPin from "../components/login/ResetPin";
+import ResetPinOtp from "../components/login/ResetPinOtp";
 import DashboardPage from "../pages/DashboardPage";
 import HistoryTransactionPage from "../pages/HistoryTransactionPage";
 import TopUpPage from "../pages/TopUpPage";
-
 import { isAuthenticated } from "../services/authService";
 
 /* login flow context & step guard */
 import { LoginFlowProvider } from "../context/LoginFlowContext";
 import RequireLoginStep from "./RequireLoginStep";
 
-/* ----------------- ProtectedRoute (keeps your existing pattern) ----------------- */
+/* transfer flow */
+import { TransferProvider } from "../context/TransferContext";
+import TransferPage from "../pages/TransferPage";
+
+/* ----------------- ProtectedRoute ----------------- */
 function ProtectedRoute() {
   const loc = useLocation();
   return isAuthenticated() ? (
@@ -43,7 +46,7 @@ function ProtectedRoute() {
   );
 }
 
-/* ----------------- PublicRoute (guest-only pages) ----------------- */
+/* ----------------- PublicRoute ----------------- */
 function PublicRoute({ children, redirectTo = "/app/dashboard" }) {
   const loc = useLocation();
   const [checking, setChecking] = React.useState(true);
@@ -85,16 +88,16 @@ export default function AppRoutes() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Public pages (accessible by anyone) */}
+        {/* ---------- Public pages ---------- */}
         <Route index element={<SplashPage />} />
         <Route path="/welcome" element={<WelcomePage />} />
 
-        {/* Registration pages — guest-only */}
+        {/* ---------- Registration (guest only) ---------- */}
         <Route path="/register" element={<PublicRoute><RegisterPage /></PublicRoute>} />
         <Route path="/register/otp" element={<PublicRoute><OtpRegisterPage /></PublicRoute>} />
         <Route path="/register/setpin" element={<PublicRoute><SetPinPage /></PublicRoute>} />
 
-        {/* Login flow — guest-only (wrap parent so nested routes are protected by LoginFlowProvider) */}
+        {/* ---------- Login Flow (guest only) ---------- */}
         <Route
           path="/login"
           element={
@@ -105,37 +108,45 @@ export default function AppRoutes() {
             </PublicRoute>
           }
         >
-          {/* index — enter phone */}
           <Route index element={<LoginPhone />} />
+          {/* reset (forgot PIN) - enter phone to reset PIN */}
+          <Route path="reset" element={<ResetPin />} />
+          {/* reset OTP under login (reset flow) */}
+          <Route path="reset/otp" element={<RequireLoginStep step="otp"><ResetPinOtp /></RequireLoginStep>} />
+          {/* reset set-pin (after OTP) under login reset flow */}
+          <Route path="reset/pin" element={<RequireLoginStep step="pin"><ResetSetPin /></RequireLoginStep>} />
           {/* OTP / PIN require login flow steps */}
           <Route path="otp" element={<RequireLoginStep step="otp"><OtpStage /></RequireLoginStep>} />
           <Route path="pin" element={<RequireLoginStep step="pin"><PinStage /></RequireLoginStep>} />
-          {/* removed reset routes from here — reset is protected under /app/reset */}
         </Route>
 
-        {/* Protected: block everything under /app/* */}
+        {/* ---------- Protected /app routes ---------- */}
         <Route path="/app/*" element={<ProtectedRoute />}>
           <Route path="dashboard" element={<DashboardPage />} />
           <Route path="transactions" element={<HistoryTransactionPage />} />
           <Route path="topup" element={<TopUpPage />} />
 
-          {/* ------------- Protected Reset flow ------------- 
-              Reset pages require the user to be authenticated (sessionStorage token).
-              URLs:
-                /app/reset            -> ResetPhone
-                /app/reset/otp        -> ResetOtp
-                /app/reset/setpin     -> ResetSetPin
-          */}
-          <Route path="reset">
-            <Route index element={<ResetPhone />} />
-            <Route path="otp" element={<ResetOtp />} />
-            <Route path="setpin" element={<ResetSetPin />} />
-          </Route>
+          {/* ----------- Transfer Flow ----------- */}
+          <Route
+            path="transfer/*"
+            element={
+              <TransferProvider>
+                <Routes>
+                  <Route index element={<TransferPage />} />
+                  <Route path="pin" element={<TransferPage />} />
+                  <Route path="success" element={<TransferPage />} />
+                </Routes>
+              </TransferProvider>
+            }
+          />
 
-          {/* Any other /app/... routes can go here */}
+          {/* ----------- Reset flow placeholder ----------- */}
+          <Route path="reset">
+            {/* add reset pages later */}
+          </Route>
         </Route>
 
-        {/* 404 */}
+        {/* ---------- 404 ---------- */}
         <Route path="*" element={<NotFound />} />
       </Routes>
     </BrowserRouter>

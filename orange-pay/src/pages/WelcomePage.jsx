@@ -3,22 +3,27 @@ import { Link, useNavigate } from "react-router-dom";
 import MobileShell from "../components/layout/MobileShell";
 import BrandLogo from "../components/common/BrandLogo";
 import Button from "../components/common/Button";
+import PhoneLayoutBackground from "../components/PhoneLayoutBackground";
 
 export default function WelcomePage() {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-dvh w-full flex items-center justify-center bg-slate-100 p-4">
+    <PhoneLayoutBackground>
       <MobileShell className="bg-white flex items-center justify-center">
         <div className="flex flex-col items-center justify-center w-full px-6">
           <div className="flex flex-col items-center">
             <BrandLogo size={12} />
           </div>
 
-          <h1 className="mt-8 text-2xl font-semibold text-slate-900 text-center">
+          <br />
+          <br />
+          <br />
+          <br />
+          <h1 className="mt-8 text-2xl font-semibold text-slate-900 text-left w-full">
             Welcome!
           </h1>
-          <p className="mt-2 text-sm text-slate-500 text-center">
+          <p className="mt-2 text-sm text-slate-500 text-left w-full">
             Sign in or Create new account
           </p>
 
@@ -40,6 +45,6 @@ export default function WelcomePage() {
           </p>
         </div>
       </MobileShell>
-    </div>
+    </PhoneLayoutBackground>
   );
 }

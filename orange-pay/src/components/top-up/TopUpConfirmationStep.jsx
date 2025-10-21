@@ -37,7 +37,9 @@ export default function TopUpConfirmationStep({ amount, va, expiresAt, onBack, o
         <div className="text-2xl font-extrabold mb-2">{formattedAmount}</div>
 
         <div className="flex justify-center my-2">
-          <img src="/range-pay-logo.svg" alt="Range-Pay Logo" className="w-20 h-20 object-contain" />
+          <p className="flex gap-1 text-sm  tracking-wide  ">
+            Orange-Pay Top Up
+          </p>
         </div>
 
         <div className="mb-2 flex items-center justify-center gap-2">
