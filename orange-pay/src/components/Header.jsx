@@ -1,6 +1,5 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import PropTypes from 'prop-types';
 
 export default function Header({
   title = '',
@@ -36,13 +35,3 @@ export default function Header({
     </div>
   );
 }
-
-Header.propTypes = {
-  title: PropTypes.string,
-  subtitle: PropTypes.string,
-  showBack: PropTypes.bool,
-  onBack: PropTypes.func,
-  right: PropTypes.node,
-  className: PropTypes.string,
-  centerTitle: PropTypes.bool,
-};
