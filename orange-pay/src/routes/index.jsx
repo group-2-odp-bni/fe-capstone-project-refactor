@@ -19,6 +19,9 @@ import LoginPage from "../pages/LoginPage";
 import LoginPhone from "../components/login/LoginPhone";
 import OtpStage from "../components/login/OtpStage";
 import PinStage from "../components/login/PinStage";
+import ResetPhone from "../components/login/ResetPhone";
+import ResetOtp from "../components/login/ResetOtp";
+import ResetSetPin from "../components/login/ResetSetPin";
 
 import DashboardPage from "../pages/DashboardPage";
 import HistoryTransactionPage from "../pages/HistoryTransactionPage";
@@ -124,7 +127,9 @@ export default function AppRoutes() {
                 /app/reset/setpin     -> ResetSetPin
           */}
           <Route path="reset">
-            
+            <Route index element={<ResetPhone />} />
+            <Route path="otp" element={<ResetOtp />} />
+            <Route path="setpin" element={<ResetSetPin />} />
           </Route>
 
           {/* Any other /app/... routes can go here */}
