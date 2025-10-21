@@ -81,8 +81,6 @@ export default function LoginPhone() {
         <br/>
         <br/>
         <br/>
-        <br/>
-        <br/>
         <div className="mt-6 text-left text-xs text-gray-500 px-1">
           <p>
             Dengan masuk atau mendaftar, Anda menyetujui
