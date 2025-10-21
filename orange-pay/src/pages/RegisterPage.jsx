@@ -8,12 +8,12 @@ import InputField from "../components/common/InputField";
 import PhoneNumberField from "../components/common/PhoneNumberField";
 import BrandLogo from "../components/common/BrandLogo";
 import { useNavigate } from "react-router-dom";
+import PhoneLayoutBackground from "../components/PhoneLayoutBackground";
 
 export default function RegisterPage() {
   return (
     <RegistrationProvider>
-      {/* Latar luar + pusatkan phone frame */}
-      <div className="min-h-dvh w-full flex items-center justify-center bg-slate-100 p-4">
+      <PhoneLayoutBackground>
         {/* PHONE FRAME (sama seperti OTP) */}
         <div
           className="relative w-full h-dvh max-w-[393px] max-h-[852px]
@@ -22,7 +22,7 @@ export default function RegisterPage() {
         >
           <RegisterContent />
         </div>
-      </div>
+      </PhoneLayoutBackground>
     </RegistrationProvider>
   );
 }

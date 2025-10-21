@@ -6,6 +6,7 @@ import Button from "../components/common/Button";
 import OtpInput from "../components/register/OtpInput";
 import BrandLogo from "../components/common/BrandLogo";
 import useOtpLogic from "../hooks/useOtpLogic";
+import PhoneLayoutBackground from "../components/PhoneLayoutBackground";
 
 export default function OtpRegisterPage() {
   const navigate = useNavigate();
@@ -38,7 +39,7 @@ export default function OtpRegisterPage() {
   };
 
   return (
-    <div className="min-h-dvh w-full flex items-center justify-center bg-slate-100 p-4">
+    <PhoneLayoutBackground>
       <div
         className="relative w-full h-dvh max-w-[393px] max-h-[852px]
                    rounded-[28px] overflow-hidden shadow-[0_20px_60px_rgba(2,6,23,.18)]
@@ -138,6 +139,6 @@ export default function OtpRegisterPage() {
           </div>
         </div>
       </div>
-    </div>
+    </PhoneLayoutBackground>
   );
 }
