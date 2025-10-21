@@ -35,8 +35,13 @@ function saveToSession(state) {
 }
 
 export const TransferProvider = ({ children }) => {
+  // --- ALL hooks must be inside the component body ---
   const location = useLocation();
   const prevPathRef = useRef(location.pathname);
+
+  // suppression refs used to avoid immediate re-persist or route-sync loops
+  const skipPersistRef = useRef(false);
+  const skipRouteSyncRef = useRef(false);
 
   const defaultFlow = {
     step: "select",
@@ -57,7 +62,6 @@ export const TransferProvider = ({ children }) => {
   const savedRaw = useMemo(() => loadFromSession(), []);
   const initialFlow = (() => {
     if (!savedRaw) return defaultFlow;
-    // if savedFlow.step === 'success' -> remove it immediately and return default
     if (savedRaw && savedRaw.step === "success") {
       try {
         sessionStorage.removeItem(TRANSFER_FLOW_KEY);
@@ -65,7 +69,6 @@ export const TransferProvider = ({ children }) => {
       } catch (e) {}
       return defaultFlow;
     }
-    // basic shape validation
     if (typeof savedRaw === "object" && savedRaw.step && savedRaw.data && typeof savedRaw.data === "object") {
       return { ...defaultFlow, ...savedRaw, data: { ...defaultFlow.data, ...savedRaw.data } };
     }
@@ -74,23 +77,42 @@ export const TransferProvider = ({ children }) => {
 
   const [flow, setFlow] = useState(initialFlow);
 
-  // keep route-driven steps in sync for explicit subpaths
+  // keep route-driven steps in sync for explicit subpaths (but allow suppression for one cycle)
   useEffect(() => {
+    if (skipRouteSyncRef.current) {
+      skipRouteSyncRef.current = false;
+      return;
+    }
     const p = location.pathname || "";
-    if (p.endsWith("/pin") && flow.step !== "pin") setFlow((f) => ({ ...f, step: "pin" }));
-    else if (p.endsWith("/success") && flow.step !== "success") setFlow((f) => ({ ...f, step: "success" }));
+    // keep only mappings for intermediate steps we actually want controlled by routes.
+    // Do NOT map "/success" -> "success" because success page must be independent from the context.
+    if (p.endsWith("/pin") && flow.step !== "pin") {
+      setFlow((f) => ({ ...f, step: "pin" }));
+    } else if (p.endsWith("/confirm") && flow.step !== "confirm") {
+      setFlow((f) => ({ ...f, step: "confirm" }));
+    }
+    // add other route -> step mappings only if they are necessary for your UX.
+    // intentionally OMIT mapping for "/success".
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.pathname]);
+  
 
   // persist to sessionStorage when flow changes, but NEVER persist PIN
   useEffect(() => {
+    if (skipPersistRef.current) {
+      // consume the flag and skip one persist cycle
+      skipPersistRef.current = false;
+      return;
+    }
+
     try {
       const clone = { step: flow.step, data: { ...flow.data } };
       if ("pin" in clone.data) delete clone.data.pin;
-      // Do not persist success-step snapshots: if flow.step === 'success' skip saving
+      // Do not persist success-step snapshots: if flow.step === "success" skip saving
       if (clone.step === "success") {
-        // we do not persist success; remove any lingering storage
-        try { sessionStorage.removeItem(TRANSFER_FLOW_KEY); } catch (e) {}
+        try {
+          sessionStorage.removeItem(TRANSFER_FLOW_KEY);
+        } catch (e) {}
         return;
       }
       saveToSession(clone);
@@ -100,7 +122,6 @@ export const TransferProvider = ({ children }) => {
   }, [flow]);
 
   // Clear session when the user leaves /app/transfer/* routes.
-  // Also, ensure we don't clear while navigating inside the transfer flow.
   useEffect(() => {
     const prev = prevPathRef.current || "";
     const current = location.pathname || "";
@@ -108,7 +129,6 @@ export const TransferProvider = ({ children }) => {
     const nowInTransfer = current.startsWith("/app/transfer");
 
     if (wasInTransfer && !nowInTransfer) {
-      // user left transfer -> clear persisted state and reset in-memory flow
       try {
         sessionStorage.removeItem(TRANSFER_FLOW_KEY);
       } catch (e) {}
@@ -117,6 +137,20 @@ export const TransferProvider = ({ children }) => {
 
     prevPathRef.current = current;
   }, [location.pathname]);
+
+  // When flow.step becomes success, clear persisted state and reset in-memory flow,
+  // but suppress route-sync and persist for a single cycle to avoid re-saving.
+  useEffect(() => {
+    if (flow.step === "success") {
+      try {
+        sessionStorage.removeItem(TRANSFER_FLOW_KEY);
+      } catch (e) {}
+      skipRouteSyncRef.current = true;
+      skipPersistRef.current = true;
+      setFlow(defaultFlow);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [flow.step]);
 
   // navigation helpers
   const setStep = (stepName) => {
@@ -148,11 +182,13 @@ export const TransferProvider = ({ children }) => {
     setFlow((prev) => ({ ...prev, data: { ...prev.data, ...patched } }));
   };
 
-  // allow full reset (clears storage + in-memory)
+  // allow full reset (clears storage + in-memory) and suppress immediate re-persist/route-sync once
   const reset = () => {
     try {
       sessionStorage.removeItem(TRANSFER_FLOW_KEY);
     } catch (err) {}
+    skipPersistRef.current = true;
+    skipRouteSyncRef.current = true;
     setFlow(defaultFlow);
   };
 
@@ -160,7 +196,7 @@ export const TransferProvider = ({ children }) => {
     flow,
     step: flow.step,
     data: flow.data,
-    setFlow, // use with care: allows ephemeral pin storage in memory
+    setFlow,
     setStep,
     nextStep,
     prevStep,

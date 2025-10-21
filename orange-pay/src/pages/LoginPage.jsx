@@ -6,7 +6,7 @@ export default function LoginPage() {
   return (
     <PhoneLayoutBackground>
       <MobileShell bg="bg-white">
-        <Outlet />
+        <Outlet />  
       </MobileShell>
     </PhoneLayoutBackground>
   );

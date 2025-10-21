@@ -20,7 +20,22 @@ export default function Header({
     <div className={`w-full flex items-center gap-2 mb-6 ${className}`}>
       {showBack ? (
         <button onClick={handleBack} aria-label="Back" className="p-1 -ml-1">
-          <span className="text-2xl">←</span>
+          <svg
+            width="22"
+            height="18"
+            viewBox="0 0 22 18"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            className="text-gray-900"
+            >
+            <path
+                d="M1.3999 9H20.5999M1.3999 9L9.3999 1M1.3999 9L9.3999 17"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+            />
+            </svg>
         </button>
       ) : (
         <div className="w-8" />
