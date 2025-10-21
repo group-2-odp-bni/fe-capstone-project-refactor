@@ -21,10 +21,22 @@ import PinStage from "../components/login/PinStage";
 import ResetPhone from "../components/login/ResetPhone";
 import ResetOtp from "../components/login/ResetOtp";
 import ResetSetPin from "../components/login/ResetSetPin";
-
+import ResetPin from "../components/login/ResetPin";
+import ResetPinOtp from "../components/login/ResetPinOtp";
 import DashboardPage from "../pages/DashboardPage";
+import HistoryTransactionPage from "../pages/HistoryTransactionPage";
+import TopUpPage from "../pages/TopUpPage";
 import { isAuthenticated } from "../services/authService";
 
+/* login flow context & step guard */
+import { LoginFlowProvider } from "../context/LoginFlowContext";
+import RequireLoginStep from "./RequireLoginStep";
+
+/* transfer flow */
+import { TransferProvider } from "../context/TransferContext";
+import TransferPage from "../pages/TransferPage";
+
+/* ----------------- ProtectedRoute ----------------- */
 function ProtectedRoute() {
   const loc = useLocation();
   return isAuthenticated() ? (
@@ -34,38 +46,107 @@ function ProtectedRoute() {
   );
 }
 
+/* ----------------- PublicRoute ----------------- */
+function PublicRoute({ children, redirectTo = "/app/dashboard" }) {
+  const loc = useLocation();
+  const [checking, setChecking] = React.useState(true);
+  const [authed, setAuthed] = React.useState(false);
+
+  React.useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const maybe = isAuthenticated();
+        const res = maybe && typeof maybe.then === "function" ? await maybe : maybe;
+        if (!mounted) return;
+        setAuthed(Boolean(res));
+      } catch (err) {
+        console.error("PublicRoute:isAuthenticated error:", err);
+        if (!mounted) return;
+        setAuthed(false);
+      } finally {
+        if (mounted) setChecking(false);
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  if (checking) return <div style={{ padding: 24, textAlign: "center" }}>Checking authentication...</div>;
+  if (authed) return <Navigate to={redirectTo} replace state={{ from: loc }} />;
+  return children;
+}
+
+/* ----------------- NotFound ----------------- */
 function NotFound() {
   return <div>404 Not Found</div>;
 }
 
+/* ----------------- Routes ----------------- */
 export default function AppRoutes() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Public */}
+        {/* ---------- Public pages ---------- */}
         <Route index element={<SplashPage />} />
         <Route path="/welcome" element={<WelcomePage />} />
-        <Route path="/register" element={<RegisterPage />} />
-        <Route path="/register/otp" element={<OtpRegisterPage />} />
-        <Route path="/register/setpin" element={<SetPinPage />} />
 
-        {/* Login flow */}
-        <Route path="/login" element={<LoginPage />}>
+        {/* ---------- Registration (guest only) ---------- */}
+        <Route path="/register" element={<PublicRoute><RegisterPage /></PublicRoute>} />
+        <Route path="/register/otp" element={<PublicRoute><OtpRegisterPage /></PublicRoute>} />
+        <Route path="/register/setpin" element={<PublicRoute><SetPinPage /></PublicRoute>} />
+
+        {/* ---------- Login Flow (guest only) ---------- */}
+        <Route
+          path="/login"
+          element={
+            <PublicRoute>
+              <LoginFlowProvider>
+                <LoginPage />
+              </LoginFlowProvider>
+            </PublicRoute>
+          }
+        >
           <Route index element={<LoginPhone />} />
-          <Route path="otp" element={<OtpStage />} />
-          <Route path="pin" element={<PinStage />} />
-          <Route path="reset" element={<ResetPhone />} />
-          <Route path="reset/otp" element={<ResetOtp />} />
-          <Route path="reset/setpin" element={<ResetSetPin />} />
+          {/* reset (forgot PIN) - enter phone to reset PIN */}
+          <Route path="reset" element={<ResetPin />} />
+          {/* reset OTP under login (reset flow) */}
+          <Route path="reset/otp" element={<RequireLoginStep step="otp"><ResetPinOtp /></RequireLoginStep>} />
+          {/* reset set-pin (after OTP) under login reset flow */}
+          <Route path="reset/pin" element={<RequireLoginStep step="pin"><ResetSetPin /></RequireLoginStep>} />
+          {/* OTP / PIN require login flow steps */}
+          <Route path="otp" element={<RequireLoginStep step="otp"><OtpStage /></RequireLoginStep>} />
+          <Route path="pin" element={<RequireLoginStep step="pin"><PinStage /></RequireLoginStep>} />
         </Route>
 
-        {/* Protected: block everything under /app/* */}
+        {/* ---------- Protected /app routes ---------- */}
         <Route path="/app/*" element={<ProtectedRoute />}>
           <Route path="dashboard" element={<DashboardPage />} />
-          {/* Any other /app/... routes can go here */}
+          <Route path="transactions" element={<HistoryTransactionPage />} />
+          <Route path="topup" element={<TopUpPage />} />
+
+          {/* ----------- Transfer Flow ----------- */}
+          <Route
+            path="transfer/*"
+            element={
+              <TransferProvider>
+                <Routes>
+                  <Route index element={<TransferPage />} />
+                  <Route path="pin" element={<TransferPage />} />
+                  <Route path="success" element={<TransferPage />} />
+                </Routes>
+              </TransferProvider>
+            }
+          />
+
+          {/* ----------- Reset flow placeholder ----------- */}
+          <Route path="reset">
+            {/* add reset pages later */}
+          </Route>
         </Route>
 
-        {/* 404 */}
+        {/* ---------- 404 ---------- */}
         <Route path="*" element={<NotFound />} />
       </Routes>
     </BrowserRouter>

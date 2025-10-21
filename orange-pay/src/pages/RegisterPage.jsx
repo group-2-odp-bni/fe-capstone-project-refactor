@@ -1,21 +1,18 @@
-// src/pages/RegisterPage.jsx
 import React from "react";
 import { Link } from "react-router-dom";
-
 import { RegistrationProvider } from "../context/RegistrationContext";
 import useRegisterForm from "../hooks/useRegistrationForm";
-
-import BackButton from "../components/common/BackButton";
 import Button from "../components/common/Button";
 import InputField from "../components/common/InputField";
 import PhoneNumberField from "../components/common/PhoneNumberField";
 import BrandLogo from "../components/common/BrandLogo";
+import { useNavigate } from "react-router-dom";
+import PhoneLayoutBackground from "../components/PhoneLayoutBackground";
 
 export default function RegisterPage() {
   return (
     <RegistrationProvider>
-      {/* Latar luar + pusatkan phone frame */}
-      <div className="min-h-dvh w-full flex items-center justify-center bg-slate-100 p-4">
+      <PhoneLayoutBackground>
         {/* PHONE FRAME (sama seperti OTP) */}
         <div
           className="relative w-full h-dvh max-w-[393px] max-h-[852px]
@@ -24,13 +21,18 @@ export default function RegisterPage() {
         >
           <RegisterContent />
         </div>
-      </div>
+      </PhoneLayoutBackground>
     </RegistrationProvider>
   );
 }
 
 function RegisterContent() {
   const { values, errors, onChange, onSubmit } = useRegisterForm();
+  const [recaptchaToken, setRecaptchaToken] = React.useState(null);
+  const [captchaLoading, setCaptchaLoading] = React.useState(false);
+  const [captchaChecked, setCaptchaChecked] = React.useState(false);
+  const [captchaError, setCaptchaError] = React.useState("");
+  const navigate = useNavigate();
 
   return (
     <div className="relative">
@@ -38,7 +40,13 @@ function RegisterContent() {
       <div className="bg-[#FF9A25] h-28 w-full rounded-t-[28px]">
         <div className="pt-[env(safe-area-inset-top)] px-4">
           <div className="pt-4">
-            <BackButton onClick={() => history.back()} />
+            <button
+              onClick={() => history.back()}
+              aria-label="Back"
+              className="absolute left-4 top-4 w-9 h-9 grid place-items-center rounded-full bg-white text-[#FF9A25] shadow-md font-semibold"
+            >
+              🡨
+            </button>
           </div>
         </div>
       </div>
@@ -46,19 +54,39 @@ function RegisterContent() {
       {/* Card putih overlap → menyatu dgn header */}
       <div
         className="relative -mt-4 z-10 bg-white rounded-t-3xl
-                   px-6 pb-[env(safe-area-inset-bottom)]"
+                   px-6 pt-4 pb-[env(safe-area-inset-bottom)]"
       >
         {/* Brand */}
         <div className="flex justify-center pt-6">
           <BrandLogo size="sm" align="center" />
         </div>
 
-        <p className="text-sm text-gray-600 text-center mt-3">
+        <p className="text-sm text-gray-600 text-center mt-6 relative z-20">
           Masukkan nama dan email aktif Anda untuk menikmati semua layanan kami.
         </p>
 
         {/* Form */}
-        <form onSubmit={onSubmit} className="space-y-5 mt-6">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (!captchaChecked) {
+              setCaptchaError("Silakan centang kotak 'I am not a robot'");
+              return;
+            }
+            const ok = onSubmit(e);
+            if (ok) {
+              navigate("/register/otp", {
+                state: {
+                  fullName: values.fullName.trim(),
+                  email: values.email.trim(),
+                  phoneNumber: `+62${values.phoneNumber.replace(/^0+/, "")}`,
+                },
+                replace: true,
+              });
+            }
+          }}
+          className="space-y-5 mt-6"
+        >
           <div>
             <InputField
               id="fullName"
@@ -69,7 +97,7 @@ function RegisterContent() {
               variant="float"
             />
             {errors.fullName && (
-              <p className="text-red-500 text-xs -mt-3">{errors.fullName}</p>
+              <p className="text-red-500 text-xs mt-1 relative z-30">{errors.fullName}</p>
             )}
           </div>
 
@@ -84,7 +112,7 @@ function RegisterContent() {
               variant="float"
             />
             {errors.email && (
-              <p className="text-red-500 text-xs -mt-3">{errors.email}</p>
+              <p className="text-red-500 text-xs mt-1 relative z-30">{errors.email}</p>
             )}
           </div>
 
@@ -94,23 +122,50 @@ function RegisterContent() {
             error={errors.phoneNumber}
           />
 
-          {/* Fake reCAPTCHA */}
+          {/* Simple checkbox captcha (simulated verification) */}
           <div className="border border-slate-300 rounded-xl px-3 py-2">
             <div className="flex items-center gap-3">
-              <input
-                type="checkbox"
-                className="h-5 w-5 rounded border-slate-300 text-orange-500 focus:ring-orange-500"
-              />
-              <span className="text-sm text-slate-700">I am not a robot</span>
-              <img
-                src="/recaptcha-logo.png"
-                alt=""
-                className="ml-auto h-5 opacity-70"
-                onError={(e) => (e.currentTarget.style.display = "none")}
-              />
+              <button
+                type="button"
+                onClick={() => {
+                  if (captchaChecked) {
+                    setCaptchaChecked(false);
+                    setRecaptchaToken(null);
+                    return;
+                  }
+                  setCaptchaLoading(true);
+                  setCaptchaError("");
+                  // simulate verification delay
+                  setTimeout(() => {
+                    setCaptchaLoading(false);
+                    setCaptchaChecked(true);
+                    setRecaptchaToken("simulated-token");
+                  }, 800);
+                }}
+                className={`h-8 w-8 rounded grid place-items-center border ${captchaChecked ? "bg-[#1C6C79] text-white" : "bg-white"}`}
+                aria-pressed={captchaChecked}
+              >
+                {captchaLoading ? (
+                  <svg className="animate-spin h-4 w-4 text-gray-600" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                  </svg>
+                ) : captchaChecked ? (
+                  <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                ) : (
+                  <div />
+                )}
+              </button>
+
+              <div className="text-sm text-slate-700">I am not a robot</div>
             </div>
+            {captchaError && <p className="text-red-500 text-xs mt-2">{captchaError}</p>}
           </div>
 
+          <br />
+          <br />
           <Button
             type="submit"
             className="w-full !bg-[#1C6C79] hover:!bg-[#15555F] !rounded-xl !h-11"

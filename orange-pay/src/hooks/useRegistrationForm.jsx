@@ -32,13 +32,19 @@ export default function useRegisterForm() {
 
   const validate = useCallback(() => {
     const e = {};
+    <br />
+
     if (!values.fullName.trim()) e.fullName = "Nama wajib diisi";
+
     if (!values.email.trim()) e.email = "Email wajib diisi";
-    else if (!emailRe.test(values.email)) e.email = "Format email tidak valid";
+    else if (values.email.includes(" ") || values.email.includes("="))
+      e.email = "Email tidak boleh mengandung spasi atau '='";
+  else if (!emailRe.test(values.email)) e.email = "Pastikan sesuai format email, contoh: nama@domain.com";
 
     if (!values.phoneNumber) e.phoneNumber = "Nomor telepon wajib diisi";
-    else if (values.phoneNumber.length < 9)
-      e.phoneNumber = "Nomor telepon terlalu pendek";
+    else if (!values.phoneNumber.startsWith("8")) e.phoneNumber = "Nomor harus dimulai dengan 8";
+    else if (values.phoneNumber.length < 10)
+      e.phoneNumber = "Nomor telepon minimal 10 digit";
 
     setErrors(e);
     return Object.keys(e).length === 0;
@@ -47,15 +53,18 @@ export default function useRegisterForm() {
   const onSubmit = useCallback(
     (e) => {
       e.preventDefault();
-      if (!validate()) return;
+      const ok = validate();
+      if (!ok) return false;
 
       setRegistrationData({
         fullName: values.fullName.trim(),
         email: values.email.trim(),
         phoneE164: `+62${values.phoneNumber.replace(/^0+/, "")}`,
+        phoneNumber: values.phoneNumber,
       });
 
       nextStep();
+      return true;
     },
     [validate, values, setRegistrationData, nextStep]
   );
