@@ -32,12 +32,14 @@ export default function useRegisterForm() {
 
   const validate = useCallback(() => {
     const e = {};
+    <br />
+
     if (!values.fullName.trim()) e.fullName = "Nama wajib diisi";
 
     if (!values.email.trim()) e.email = "Email wajib diisi";
     else if (values.email.includes(" ") || values.email.includes("="))
       e.email = "Email tidak boleh mengandung spasi atau '='";
-    else if (!emailRe.test(values.email)) e.email = "Format email tidak valid";
+  else if (!emailRe.test(values.email)) e.email = "Pastikan sesuai format email, contoh: nama@domain.com";
 
     if (!values.phoneNumber) e.phoneNumber = "Nomor telepon wajib diisi";
     else if (!values.phoneNumber.startsWith("8")) e.phoneNumber = "Nomor harus dimulai dengan 8";
