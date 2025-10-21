@@ -55,14 +55,14 @@ function RegisterContent() {
       {/* Card putih overlap → menyatu dgn header */}
       <div
         className="relative -mt-4 z-10 bg-white rounded-t-3xl
-                   px-6 pb-[env(safe-area-inset-bottom)]"
+                   px-6 pt-4 pb-[env(safe-area-inset-bottom)]"
       >
         {/* Brand */}
         <div className="flex justify-center pt-6">
           <BrandLogo size="sm" align="center" />
         </div>
 
-        <p className="text-sm text-gray-600 text-center mt-3">
+        <p className="text-sm text-gray-600 text-center mt-6 relative z-20">
           Masukkan nama dan email aktif Anda untuk menikmati semua layanan kami.
         </p>
 
@@ -98,7 +98,7 @@ function RegisterContent() {
               variant="float"
             />
             {errors.fullName && (
-              <p className="text-red-500 text-xs -mt-3">{errors.fullName}</p>
+              <p className="text-red-500 text-xs mt-1 relative z-30">{errors.fullName}</p>
             )}
           </div>
 
@@ -113,7 +113,7 @@ function RegisterContent() {
               variant="float"
             />
             {errors.email && (
-              <p className="text-red-500 text-xs -mt-3">{errors.email}</p>
+              <p className="text-red-500 text-xs mt-1 relative z-30">{errors.email}</p>
             )}
           </div>
 
@@ -165,7 +165,6 @@ function RegisterContent() {
             {captchaError && <p className="text-red-500 text-xs mt-2">{captchaError}</p>}
           </div>
 
-          <br />
           <br />
           <br />
           <Button
