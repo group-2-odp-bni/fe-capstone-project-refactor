@@ -20,7 +20,7 @@ export default function useCardBalances() {
       // data dummy — sama formatnya dengan yang diharapkan komponen
       const dummyData = [
         { id: "utama", balance: 385000 },
-        { id: "family", balance: 10000000 },
+        { id: "family", balance: 2000000 },
         { id: "shared", balance: 765000 },
       ];
 

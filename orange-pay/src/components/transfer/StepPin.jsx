@@ -1,20 +1,29 @@
 // src/components/transfer/StepPin.jsx
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useTransfer } from "../../context/TransferContext";
 import useTransferApi from "../../hooks/api/useTransferApi";
 import { useNavigate } from "react-router-dom";
 
 const Key = ({ children, onClick, className }) => (
-  <button onClick={onClick} className={`w-16 h-16 rounded-full text-lg ${className || ""}`}>{children}</button>
+  <button type="button" onClick={onClick} className={`w-16 h-16 rounded-full text-lg ${className || ""}`}>{children}</button>
 );
 
 export default function StepPin() {
-  const { flow, data, setData, setStep, setFlow } = useTransfer();
+  // ----- hooks first -----
+  const { data, setStep, reset } = useTransfer();
   const { performTransfer } = useTransferApi();
+  const navigate = useNavigate();
+
   const [pin, setPinLocal] = useState("");
   const [error, setError] = useState(null);
-  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+
+  // redirect if required data missing
+  useEffect(() => {
+    if (!data || !data.phone || !data.amount) {
+      navigate("/app/transfer", { replace: true });
+    }
+  }, [data, navigate]);
 
   const addDigit = (d) => {
     if (pin.length >= 6) return;
@@ -25,34 +34,22 @@ export default function StepPin() {
 
   const submitPinAndTransfer = async () => {
     setError(null);
+
     if (pin.length !== 6) {
       setError("PIN must be 6 digits");
       return;
     }
 
-    // local mock validation quick check
-    if (pin !== "123456") {
-      setError("Invalid PIN");
-      return;
-    }
-
-    if (!data.phone || !data.amount) {
+    if (!data || !data.phone || !data.amount) {
       setError("Recipient or amount missing");
       return;
     }
 
     setLoading(true);
 
-    // store PIN in memory (ephemeral) so performTransfer can use it
-    setFlow((prev) => ({
-      ...prev,
-      data: {
-        ...prev.data,
-        pin,
-      },
-    }));
-
     try {
+      console.log("StepPin: calling performTransfer with", { phone: data.phone, amount: data.amount, note: data.note });
+
       const res = await performTransfer({
         phone: data.phone,
         amount: data.amount,
@@ -60,41 +57,30 @@ export default function StepPin() {
         pin,
       });
 
-      if (res?.status === "success") {
-        // persist transactionId
-        setData({ transactionId: res.transactionId });
-        // remove ephemeral PIN from memory
-        setFlow((prev) => ({
-          ...prev,
-          data: {
-            ...prev.data,
-            pin: undefined,
-          },
-        }));
-        setStep("success");
-        navigate("/app/transfer/success");
-      } else {
-        setError(res?.message || "Transfer failed");
-        // remove ephemeral PIN on failure too for safety
-        setFlow((prev) => ({
-          ...prev,
-          data: {
-            ...prev.data,
-            pin: undefined,
-          },
-        }));
+      console.log("StepPin: performTransfer result:", res);
+
+      if (!res) {
+        setError("Unknown error from server");
+        return;
       }
+
+      if (res.status === "error") {
+        setError(res.message || "Transfer failed");
+        return;
+      }
+
+      // success: receipt saved by mock API and returned as `res`
+      const tx = res.transactionId;
+      console.log("StepPin: navigating to success tx=", tx);
+
+      // Navigate to success page (receipt page will fetch receipt from mock API).
+      // Do NOT reset here. StepSuccess will reset the flow on unmount.
+      navigate(`/app/transfer/success?tx=${encodeURIComponent(tx)}`, { replace: false });
     } catch (err) {
-      console.error(err);
-      setError("Transfer error");
-      setFlow((prev) => ({
-        ...prev,
-        data: {
-          ...prev.data,
-          pin: undefined,
-        },
-      }));
+      console.error("submitPinAndTransfer error:", err);
+      setError(err?.message || "Transfer error");
     } finally {
+      setPinLocal("");
       setLoading(false);
     }
   };
@@ -106,7 +92,11 @@ export default function StepPin() {
       <div className="mb-4 flex justify-center">
         <div className="flex gap-2">
           {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="w-4 h-4 rounded-full border" style={{ background: i < pin.length ? "#111827" : "transparent" }} />
+            <div
+              key={i}
+              className="w-4 h-4 rounded-full border"
+              style={{ background: i < pin.length ? "#111827" : "transparent" }}
+            />
           ))}
         </div>
       </div>
@@ -128,8 +118,23 @@ export default function StepPin() {
       </div>
 
       <div className="flex gap-3">
-        <button onClick={() => { setStep("confirm"); navigate("/app/transfer"); }} className="flex-1 py-3 rounded-lg border">Back</button>
-        <button onClick={submitPinAndTransfer} disabled={loading} className="flex-1 py-3 rounded-lg bg-orange-500 text-white">
+        <button
+          type="button"
+          onClick={() => {
+            setStep("confirm");
+            navigate("/app/transfer");
+          }}
+          className="flex-1 py-3 rounded-lg border"
+        >
+          Back
+        </button>
+
+        <button
+          type="button"
+          onClick={submitPinAndTransfer}
+          disabled={loading}
+          className="flex-1 py-3 rounded-lg bg-orange-500 text-white"
+        >
           {loading ? "Processing..." : "Confirm & Send"}
         </button>
       </div>

@@ -12,6 +12,30 @@ const MOCK_CONTACTS = [
 
 const delay = (ms = 700) => new Promise((res) => setTimeout(res, ms));
 
+/** receipts storage key */
+const RECEIPTS_KEY = "mockReceipts";
+
+/** small helpers to persist receipts in sessionStorage */
+function loadReceipts() {
+  try {
+    const raw = sessionStorage.getItem(RECEIPTS_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch (e) {
+    console.warn("useTransferApi: loadReceipts error", e);
+    return {};
+  }
+}
+function saveReceipts(obj) {
+  try {
+    sessionStorage.setItem(RECEIPTS_KEY, JSON.stringify(obj));
+  } catch (e) {
+    console.warn("useTransferApi: saveReceipts error", e);
+  }
+}
+function generateTxId() {
+  return `TRX${Date.now()}`;
+}
+
 export default function useTransferApi() {
   const [loading, setLoading] = useState(false);
 
@@ -35,7 +59,7 @@ export default function useTransferApi() {
   };
 
   // performTransfer expects { phone, amount, note, pin }
-  // No step-up token required anymore.
+  // will validate, update balances, create & persist a receipt, and return the receipt.
   const performTransfer = async ({ phone, amount, note, pin }) => {
     setLoading(true);
     await delay(900);
@@ -61,18 +85,54 @@ export default function useTransferApi() {
     // Update recipient balance:
     MOCK_CONTACTS[receiverIdx].balance += amt;
 
-    const tx = {
+    // Build receipt object and persist to sessionStorage
+    const txId = generateTxId();
+    const now = new Date();
+    const receipt = {
       status: "success",
-      transactionId: `TRX${Date.now()}`,
+      transactionId: txId,
       receiver: MOCK_CONTACTS[receiverIdx].name,
       phone,
       amount: amt,
-      note,
-      timestamp: new Date().toISOString(),
+      note: note || "",
+      timestamp: now.toISOString(),
+      date: now.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }),
+      time: now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      refId: `${now.getTime()}`, // simple ref id
+      type: "Transfer",
+      meta: {
+        accountId: MOCK_CONTACTS[receiverIdx].accountId,
+      },
     };
 
+    // persist receipt into "mockReceipts"
+    try {
+      const all = loadReceipts();
+      all[txId] = receipt;
+      saveReceipts(all);
+    } catch (e) {
+      console.warn("useTransferApi: failed to persist receipt", e);
+    }
+
     setLoading(false);
-    return tx;
+    // return full receipt object (not only tx id)
+    return receipt;
+  };
+
+  // fetch a saved receipt by transactionId (returns null if not found)
+  const getReceipt = async (transactionId) => {
+    setLoading(true);
+    await delay(300);
+    try {
+      const all = loadReceipts();
+      const found = all[transactionId] || null;
+      setLoading(false);
+      return found;
+    } catch (e) {
+      setLoading(false);
+      console.warn("useTransferApi: getReceipt error", e);
+      return null;
+    }
   };
 
   const getAllContacts = () => MOCK_CONTACTS.map((c) => ({ ...c }));
@@ -82,6 +142,7 @@ export default function useTransferApi() {
     fetchContacts,
     lookupContactByPhone,
     performTransfer,
+    getReceipt,
     getAllContacts,
   };
 }

@@ -1,6 +1,6 @@
 // src/pages/TransferPage.jsx
 import React from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import Header from "../components/Header";
 import { useTransfer } from "../context/TransferContext";
 
@@ -14,6 +14,7 @@ import StepSuccess from "../components/transfer/StepSuccess";
 export default function TransferPage() {
   const { step, prevStep, reset } = useTransfer();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const headerTitle = {
     select: "Transfer",
@@ -25,28 +26,35 @@ export default function TransferPage() {
   }[step] || "Transfer";
 
   const handleBack = () => {
-    // if inside flow (not at first step), go to previous step
+    // If inside flow (not at the first step), go to previous step
     if (step && step !== "select") {
       prevStep();
       return;
     }
-    // otherwise, user is at entry of transfer — clear flow and go back to dashboard
+
+    // Otherwise, user is at the first step — clear flow and go back to dashboard
     reset();
     navigate("/app/dashboard");
   };
 
-  return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-md overflow-hidden p-6">
-        <Header title={headerTitle} onBack={handleBack} showBack centerTitle />
+  // If the URL is /app/transfer/success then render StepSuccess regardless of context.step
+  const path = location.pathname || "";
+  const isSuccessPath = path.endsWith("/success");
 
-        {step === "select" && <StepSelectContacts />}
-        {step === "details" && <StepContactDetails />}
-        {step === "amount" && <StepEnterAmount />}
-        {step === "confirm" && <StepConfirm />}
-        {step === "pin" && <StepPin />}
-        {step === "success" && <StepSuccess />}
-      </div>
+  return (
+    <div className="p-6">
+      <Header title={headerTitle} onBack={handleBack} showBack centerTitle />
+      {isSuccessPath ? (
+        <StepSuccess />
+      ) : (
+        <>
+          {step === "select" && <StepSelectContacts />}
+          {step === "details" && <StepContactDetails />}
+          {step === "amount" && <StepEnterAmount />}
+          {step === "confirm" && <StepConfirm />}
+          {step === "pin" && <StepPin />}
+        </>
+      )}
     </div>
   );
 }

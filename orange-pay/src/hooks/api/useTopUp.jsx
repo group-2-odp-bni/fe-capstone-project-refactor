@@ -12,7 +12,7 @@ function genIdemKey() {
   return `idem-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 }
 
-export function useTopUp() {t
+export function useTopUp() {
   const [loading, setLoading] = useState(false);
   const [error, setError]   = useState("");
   const lock = useRef(false);

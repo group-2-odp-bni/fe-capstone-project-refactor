@@ -40,16 +40,11 @@ export default function StepConfirm() {
   // From info (may be provided earlier via setData)
   const fromName = data.fromWalletName || "Ahong";
   const fromPhone = data.fromWalletPhone || "0812 6754 9123";
-
+  
   const goToPin = async () => {
     if (!data.phone || nominal <= 0) return;
     try {
       setIssuing(true);
-      const tokenResp = await requestStepUpToken(data.phone);
-      setData({
-        stepUpToken: tokenResp?.token || null,
-        stepUpExpiresAt: tokenResp?.expiresAt || null,
-      });
       // move to pin step and navigate route if you have a sub-route
       setStep("pin");
       navigate("/app/transfer/pin");
