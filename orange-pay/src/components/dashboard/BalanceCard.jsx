@@ -45,7 +45,7 @@ const IconToggle = ({ on, onToggle }) => (
 
 const HistoryButton = ({ to }) => (
   <Link to={to} className="shrink-0">
-    <button className="flex items-center gap-1 bg-[#FFAE51] backdrop-blur-sm border border-white/20 text-white text-[11px] md:text-xs px-3.5 md:px-4 py-[5px] md:py-[6px] pl-5 md:pl-6 rounded-full shadow-sm hover:bg-[#CF7309] transition-all active:scale-[.98]">
+    <button className="flex items-center justify-center gap-1 bg-[#FFAE51] backdrop-blur-sm border border-white/20 text-white text-[11px] md:text-xs px-3.5 md:px-4 py-[5px] md:py-[6px] pl-5 md:pl-5 md:w-auto md:px-12 md:pl-12  rounded-full shadow-sm hover:bg-[#CF7309] transition-all active:scale-[.98]">
       <span>History</span>
       <svg
         xmlns="http://www.w3.org/2000/svg"
@@ -75,38 +75,8 @@ const ActionIcon = ({ label, children, to }) => (
   </Link>
 );
 
-const Dot = ({ active, accent, onClick }) => (
-  <button
-    onClick={onClick}
-    aria-label="Go to slide"
-    className="transition-all duration-300 outline-none focus:ring-0"
-    style={{
-      width: active ? 56 : 10,
-      height: 10,
-      borderRadius: 9999,
-      background: active ? accent : "#D1D5DB",
-      boxShadow: active ? `0 4px 12px ${accent}55` : "0 0 0 2px rgba(255,255,255,0.6)",
-    }}
-  />
-);
 
-const SegmentedTab = ({ title, active, onClick, accent }) => (
-  <button
-    onClick={onClick}
-    className={`px-3 py-1 rounded-full text-[11px] md:text-xs transition-all border backdrop-blur-sm ${
-      active
-        ? "text-black/90 bg-white border-black/10 shadow-sm"
-        : "text-black/70 bg-white/60 border-black/10 hover:bg-white"
-    }`}
-    style={{ boxShadow: active ? "0 6px 18px rgba(0,0,0,0.06)" : undefined }}
-  >
-    <span
-      className="inline-block w-2 h-2 rounded-full mr-2"
-      style={{ background: accent }}
-    />
-    {title}
-  </button>
-);
+
 
 // measured width so eye icon follows the visible number
 const AmountText = ({ amount, isHidden, onMeasured }) => {
@@ -256,12 +226,12 @@ const CTASection = ({ links }) => (
 
       <ActionIcon to={links.transfer} label="Transfer">
         <svg
-          width="20"
-          height="23"
-          viewBox="0 0 20 23"
+          width="19"
+          height="19"
+          viewBox="0 0 20 24"
           fill="currentColor"
           xmlns="http://www.w3.org/2000/svg"
-          className="w-6 h-auto mb-[2px]"
+          className="w-7 md:w-7 h-auto mb-[2px]"
         >
           <path d="M19.6877 0.359167C19.5416 0.191978 19.3564 0.0766741 19.1545 0.0271745C18.9525 -0.0223251 18.7423 -0.00392698 18.5492 0.0801298L0.690399 7.81817H0.686828C0.480918 7.90885 0.304472 8.0701 0.181598 8.27983C0.058724 8.48961 -0.0046263 8.73764 0.000263153 8.9902C0.00515261 9.24266 0.0780267 9.48729 0.208852 9.69059C0.339761 9.8939 0.522244 10.046 0.73147 10.1262L0.749753 10.1328L6.87934 13.1292C6.9989 13.1707 7.1259 13.1757 7.24767 13.1434C7.36935 13.1113 7.4816 13.0431 7.57309 12.9457L17.4108 2.45197C17.4402 2.41844 17.4749 2.39181 17.5132 2.37366C17.5515 2.35546 17.5926 2.34611 17.634 2.34611C17.6755 2.34611 17.7165 2.35546 17.7548 2.37366C17.7931 2.39181 17.828 2.41844 17.8573 2.45197C17.8866 2.48556 17.9098 2.52537 17.9257 2.56922C17.9415 2.61308 17.9497 2.66005 17.9497 2.7075C17.9497 2.75496 17.9415 2.80197 17.9257 2.84583C17.9098 2.88963 17.8866 2.9295 17.8573 2.96303L8.6901 14.2198C8.60506 14.3246 8.5455 14.4531 8.5174 14.5925C8.48925 14.7318 8.49354 14.8772 8.52981 15.014L11.1482 22.0351C11.2995 22.538 11.6611 22.8722 12.0982 22.8947H12.1429C12.3635 22.8961 12.5794 22.8216 12.7625 22.6807C12.9457 22.5397 13.0875 22.339 13.1696 22.1046L19.9283 1.66597C20.0027 1.4448 20.0197 1.20368 19.977 0.971755C19.9342 0.739881 19.8338 0.527086 19.6877 0.359167Z" />
         </svg>
@@ -270,8 +240,14 @@ const CTASection = ({ links }) => (
   </div>
 );
 
-const glowShadows = (accent) =>
-  ["0 10px 28px rgba(0,0,0,0.22)", `0 0 24px ${accent}55`, `0 0 64px ${accent}33`].join(", ");
+const glowShadows = () =>
+    [
+      "0 6px 16px rgba(255,255,255,0.3)",   // soft white lift
+      "0 0 24px rgba(255,255,255,0.4)",    // glowing edge
+      "0 0 48px rgba(255,255,255,0.2)"     // smooth outer fade
+    ].join(", ");
+  
+  
 
 const BalanceCardOrganism = ({
   card,
@@ -311,131 +287,147 @@ const BalanceCardOrganism = ({
 /* ============== VIEWPORT (drag + snap + imperative) ============== */
 
 const CarouselViewport = forwardRef(function CarouselViewport(
-  { items, renderItem, activeIndex, setActiveIndex },
-  ref
-) {
-  const viewportRef = useRef(null);
-  const isDraggingRef = useRef(false);
-  const draggingActiveRef = useRef(false);
-  const dragStartXRef = useRef(0);
-  const startScrollLeftRef = useRef(0);
-  const rafRef = useRef(0);
-  const DRAG_ACTIVATE_PX = 8;
-
-  const isInteractiveTarget = (el) =>
-    !!(el && el.closest && el.closest("button, a, [role='button'], input, textarea, select, label"));
-
-  const updateActiveIndexFromScroll = () => {
-    const el = viewportRef.current;
-    if (!el) return;
-    const cardWidth = el.clientWidth || 1;
-    const idx = Math.round(el.scrollLeft / cardWidth);
-    const clamped = Math.max(0, Math.min(items.length - 1, idx));
-    if (clamped !== activeIndex) setActiveIndex(clamped);
-  };
-
-  const onScroll = () => {
-    if (rafRef.current) cancelAnimationFrame(rafRef.current);
-    rafRef.current = requestAnimationFrame(updateActiveIndexFromScroll);
-  };
-
-  const onPointerDown = (e) => {
-    const el = viewportRef.current;
-    if (!el) return;
-    if (isInteractiveTarget(e.target)) return;
-    isDraggingRef.current = true;
-    draggingActiveRef.current = false;
-    dragStartXRef.current = e.clientX ?? e.touches?.[0]?.clientX ?? 0;
-    startScrollLeftRef.current = el.scrollLeft;
-  };
-
-  const onPointerMove = (e) => {
-    if (!isDraggingRef.current) return;
-    const el = viewportRef.current;
-    if (!el) return;
-    const currentX = e.clientX ?? e.touches?.[0]?.clientX ?? 0;
-    const delta = currentX - dragStartXRef.current;
-
-    if (!draggingActiveRef.current) {
-      if (Math.abs(delta) < DRAG_ACTIVATE_PX) return;
+    { items, renderItem, activeIndex, setActiveIndex },
+    ref
+  ) {
+    const viewportRef = useRef(null);
+    const isDraggingRef = useRef(false);
+    const draggingActiveRef = useRef(false);
+    const dragStartXRef = useRef(0);
+    const startScrollLeftRef = useRef(0);
+    const rafRef = useRef(0);
+    const DRAG_ACTIVATE_PX = 8;
+  
+    // PEEK: pixels of the next card visible
+    const PEEK = 40;
+    // GAP: spacing between cards (you can increase to e.g. 16 or 20)
+    const GAP = 12;
+  
+    const isInteractiveTarget = (el) =>
+      !!(el && el.closest && el.closest("button, a, [role='button'], input, textarea, select, label"));
+  
+    const updateActiveIndexFromScroll = () => {
+      const el = viewportRef.current;
+      if (!el) return;
+      // card step includes the gap so snapping stays aligned
+      const cardStep = Math.max(1, el.clientWidth - PEEK + GAP);
+      const idx = Math.round(el.scrollLeft / cardStep);
+      const clamped = Math.max(0, Math.min(items.length - 1, idx));
+      if (clamped !== activeIndex) setActiveIndex(clamped);
+    };
+  
+    const onScroll = () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      rafRef.current = requestAnimationFrame(updateActiveIndexFromScroll);
+    };
+  
+    const onPointerDown = (e) => {
+      const el = viewportRef.current;
+      if (!el) return;
       if (isInteractiveTarget(e.target)) return;
-      draggingActiveRef.current = true;
-      if (el.setPointerCapture) {
+      isDraggingRef.current = true;
+      draggingActiveRef.current = false;
+      dragStartXRef.current = e.clientX ?? e.touches?.[0]?.clientX ?? 0;
+      startScrollLeftRef.current = el.scrollLeft;
+    };
+  
+    const onPointerMove = (e) => {
+      if (!isDraggingRef.current) return;
+      const el = viewportRef.current;
+      if (!el) return;
+      const currentX = e.clientX ?? e.touches?.[0]?.clientX ?? 0;
+      const delta = currentX - dragStartXRef.current;
+  
+      if (!draggingActiveRef.current) {
+        if (Math.abs(delta) < DRAG_ACTIVATE_PX) return;
+        if (isInteractiveTarget(e.target)) return;
+        draggingActiveRef.current = true;
+        if (el.setPointerCapture) {
+          try {
+            el.setPointerCapture(e.pointerId);
+          } catch {}
+        }
+        el.style.cursor = "grabbing";
+      }
+  
+      el.scrollLeft = startScrollLeftRef.current - delta;
+    };
+  
+    const onPointerUp = (e) => {
+      const el = viewportRef.current;
+      if (!el) return;
+  
+      if (el.releasePointerCapture) {
         try {
-          el.setPointerCapture(e.pointerId);
+          el.releasePointerCapture(e.pointerId);
         } catch {}
       }
-      el.style.cursor = "grabbing";
-    }
-
-    el.scrollLeft = startScrollLeftRef.current - delta;
-  };
-
-  const onPointerUp = (e) => {
-    const el = viewportRef.current;
-    if (!el) return;
-
-    if (el.releasePointerCapture) {
-      try {
-        el.releasePointerCapture(e.pointerId);
-      } catch {}
-    }
-    el.style.cursor = "";
-
-    if (!draggingActiveRef.current) {
+      el.style.cursor = "";
+  
+      if (!draggingActiveRef.current) {
+        isDraggingRef.current = false;
+        return;
+      }
+  
+      const cardStep = Math.max(1, el.clientWidth - PEEK + GAP);
+      const idx = Math.round(el.scrollLeft / cardStep);
+      scrollToIndex(idx);
+  
       isDraggingRef.current = false;
-      return;
-    }
-
-    const cardWidth = el.clientWidth || 1;
-    const idx = Math.round(el.scrollLeft / cardWidth);
-    scrollToIndex(idx);
-
-    isDraggingRef.current = false;
-    draggingActiveRef.current = false;
-    if (e.cancelable) e.preventDefault();
-  };
-
-  const scrollToIndex = (i) => {
-    const el = viewportRef.current;
-    if (!el) return;
-    const clamped = Math.max(0, Math.min(items.length - 1, i));
-    el.scrollTo({ left: clamped * el.clientWidth, behavior: "smooth" });
-  };
-
-  useImperativeHandle(
-    ref,
-    () => ({
-      scrollToIndex,
-      get index() {
-        return activeIndex;
-      },
-    }),
-    [activeIndex]
-  );
-
-  return (
-    <div
-      ref={viewportRef}
-      className="relative overflow-x-auto overflow-y-visible snap-x snap-mandatory scroll-smooth rounded-2xl select-none [-webkit-overflow-scrolling:touch]"
-      style={{ scrollbarWidth: "none", touchAction: "pan-y" }}
-      onScroll={onScroll}
-      onPointerDown={onPointerDown}
-      onPointerMove={onPointerMove}
-      onPointerUp={onPointerUp}
-      onPointerCancel={onPointerUp}
-    >
-      <div className="flex" style={{ width: "100%" }}>
-        {items.map((item) => (
-          <div key={item.id} className="snap-center shrink-0 p-0" style={{ width: "100%" }}>
-            {renderItem(item)}
-          </div>
-        ))}
+      draggingActiveRef.current = false;
+      if (e.cancelable) e.preventDefault();
+    };
+  
+    const scrollToIndex = (i) => {
+      const el = viewportRef.current;
+      if (!el) return;
+      const clamped = Math.max(0, Math.min(items.length - 1, i));
+      const cardStep = Math.max(1, el.clientWidth - PEEK + GAP);
+      el.scrollTo({ left: clamped * cardStep, behavior: "smooth" });
+    };
+  
+    useImperativeHandle(
+      ref,
+      () => ({
+        scrollToIndex,
+        get index() {
+          return activeIndex;
+        },
+      }),
+      [activeIndex]
+    );
+  
+    return (
+      <div
+        ref={viewportRef}
+        className="relative overflow-x-auto overflow-y-visible snap-x snap-mandatory scroll-smooth rounded-2xl select-none [-webkit-overflow-scrolling:touch]"
+        style={{
+          scrollbarWidth: "none",
+          touchAction: "pan-y",
+          paddingRight: `${PEEK}px`, // keep space so next card shows
+        }}
+        onScroll={onScroll}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onPointerCancel={onPointerUp}
+      >
+        {/* add gap here on the flex row */}
+        <div className="flex bg-white" style={{ width: "100%", gap: `${GAP}px` , padding:0}}>
+          {items.map((item) => (
+            <div
+              key={item.id}
+              className="snap-center shrink-0 p-0"
+              style={{ width: `calc(100% - ${PEEK}px)` }} // card width leaves room for peek
+            >
+              {renderItem(item)}
+            </div>
+          ))}
+        </div>
       </div>
-    </div>
-  );
-});
-
+    );
+  });
+  
 /* ===================== TEMPLATE / PAGE ===================== */
 
 export default function AtomicBalanceCard() {
@@ -526,11 +518,14 @@ export default function AtomicBalanceCard() {
   };
 
   return (
-    <div className="w-full mx-auto md:px-4">
+    <div className="w-full mx-auto md:px-4 mt-6 ">
+      <h3 className="px-3 font-semibold text-lg text-gray-900 mb-3 md:px-0 text-left">
+        Your Wallet
+      </h3>
       {/* Tabs */}
-      <div className="flex flex-wrap items-center justify-center gap-2 mb-3">
+      <div className="flex flex-wrap items-center justify-center gap-2 ">
         {cards.map((c, i) => (
-          <SegmentedTab
+          <div
             key={c.id}
             title={c.title}
             accent={c.accent}
@@ -573,16 +568,6 @@ export default function AtomicBalanceCard() {
       />
 
       {/* Dots */}
-      <div className="flex justify-center items-center gap-2 mt-4">
-        {cards.map((c, i) => (
-          <Dot
-            key={c.id}
-            active={i === activeIndex}
-            accent={c.accent}
-            onClick={() => goTo(i)}
-          />
-        ))}
-      </div>
 
       {/* Error */}
       {error && (
