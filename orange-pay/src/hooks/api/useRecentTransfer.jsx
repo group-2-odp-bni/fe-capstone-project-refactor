@@ -32,11 +32,10 @@ export default function useRecentTransfer({
 
   // ==== Mock data (dengan timestamp ISO +07:00) ====
   const mockData = [
-    { name: "Safu", amount: 100000, type: "kirim",  createdAt: "2025-10-07T09:12:00+07:00" },
+    { name: "HAHSDHASD", amount: 100000, type: "kirim",  createdAt: "2025-10-07T09:12:00+07:00" },
     { name: "Fufu", amount: 100000, type: "terima", createdAt: "2025-10-07T11:45:00+07:00" },
     { name: "Ahong", amount: 100000, type: "terima", createdAt: "2025-10-07T16:03:00+07:00" },
     { name: "Raka", amount: 100000, type: "kirim",  createdAt: "2025-10-07T20:15:00+07:00" },
-
     { name: "Ayu",  amount: 250000, type: "terima", createdAt: "2025-10-08T08:05:00+07:00" },
     { name: "Ayu",  amount: 250000, type: "kirim",  createdAt: "2025-10-08T09:20:00+07:00" },
     { name: "Ayu",  amount: 250000, type: "kirim",  createdAt: "2025-10-08T10:32:00+07:00" },

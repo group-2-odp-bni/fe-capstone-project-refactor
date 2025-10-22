@@ -1,5 +1,7 @@
+// src/components/QuickTransfer.jsx
 import { useEffect, useMemo, useRef, useState } from "react";
-import useRecentTransfer from "../../hooks/api/useRecentTransfer";
+import { useNavigate } from "react-router-dom";
+import useQuickTransfer from "../../hooks/api/useQuickTransfer"; // new hook
 
 const letterColorMap = {
   A: "bg-red-200",  B: "bg-orange-200", C: "bg-amber-200", D: "bg-yellow-200",
@@ -16,67 +18,29 @@ const getColorForName = (name = "") => {
   return letterColorMap[first] || "bg-gray-200";
 };
 
-/**
- * QuickTransfer
- * - Menampilkan daftar penerima unik berdasarkan transaksi paling baru
- * - Mobile: fixed 4 item
- * - Desktop: jumlah sesuai lebar kontainer
- * - Optional: onSelect(name) saat avatar diklik
- */
-export default function QuickTransfer({ onSelect }) {
-  const { users = [], loading } = useRecentTransfer(); // gunakan mock/API dari hook
+export default function QuickTransfer() {
+  // use the new mock API hook
+  const { contacts = [], loading } = useQuickTransfer({ limit: 50 });
+  const navigate = useNavigate();
 
-  // ====== Konfigurasi tampilan ======
-  const GAP_PX = 24;       // gap-6 = 24px
-  const ITEM_MIN_PX = 112; // min lebar item
+  // config
+  const GAP_PX = 16;
+  const ITEM_W_PX = 120; // fixed width for each item (desktop)
+  const MOBILE_VISIBLE = 4;
 
-  // ====== Dedupe per nama dan urutkan berdasarkan transaksi terbaru ======
+  // dedupe by name (same as your existing logic) and sort by lastTransferAt
   const uniqueRecent = useMemo(() => {
-    // gunakan map: name -> transaksi terbaru
-    const latestByName = new Map();
-    for (const u of users) {
-      const name = (u.name || "").trim();
-      const when =
-        u.createdAt instanceof Date
-          ? u.createdAt.getTime()
-          : u.createdAtISO
-          ? Date.parse(u.createdAtISO)
-          : u.date
-          ? Date.parse(u.date)
-          : 0; // fallback
-
-      const existing = latestByName.get(name);
-      if (!existing || when > existing.when) {
-        latestByName.set(name, { name, when });
-      }
+    const map = new Map();
+    for (const c of contacts) {
+      const name = (c.name || "").trim() || c.phone || "—";
+      const when = c.lastTransferAt ? Date.parse(c.lastTransferAt) : 0;
+      const ex = map.get(name);
+      if (!ex || when > ex.when) map.set(name, { name, when, meta: c });
     }
-    // sort desc by when (paling baru duluan)
-    return Array.from(latestByName.values())
+    return Array.from(map.values())
       .sort((a, b) => b.when - a.when)
-      .map((x) => x.name);
-  }, [users]);
-
-  // ====== Responsif: hitung berapa item muat di desktop ======
-  const gridRef = useRef(null);
-  const [visibleCount, setVisibleCount] = useState(6);
-
-  useEffect(() => {
-    if (!gridRef.current) return;
-    const el = gridRef.current;
-
-    const compute = () => {
-      const width = el.clientWidth || 0;
-      if (!width) return;
-      const raw = (width + GAP_PX) / (ITEM_MIN_PX + GAP_PX);
-      const capacity = Math.max(1, Math.floor(raw));
-      setVisibleCount(capacity);
-    };
-
-    const ro = new ResizeObserver(compute);
-    ro.observe(el);
-    compute();
-    return () => ro.disconnect();
-  }, []);
+      .map((x) => ({ name: x.name, meta: x.meta }));
+  }, [contacts]);
 
   const ProfileCard = ({ children }) => (
     <div
@@ -84,41 +48,59 @@ export default function QuickTransfer({ onSelect }) {
         "rounded-[14px]",
         "bg-white",
         "border border-gray-200",
-        "shadow-[0_0_10px_rgba(0,0,0,0.08)]",
+        "shadow-[0_6px_18px_rgba(0,0,0,0.06)]",
         "p-3 flex flex-col items-center justify-center",
-        "w-full max-w-[92px] sm:max-w-[110px] md:max-w-none md:w-[120px]",
+        "flex-none", // important: don't stretch
+        `w-[${ITEM_W_PX}px]`,
       ].join(" ")}
+      style={{ width: ITEM_W_PX }}
     >
       {children}
     </div>
   );
 
-  const AvatarButton = ({ name = "" }) => (
-    <button
-      type="button"
-      onClick={() => onSelect?.(name)}
-      className="flex flex-col items-center space-y-3 group focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 rounded-xl"
-      aria-label={`Transfer cepat ke ${name}`}
-      title={name}
-    >
-      <div
-        className={[
-          "rounded-full flex items-center justify-center font-bold text-gray-700",
-          "w-12 h-12 text-lg",
-          "md:w-16 md:h-16 md:text-2xl",
-          "lg:w-20 lg:h-20 lg:text-3xl",
-          "transition-transform group-active:scale-95",
-          getColorForName(name),
-        ].join(" ")}
-        style={{ minWidth: 48, minHeight: 48 }}
+  const AvatarButton = ({ name = "", meta }) => {
+    const handleClick = () => {
+      // navigate to transfer page with step enter-amount and pass recipient data
+      navigate("/app/transfer", {
+        state: {
+          step: "enter-amount",
+          to: {
+            name: meta?.name || name,
+            phone: meta?.phone,
+            accountId: meta?.accountId,
+          },
+        },
+      });
+    };
+
+    return (
+      <button
+        type="button"
+        onClick={handleClick}
+        className="flex flex-col items-center space-y-3 group focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 rounded-xl"
+        aria-label={`Transfer cepat ke ${name}`}
+        title={name}
       >
-        {(name || "?").charAt(0).toUpperCase()}
-      </div>
-      <span className="text-xs sm:text-sm md:text-base text-gray-800 font-medium truncate max-w-[120px]">
-        {name || "—"}
-      </span>
-    </button>
-  );
+        <div
+          className={[
+            "rounded-full flex items-center justify-center font-bold text-gray-700",
+            "w-12 h-12 text-lg",
+            "md:w-16 md:h-16 md:text-2xl",
+            "lg:w-20 lg:h-20 lg:text-3xl",
+            "transition-transform group-active:scale-95",
+            getColorForName(name),
+          ].join(" ")}
+          style={{ minWidth: 48, minHeight: 48 }}
+        >
+          {(name || "?").charAt(0).toUpperCase()}
+        </div>
+        <span className="text-xs sm:text-sm md:text-sm text-gray-800 font-medium truncate max-w-[120px]">
+          {name || "—"}
+        </span>
+      </button>
+    );
+  };
 
   return (
     <div className="mt-6">
@@ -128,9 +110,9 @@ export default function QuickTransfer({ onSelect }) {
 
       <div className="mb-8">
         {loading ? (
-          <div className="grid grid-cols-4 md:grid-cols-6 gap-6">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="flex flex-col items-center space-y-2">
+          <div className="flex gap-4 px-3">
+            {Array.from({ length: MOBILE_VISIBLE }).map((_, i) => (
+              <div key={i} className="flex flex-col items-center space-y-2 w-[92px]">
                 <div className="w-14 h-14 md:w-16 md:h-16 bg-gray-200 animate-pulse rounded-full" />
                 <div className="w-12 h-3 md:w-14 bg-gray-200 animate-pulse rounded" />
               </div>
@@ -140,33 +122,57 @@ export default function QuickTransfer({ onSelect }) {
           <div className="text-sm text-gray-500 px-3">Belum ada penerima.</div>
         ) : (
           <>
-            {/* Mobile: fixed 4 */}
-            <div className="block md:hidden">
-              <div className="grid grid-cols-4 gap-4 sm:gap-6 overflow-visible justify-items-center">
-                {uniqueRecent.slice(0, 4).map((name, i) => (
+            {/* Mobile: fixed 4 grid (keeps original feel) */}
+            <div className="block md:hidden px-3">
+              <div className="grid grid-cols-4 gap-4 sm:gap-6 justify-items-center">
+                {uniqueRecent.slice(0, MOBILE_VISIBLE).map(({ name, meta }, i) => (
                   <ProfileCard key={`m-${i}`}>
-                    <AvatarButton name={name} />
+                    <AvatarButton name={name} meta={meta} />
                   </ProfileCard>
                 ))}
               </div>
             </div>
 
-            {/* Desktop: sesuai kapasitas kontainer */}
+            {/* Desktop: horizontal scroll with fixed item width (no stretch) */}
             <div className="hidden md:block">
               <div
-                ref={gridRef}
-                className="grid grid-flow-col auto-cols-fr gap-6 justify-items-center overflow-visible"
+                ref={null}
+                className="px-3"
               >
-                {uniqueRecent.slice(0, Math.min(visibleCount, uniqueRecent.length)).map((name, i) => (
-                  <ProfileCard key={`d-${i}`}>
-                    <AvatarButton name={name} />
-                  </ProfileCard>
-                ))}
+                <div
+                  className="flex gap-4 overflow-x-auto pb-3 pl-0 pr-3 scroll-smooth"
+                  style={{
+                    // enable snap to center for nicer UX (optional)
+                    scrollSnapType: "x mandatory",
+                    WebkitOverflowScrolling: "touch",
+                  }}
+                >
+                  {uniqueRecent.map(({ name, meta }, i) => (
+                    <div
+                      key={`d-${i}`}
+                      className="flex-none"
+                      style={{
+                        width: ITEM_W_PX,
+                        scrollSnapAlign: "center",
+                      }}
+                    >
+                      <ProfileCard>
+                        <AvatarButton name={name} meta={meta} />
+                      </ProfileCard>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           </>
         )}
       </div>
+
+      {/* small CSS to hide scrollbar and keep tidy */}
+      <style>{`
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      `}</style>
     </div>
   );
 }
