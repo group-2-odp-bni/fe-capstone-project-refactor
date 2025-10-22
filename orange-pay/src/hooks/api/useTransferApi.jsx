@@ -5,9 +5,19 @@ import { useState } from "react";
  * Module-level mock DB so state persists across hook instances.
  */
 const MOCK_CONTACTS = [
-  { phone: "081234567890", name: "Andi Susanto", accountId: "ACC-001", balance: 200000 },
-  { phone: "081298765432", name: "Sinta Dewi", accountId: "ACC-002", balance: 500000 },
-  { phone: "081300011122", name: "Budi Santoso", accountId: "ACC-003", balance: 1200000 },
+  { phone: "081234567890", name: "Belanda Belinda", accountId: "ACC-001", balance: 200000 },
+  { phone: "081298765432", name: "Belilindada haha", accountId: "ACC-002", balance: 500000 },
+  { phone: "081300011122", name: "Safafufu Zabulaza", accountId: "ACC-003", balance: 1200000 },
+  { phone: "087888123522", name: "Xaviera Azzahra", accountId: "ACC-004", balance: 1200000 },
+  { phone: "087888123523", name: "Bimbim Mama", accountId: "ACC-005", balance: 1200000 },
+  { phone: "087888122341", name: "Has Zabel", accountId: "ACC-006", balance: 1200000 },
+  { phone: "087888122342", name: "Belsaf Buba", accountId: "ACC-007", balance: 1200000 },
+  { phone: "087888122352", name: "Belindax Kocak", accountId: "ACC-008", balance: 1200000 },
+  { phone: "087888122341", name: "Safzhar", accountId: "ACC-009", balance: 1200000 },
+  { phone: "087888122151", name: "Zaza Siahaan", accountId: "ACC-010", balance: 1200000 },
+  { phone: "087888112512", name: "Taf Saha", accountId: "ACC-011", balance: 1200000 },
+  { phone: "087888122521", name: "Baik Baik Saja", accountId: "ACC-012", balance: 1200000 },
+  { phone: "087888125231", name: "Siapa yang jadi", accountId: "ACC-013", balance: 1200000 },
 ];
 
 const delay = (ms = 700) => new Promise((res) => setTimeout(res, ms));
