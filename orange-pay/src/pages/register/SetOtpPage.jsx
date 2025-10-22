@@ -1,14 +1,21 @@
 import React from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 
-import BackButton from "../components/common/BackButton";
-import Button from "../components/common/Button";
-import OtpInput from "../components/register/OtpInput";
-import BrandLogo from "../components/common/BrandLogo";
-import useOtpLogic from "../hooks/useOtpLogic";
-import PhoneLayoutBackground from "../components/PhoneLayoutBackground";
+import BackButton from "../../components/common/BackButton";
+import Button from "../../components/common/Button";
+import OtpInput from "../../components/register/OtpInput";
+import BrandLogo from "../../components/common/BrandLogo";
+import useOtpLogic from "../../hooks/useOtpLogic";
+import PhoneLayoutBackground from "../../components/PhoneLayoutBackground";
+import { useRegistrationContext } from "../../context/RegistrationContext";
 
 export default function OtpRegisterPage() {
+  // const { userData } = useRegistrationContext();
+
+  // console.log("Full Name:", userData.fullName);
+  // console.log("Email:", userData.email);
+  // console.log("Phone Number:", userData.phoneNumber);
+
   const navigate = useNavigate();
   const {
     fullName,

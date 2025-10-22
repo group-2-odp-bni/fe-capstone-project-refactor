@@ -1,11 +1,11 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 
-import BrandLogo from "../components/common/BrandLogo";
-import PinKeypad from "../components/register/PinKeypad";
-import PinDots from "../components/register/PinDots";
-import usePinSetupLogic from "../hooks/usePinSetupLogic";
-import PhoneLayoutBackground from "../components/PhoneLayoutBackground";
+import BrandLogo from "../../components/common/BrandLogo";
+import PinKeypad from "../../components/register/PinKeypad";
+import PinDots from "../../components/register/PinDots";
+import usePinSetupLogic from "../../hooks/usePinSetupLogic";
+import PhoneLayoutBackground from "../../components/PhoneLayoutBackground";
 
 export default function SetPinPage() {
   const navigate = useNavigate();

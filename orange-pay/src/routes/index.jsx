@@ -9,9 +9,9 @@ import {
 } from "react-router-dom";
 
 import SplashPage from "../pages/SplashPage";
-import RegisterPage from "../pages/RegisterPage";
-import OtpRegisterPage from "../pages/OtpRegisterPage";
-import SetPinPage from "../pages/SetPinPage";
+import RegisterPage from "../pages/register/RegisterPage";
+import OtpRegisterPage from "../pages/register/SetOtpPage";
+import SetPinPage from "../pages/register/SetPinPage";
 import WelcomePage from "../pages/WelcomePage";
 import LoginPage from "../pages/LoginPage";
 
