@@ -10,7 +10,7 @@ import {
 import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
 import { Link } from "react-router-dom";
 import useCardBalances from "../../hooks/api/useInitialBalances";
-
+import AddNewWalletCard from "../add_wallet/AddNewWalletDashboard";
 /* ===================== ATOMS ===================== */
 
 const PillBadge = ({ label, active, style, onClick }) => (
@@ -74,9 +74,6 @@ const ActionIcon = ({ label, children, to }) => (
     </span>
   </Link>
 );
-
-
-
 
 // measured width so eye icon follows the visible number
 const AmountText = ({ amount, isHidden, onMeasured }) => {
@@ -163,13 +160,7 @@ const CardTopBar = ({ title, isMain, onBadgeClick }) => (
   </div>
 );
 
-const BalanceRow = ({
-  amount,
-  isHidden,
-  onToggleHidden,
-  loading,
-  active,
-}) => {
+const BalanceRow = ({ amount, isHidden, onToggleHidden, loading, active }) => {
   const [sizes, setSizes] = useState({ maxWidth: 0, currentWidth: 0 });
 
   if (loading && active) {
@@ -241,13 +232,11 @@ const CTASection = ({ links }) => (
 );
 
 const glowShadows = () =>
-    [
-      "0 6px 16px rgba(255,255,255,0.3)",   // soft white lift
-      "0 0 24px rgba(255,255,255,0.4)",    // glowing edge
-      "0 0 48px rgba(255,255,255,0.2)"     // smooth outer fade
-    ].join(", ");
-  
-  
+  [
+    "0 6px 16px rgba(255,255,255,0.3)", // soft white lift
+    "0 0 24px rgba(255,255,255,0.4)", // glowing edge
+    "0 0 48px rgba(255,255,255,0.2)", // smooth outer fade
+  ].join(", ");
 
 const BalanceCardOrganism = ({
   card,
@@ -287,147 +276,154 @@ const BalanceCardOrganism = ({
 /* ============== VIEWPORT (drag + snap + imperative) ============== */
 
 const CarouselViewport = forwardRef(function CarouselViewport(
-    { items, renderItem, activeIndex, setActiveIndex },
-    ref
-  ) {
-    const viewportRef = useRef(null);
-    const isDraggingRef = useRef(false);
-    const draggingActiveRef = useRef(false);
-    const dragStartXRef = useRef(0);
-    const startScrollLeftRef = useRef(0);
-    const rafRef = useRef(0);
-    const DRAG_ACTIVATE_PX = 8;
-  
-    // PEEK: pixels of the next card visible
-    const PEEK = 40;
-    // GAP: spacing between cards (you can increase to e.g. 16 or 20)
-    const GAP = 12;
-  
-    const isInteractiveTarget = (el) =>
-      !!(el && el.closest && el.closest("button, a, [role='button'], input, textarea, select, label"));
-  
-    const updateActiveIndexFromScroll = () => {
-      const el = viewportRef.current;
-      if (!el) return;
-      // card step includes the gap so snapping stays aligned
-      const cardStep = Math.max(1, el.clientWidth - PEEK + GAP);
-      const idx = Math.round(el.scrollLeft / cardStep);
-      const clamped = Math.max(0, Math.min(items.length - 1, idx));
-      if (clamped !== activeIndex) setActiveIndex(clamped);
-    };
-  
-    const onScroll = () => {
-      if (rafRef.current) cancelAnimationFrame(rafRef.current);
-      rafRef.current = requestAnimationFrame(updateActiveIndexFromScroll);
-    };
-  
-    const onPointerDown = (e) => {
-      const el = viewportRef.current;
-      if (!el) return;
+  { items, renderItem, activeIndex, setActiveIndex },
+  ref
+) {
+  const viewportRef = useRef(null);
+  const isDraggingRef = useRef(false);
+  const draggingActiveRef = useRef(false);
+  const dragStartXRef = useRef(0);
+  const startScrollLeftRef = useRef(0);
+  const rafRef = useRef(0);
+  const DRAG_ACTIVATE_PX = 8;
+
+  // PEEK: pixels of the next card visible
+  const PEEK = 40;
+  // GAP: spacing between cards (you can increase to e.g. 16 or 20)
+  const GAP = 12;
+
+  const isInteractiveTarget = (el) =>
+    !!(
+      el &&
+      el.closest &&
+      el.closest("button, a, [role='button'], input, textarea, select, label")
+    );
+
+  const updateActiveIndexFromScroll = () => {
+    const el = viewportRef.current;
+    if (!el) return;
+    // card step includes the gap so snapping stays aligned
+    const cardStep = Math.max(1, el.clientWidth - PEEK + GAP);
+    const idx = Math.round(el.scrollLeft / cardStep);
+    const clamped = Math.max(0, Math.min(items.length - 1, idx));
+    if (clamped !== activeIndex) setActiveIndex(clamped);
+  };
+
+  const onScroll = () => {
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    rafRef.current = requestAnimationFrame(updateActiveIndexFromScroll);
+  };
+
+  const onPointerDown = (e) => {
+    const el = viewportRef.current;
+    if (!el) return;
+    if (isInteractiveTarget(e.target)) return;
+    isDraggingRef.current = true;
+    draggingActiveRef.current = false;
+    dragStartXRef.current = e.clientX ?? e.touches?.[0]?.clientX ?? 0;
+    startScrollLeftRef.current = el.scrollLeft;
+  };
+
+  const onPointerMove = (e) => {
+    if (!isDraggingRef.current) return;
+    const el = viewportRef.current;
+    if (!el) return;
+    const currentX = e.clientX ?? e.touches?.[0]?.clientX ?? 0;
+    const delta = currentX - dragStartXRef.current;
+
+    if (!draggingActiveRef.current) {
+      if (Math.abs(delta) < DRAG_ACTIVATE_PX) return;
       if (isInteractiveTarget(e.target)) return;
-      isDraggingRef.current = true;
-      draggingActiveRef.current = false;
-      dragStartXRef.current = e.clientX ?? e.touches?.[0]?.clientX ?? 0;
-      startScrollLeftRef.current = el.scrollLeft;
-    };
-  
-    const onPointerMove = (e) => {
-      if (!isDraggingRef.current) return;
-      const el = viewportRef.current;
-      if (!el) return;
-      const currentX = e.clientX ?? e.touches?.[0]?.clientX ?? 0;
-      const delta = currentX - dragStartXRef.current;
-  
-      if (!draggingActiveRef.current) {
-        if (Math.abs(delta) < DRAG_ACTIVATE_PX) return;
-        if (isInteractiveTarget(e.target)) return;
-        draggingActiveRef.current = true;
-        if (el.setPointerCapture) {
-          try {
-            el.setPointerCapture(e.pointerId);
-          } catch {}
-        }
-        el.style.cursor = "grabbing";
-      }
-  
-      el.scrollLeft = startScrollLeftRef.current - delta;
-    };
-  
-    const onPointerUp = (e) => {
-      const el = viewportRef.current;
-      if (!el) return;
-  
-      if (el.releasePointerCapture) {
+      draggingActiveRef.current = true;
+      if (el.setPointerCapture) {
         try {
-          el.releasePointerCapture(e.pointerId);
+          el.setPointerCapture(e.pointerId);
         } catch {}
       }
-      el.style.cursor = "";
-  
-      if (!draggingActiveRef.current) {
-        isDraggingRef.current = false;
-        return;
-      }
-  
-      const cardStep = Math.max(1, el.clientWidth - PEEK + GAP);
-      const idx = Math.round(el.scrollLeft / cardStep);
-      scrollToIndex(idx);
-  
+      el.style.cursor = "grabbing";
+    }
+
+    el.scrollLeft = startScrollLeftRef.current - delta;
+  };
+
+  const onPointerUp = (e) => {
+    const el = viewportRef.current;
+    if (!el) return;
+
+    if (el.releasePointerCapture) {
+      try {
+        el.releasePointerCapture(e.pointerId);
+      } catch {}
+    }
+    el.style.cursor = "";
+
+    if (!draggingActiveRef.current) {
       isDraggingRef.current = false;
-      draggingActiveRef.current = false;
-      if (e.cancelable) e.preventDefault();
-    };
-  
-    const scrollToIndex = (i) => {
-      const el = viewportRef.current;
-      if (!el) return;
-      const clamped = Math.max(0, Math.min(items.length - 1, i));
-      const cardStep = Math.max(1, el.clientWidth - PEEK + GAP);
-      el.scrollTo({ left: clamped * cardStep, behavior: "smooth" });
-    };
-  
-    useImperativeHandle(
-      ref,
-      () => ({
-        scrollToIndex,
-        get index() {
-          return activeIndex;
-        },
-      }),
-      [activeIndex]
-    );
-  
-    return (
+      return;
+    }
+
+    const cardStep = Math.max(1, el.clientWidth - PEEK + GAP);
+    const idx = Math.round(el.scrollLeft / cardStep);
+    scrollToIndex(idx);
+
+    isDraggingRef.current = false;
+    draggingActiveRef.current = false;
+    if (e.cancelable) e.preventDefault();
+  };
+
+  const scrollToIndex = (i) => {
+    const el = viewportRef.current;
+    if (!el) return;
+    const clamped = Math.max(0, Math.min(items.length - 1, i));
+    const cardStep = Math.max(1, el.clientWidth - PEEK + GAP);
+    el.scrollTo({ left: clamped * cardStep, behavior: "smooth" });
+  };
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      scrollToIndex,
+      get index() {
+        return activeIndex;
+      },
+    }),
+    [activeIndex]
+  );
+
+  return (
+    <div
+      ref={viewportRef}
+      className="relative overflow-x-auto overflow-y-visible snap-x snap-mandatory scroll-smooth rounded-2xl select-none [-webkit-overflow-scrolling:touch]"
+      style={{
+        scrollbarWidth: "none",
+        touchAction: "pan-y",
+        paddingRight: `${PEEK}px`, // keep space so next card shows
+      }}
+      onScroll={onScroll}
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerUp}
+      onPointerCancel={onPointerUp}
+    >
+      {/* add gap here on the flex row */}
       <div
-        ref={viewportRef}
-        className="relative overflow-x-auto overflow-y-visible snap-x snap-mandatory scroll-smooth rounded-2xl select-none [-webkit-overflow-scrolling:touch]"
-        style={{
-          scrollbarWidth: "none",
-          touchAction: "pan-y",
-          paddingRight: `${PEEK}px`, // keep space so next card shows
-        }}
-        onScroll={onScroll}
-        onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={onPointerUp}
-        onPointerCancel={onPointerUp}
+        className="flex bg-white"
+        style={{ width: "100%", gap: `${GAP}px`, padding: 0 }}
       >
-        {/* add gap here on the flex row */}
-        <div className="flex bg-white" style={{ width: "100%", gap: `${GAP}px` , padding:0}}>
-          {items.map((item) => (
-            <div
-              key={item.id}
-              className="snap-center shrink-0 p-0"
-              style={{ width: `calc(100% - ${PEEK}px)` }} // card width leaves room for peek
-            >
-              {renderItem(item)}
-            </div>
-          ))}
-        </div>
+        {items.map((item) => (
+          <div
+            key={item.id}
+            className="snap-center shrink-0 p-0"
+            style={{ width: `calc(100% - ${PEEK}px)` }} // card width leaves room for peek
+          >
+            {renderItem(item)}
+          </div>
+        ))}
       </div>
-    );
-  });
-  
+    </div>
+  );
+});
+
 /* ===================== TEMPLATE / PAGE ===================== */
 
 export default function AtomicBalanceCard() {
@@ -476,6 +472,8 @@ export default function AtomicBalanceCard() {
     ],
     []
   );
+  const addCard = useMemo(() => ({ id: "add", kind: "add" }), []);
+  const displayItems = useMemo(() => [...cards, addCard], [cards, addCard]);
 
   // data saldo dari API (dummy/real tergantung implementasi hook)
   const { data, loading: apiLoading, error, refetch } = useCardBalances();
@@ -496,13 +494,26 @@ export default function AtomicBalanceCard() {
 
   // sinkronkan angka kartu aktif dengan data API
   useEffect(() => {
-    const currentId = cards[activeIndex]?.id;
-    const apiValue = currentId ? balancesMap[currentId] : undefined;
-    const fallback = cards[activeIndex]?.initialBalance ?? 0;
+    const current = cards[activeIndex]; // jika aktif = 'add', undefined → return
+    if (!current) return;
+    const apiValue = balancesMap[current.id];
+    const fallback = current.initialBalance ?? 0;
     setBalance(
-      typeof apiValue === "number" && !Number.isNaN(apiValue) ? apiValue : fallback
+      typeof apiValue === "number" && !Number.isNaN(apiValue)
+        ? apiValue
+        : fallback
     );
   }, [activeIndex, balancesMap, cards]);
+  // useEffect(() => {
+  //   const currentId = cards[activeIndex]?.id;
+  //   const apiValue = currentId ? balancesMap[currentId] : undefined;
+  //   const fallback = cards[activeIndex]?.initialBalance ?? 0;
+  //   setBalance(
+  //     typeof apiValue === "number" && !Number.isNaN(apiValue)
+  //       ? apiValue
+  //       : fallback
+  //   );
+  // }, [activeIndex, balancesMap, cards]);
 
   // viewport imperative
   const viewportRef = useRef(null);
@@ -512,11 +523,15 @@ export default function AtomicBalanceCard() {
   };
 
   // loading per card (aktif prioritas skeleton)
+  // const isCardLoading = (cardId, i) => {
+  //   const hasApi = typeof balancesMap[cardId] === "number";
+  //   return apiLoading || (!hasApi && i === activeIndex);
+  // };
   const isCardLoading = (cardId, i) => {
+    if (cardId === "add") return false;
     const hasApi = typeof balancesMap[cardId] === "number";
     return apiLoading || (!hasApi && i === activeIndex);
   };
-
   return (
     <div className="w-full mx-auto md:px-4 mt-6 ">
       <h3 className="px-3 font-semibold text-lg text-gray-900 mb-3 md:px-0 text-left">
@@ -538,10 +553,17 @@ export default function AtomicBalanceCard() {
       {/* Viewport */}
       <CarouselViewport
         ref={viewportRef}
-        items={cards}
+        items={displayItems}
         activeIndex={activeIndex}
         setActiveIndex={setActiveIndex}
         renderItem={(card, i = activeIndex) => {
+          if (card.kind === "add" || card.id === "add") {
+            return (
+              <div className="p-0" style={{ width: "100%" }}>
+                <AddNewWalletCard />
+              </div>
+            );
+          }
           // jumlah yg ditampilkan:
           // - kartu aktif: gunakan state `balance` yg sudah difusi dari API/fallback
           // - kartu non-aktif: gunakan API jika ada, kalau belum ada pakai initialBalance
@@ -552,7 +574,10 @@ export default function AtomicBalanceCard() {
               : card.initialBalance ?? 0;
 
           return (
-            <div className="p-0" style={{ width: "100%" }}>
+            <div
+              className="p-0 min-h-[200px] md:min-h-[220px]"
+              style={{ width: "100%" }}
+            >
               <BalanceCardOrganism
                 card={card}
                 active={i === activeIndex}
