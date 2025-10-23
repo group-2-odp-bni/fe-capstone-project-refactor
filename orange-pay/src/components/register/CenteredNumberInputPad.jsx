@@ -1,19 +1,17 @@
-import React, { useState } from "react";
 import { Delete } from "lucide-react";
 
-export default function CenteredNumberInputPad() {
-  const [value, setValue] = useState("");
+export default function CenteredNumberInputPad({ value, onChange }) {
 
   const handlePress = (num) => {
-    if (value.length < 6) setValue((prev) => prev + num);
+    if (value.length < 6) onChange(value + num);
   };
 
   const handleDelete = () => {
-    setValue((prev) => prev.slice(0, -1));
+    onChange(value.slice(0, -1));
   };
 
   return (
-    <div className="relative w-full h-dvh max-w-[393px] pb-6 rounded-[28px] flex flex-col justify-between overflow-y-auto overscroll-contain scroll-smooth">
+    <div className="relative w-full h-dvh max-w-[393px] pb-6 rounded-[28px]  flex flex-col justify-between overflow-y-auto overscroll-contain scroll-smooth">
       {/* Centered input field */}
       <div className="flex flex-col items-center justify-center flex-1">
         <label htmlFor="pin" className="text-gray-500 mb-3 text-base">
@@ -35,6 +33,7 @@ export default function CenteredNumberInputPad() {
         {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
           <button
             key={num}
+            type="button"
             onClick={() => handlePress(num.toString())}
             className="aspect-square rounded-full bg-gray-100 active:bg-gray-200 transition-all flex items-center justify-center"
           >
@@ -42,19 +41,18 @@ export default function CenteredNumberInputPad() {
           </button>
         ))}
 
-        {/* Empty placeholder for alignment */}
         <div />
 
-        {/* 0 button */}
         <button
+          type="button"
           onClick={() => handlePress("0")}
           className="aspect-square rounded-full bg-gray-100 active:bg-gray-200 transition-all flex items-center justify-center"
         >
           0
         </button>
 
-        {/* Delete button */}
         <button
+          type="button"
           onClick={handleDelete}
           className="aspect-square rounded-full bg-gray-100 active:bg-gray-200 transition-all flex items-center justify-center"
         >

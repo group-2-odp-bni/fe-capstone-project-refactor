@@ -34,7 +34,7 @@ export default function OtpRegisterPage() {
 
 function SetOtpContent() {
   const navigate = useNavigate();
-  const { userData } = useRegistrationContext();
+  const { userData, setRegistrationData } = useRegistrationContext();
   console.log(userData.phoneNumber);
 
 
@@ -67,8 +67,14 @@ function SetOtpContent() {
         throw new Error("Failed to send request");
       }
 
+      //save the data
       const data = await response.json();
-      console.log("Registration initiated:", data);
+       setRegistrationData({ stateToken: data.data.stateToken });
+
+      //log
+      console.log("otp successfully registered :", data);
+      
+      //update next route
       navigate("/register/setpin");
 
     } catch (err) {

@@ -13,7 +13,11 @@ export const RegistrationProvider = ({ children }) => {
     fullName: "",
     email: "",
     phoneNumber: "",
+    stateToken:"",
+    accessToken:"",
+    refreshToken:"",
   });
+
 
   const setRegistrationData = (data) => {
     setUserData((prev) => ({ ...prev, ...data }));
