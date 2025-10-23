@@ -37,6 +37,7 @@ import RequireLoginStep from "./RequireLoginStep";
 /* transfer flow */
 import { TransferProvider } from "../context/TransferContext";
 import TransferPage from "../pages/TransferPage";
+import RequireRegisterStep from "./RequireRegisterStep";
 
 /* ----------------- ProtectedRoute ----------------- */
 function ProtectedRoute() {
@@ -100,15 +101,17 @@ export default function AppRoutes() {
           element={
             <PublicRoute>
               <RegistrationProvider>
-                <Routes>
-                  <Route index element={<RegisterPage />} />
-                  <Route path="otp" element={<OtpRegisterPage />} />
-                  <Route path="setpin" element={<SetPinPage />} />
-                </Routes>
+                <Outlet />
               </RegistrationProvider>
             </PublicRoute>
           }
-        />
+        >
+          <Route index element={<RegisterPage />} />
+          <Route path="otp" element={<OtpRegisterPage />} />
+          <Route path="setpin" element={<SetPinPage />} />
+          {/* <Route path="otp" element={<RequireRegisterStep step="otp"><OtpRegisterPage /></RequireRegisterStep>} /> */}
+          {/* <Route path="setpin" element={<RequireRegisterStep step="setpin"><SetPinPage /></RequireRegisterStep>} /> */}
+        </Route>
 
         {/* ---------- Login Flow (guest only) ---------- */}
         <Route
