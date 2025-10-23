@@ -14,6 +14,7 @@ import OtpRegisterPage from "../pages/register/SetOtpPage";
 import SetPinPage from "../pages/register/SetPinPage";
 import WelcomePage from "../pages/WelcomePage";
 import LoginPage from "../pages/LoginPage";
+import ProfilePage from "../pages/ProfilePage";
 
 import LoginPhone from "../components/login/LoginPhone";
 import OtpStage from "../components/login/OtpStage";
@@ -137,6 +138,7 @@ export default function AppRoutes() {
           <Route path="dashboard" element={<DashboardPage />} />
           <Route path="transactions" element={<HistoryTransactionPage />} />
           <Route path="topup" element={<TopUpPage />} />
+          <Route path="profile" element={<ProfilePage />} />
 
           {/* ----------- Transfer Flow ----------- */}
           <Route
