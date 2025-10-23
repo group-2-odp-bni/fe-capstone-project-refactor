@@ -9,7 +9,6 @@ import WalletColorPicker, {
 } from "../components/add_wallet/WalletColorPicker";
 import WalletNameField from "../components/add_wallet/WalletNameField";
 import CreateButton from "../components/add_wallet/CreateButton";
-import { createWalletApi } from "../services/wallets/wallets";
 
 export default function AddWalletPage() {
   const [step, setStep] = useState(1);
@@ -34,13 +33,13 @@ export default function AddWalletPage() {
     if (!canContinue) return;
     try {
       setSubmitting(true);
-      await createWalletApi({
-        type: type === "personal" ? "PERSONAL" : "SHARED",
-        name: name.trim(),
-        currency: "IDR",
-        color: gradient,
-        metadata: { theme: "gradient-v1" },
-      });
+      //   await createWalletApi({
+      //     type: type === "personal" ? "PERSONAL" : "SHARED",
+      //     name: name.trim(),
+      //     currency: "IDR",
+      //     color: gradient,
+      //     metadata: { theme: "gradient-v1" },
+      //   });
       const from = location.state?.from?.pathname || location.state?.from;
       navigate(from || "/app/dashboard", { replace: true });
     } catch (e) {
