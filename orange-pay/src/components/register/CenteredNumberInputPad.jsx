@@ -11,7 +11,7 @@ export default function CenteredNumberInputPad({ value, onChange }) {
   };
 
   return (
-    <div className="relative w-full h-dvh max-w-[393px] pb-6 rounded-[28px]  flex flex-col justify-between overflow-y-auto overscroll-contain scroll-smooth">
+    <div>
       {/* Centered input field */}
       <div className="flex flex-col items-center justify-center flex-1">
         <label htmlFor="pin" className="text-gray-500 mb-3 text-base">
@@ -29,13 +29,13 @@ export default function CenteredNumberInputPad({ value, onChange }) {
       </div>
 
       {/* Number pad */}
-      <div className="grid grid-cols-3 gap-y-4 text-center text-2xl font-medium text-gray-800 px-12 pb-4">
+      <div className="mt-10 mb-10 grid grid-cols-3 gap-y-4 text-center text-2xl font-medium text-gray-800">
         {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
           <button
             key={num}
             type="button"
             onClick={() => handlePress(num.toString())}
-            className="aspect-square rounded-full bg-gray-100 active:bg-gray-200 transition-all flex items-center justify-center"
+            className="m-2 aspect-square rounded-full bg-gray-100 active:bg-gray-200 transition-all flex items-center justify-center"
           >
             {num}
           </button>
@@ -46,7 +46,7 @@ export default function CenteredNumberInputPad({ value, onChange }) {
         <button
           type="button"
           onClick={() => handlePress("0")}
-          className="aspect-square rounded-full bg-gray-100 active:bg-gray-200 transition-all flex items-center justify-center"
+          className="m-2 aspect-square rounded-full bg-gray-100 active:bg-gray-200 transition-all flex items-center justify-center"
         >
           0
         </button>
@@ -54,7 +54,7 @@ export default function CenteredNumberInputPad({ value, onChange }) {
         <button
           type="button"
           onClick={handleDelete}
-          className="aspect-square rounded-full bg-gray-100 active:bg-gray-200 transition-all flex items-center justify-center"
+          className="m-2 aspect-square rounded-full bg-gray-100 active:bg-gray-200 transition-all flex items-center justify-center"
         >
           <Delete className="w-6 h-6" />
         </button>
