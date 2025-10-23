@@ -13,18 +13,20 @@ import RegisterOtpInput from "../../components/register/RegisterOtpInput";
 import InputField from "../../components/register/RegisterGeneralInput";
 import { FullSubmitButton } from "../../components/button/FullSubmitButton";
 import { useRegistrationContext } from "../../context/RegistrationContext";
+import OrangePayLogo from "../../components/register/OrangePayLogo";
+import RegisterTextContainer from "./RegisterTextContainer";
 
 export default function OtpRegisterPage() {
-
-
-
-
 
   return (
     <PhoneLayoutBackground>
       <MobileShell>
         <OrangeHeader />
         <WhiteCardContainer>
+          <OrangePayLogo />
+          <RegisterTextContainer>
+            Kode OTP telah dikirim ke WhatsApp Anda. Masukkan kode di bawah untuk melanjutkan.
+          </RegisterTextContainer>
           <SetOtpContent />
         </WhiteCardContainer>
       </MobileShell>
@@ -69,11 +71,11 @@ function SetOtpContent() {
 
       //save the data
       const data = await response.json();
-       setRegistrationData({ stateToken: data.data.stateToken });
+      setRegistrationData({ stateToken: data.data.stateToken });
 
       //log
       console.log("otp successfully registered :", data);
-      
+
       //update next route
       navigate("/register/setpin");
 
@@ -98,7 +100,7 @@ function SetOtpContent() {
           placeholder="Masukkan OTP "
           required
           value={otp}
-          onChange={(e) => setOtp(e.target.value)} 
+          onChange={(e) => setOtp(e.target.value)}
         />
 
         {error && <p className="text-red-500 text-xs">{error}</p>}
@@ -107,7 +109,7 @@ function SetOtpContent() {
           {loading ? "Mengirim..." : "Lanjut"}
         </FullSubmitButton>
 
-        
+
 
 
 

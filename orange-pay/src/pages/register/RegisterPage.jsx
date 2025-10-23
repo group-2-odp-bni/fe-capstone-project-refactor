@@ -4,11 +4,13 @@ import { RegistrationProvider, useRegistrationContext } from "../../context/Regi
 import PhoneLayoutBackground from "../../components/PhoneLayoutBackground";
 import { FullSubmitButton } from "../../components/button/FullSubmitButton";
 import GoogleCaptcha from "../../components/recaptcha/GoogleCaptcha";
-import BrandLogo from "../../components/common/BrandLogo";
+
 import MobileShell from "../../components/layout/MobileShell";
 import InputField from "../../components/register/RegisterGeneralInput";
 import OrangeHeader from "../../components/register/OrangeHeader";
 import WhiteCardContainer from "../../components/register/WhiteCardContainer";
+import OrangePayLogo from "../../components/register/OrangePayLogo";
+import RegisterTextContainer from "./RegisterTextContainer";
 
 export default function RegisterPage() {
   return (
@@ -81,19 +83,13 @@ function RegisterContent() {
 
   return (
     <div className="relative">
-      {/* Header */}
       <OrangeHeader />
-
-
-      {/* White card */}
       <WhiteCardContainer>
-        <div className="flex justify-center pt-6">
-          <BrandLogo size="md" align="center" />
-        </div>
-
-        <p className="text-xs text-center relative mt-5 mb-5">
+        <OrangePayLogo />
+        <RegisterTextContainer>
           Masukkan nama dan email aktif Anda untuk menikmati semua layanan kami.
-        </p>
+        </RegisterTextContainer>
+        
 
         <form onSubmit={handleSubmit} className="space-y-5 mt-6">
           <InputField
