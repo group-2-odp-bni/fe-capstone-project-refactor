@@ -27,6 +27,7 @@ import DashboardPage from "../pages/DashboardPage";
 import HistoryTransactionPage from "../pages/HistoryTransactionPage";
 import TopUpPage from "../pages/TopUpPage";
 import { isAuthenticated } from "../services/authService";
+import { RegistrationProvider } from "../context/RegistrationContext";
 
 /* login flow context & step guard */
 import { LoginFlowProvider } from "../context/LoginFlowContext";
@@ -93,9 +94,20 @@ export default function AppRoutes() {
         <Route path="/welcome" element={<WelcomePage />} />
 
         {/* ---------- Registration (guest only) ---------- */}
-        <Route path="/register" element={<PublicRoute><RegisterPage /></PublicRoute>} />
-        <Route path="/register/otp" element={<PublicRoute><OtpRegisterPage /></PublicRoute>} />
-        <Route path="/register/setpin" element={<PublicRoute><SetPinPage /></PublicRoute>} />
+        <Route
+          path="/register/*"
+          element={
+            <PublicRoute>
+              <RegistrationProvider>
+                <Routes>
+                  <Route index element={<RegisterPage />} />
+                  <Route path="otp" element={<OtpRegisterPage />} />
+                  <Route path="setpin" element={<SetPinPage />} />
+                </Routes>
+              </RegistrationProvider>
+            </PublicRoute>
+          }
+        />
 
         {/* ---------- Login Flow (guest only) ---------- */}
         <Route

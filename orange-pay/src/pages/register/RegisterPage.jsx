@@ -6,18 +6,17 @@ import { FullSubmitButton } from "../../components/button/FullSubmitButton";
 import GoogleCaptcha from "../../components/recaptcha/GoogleCaptcha";
 import BrandLogo from "../../components/common/BrandLogo";
 import MobileShell from "../../components/layout/MobileShell";
-import BackButton from "../../components/common/BackButton";
 import InputField from "../../components/register/RegisterGeneralInput";
+import OrangeHeader from "../../components/register/OrangeHeader";
+import WhiteCardContainer from "../../components/register/WhiteCardContainer";
 
 export default function RegisterPage() {
   return (
-    <RegistrationProvider>
-      <PhoneLayoutBackground>
-        <MobileShell>
-          <RegisterContent />
-        </MobileShell>
-      </PhoneLayoutBackground>
-    </RegistrationProvider>
+    <PhoneLayoutBackground>
+      <MobileShell>
+        <RegisterContent />
+      </MobileShell>
+    </PhoneLayoutBackground>
   );
 }
 
@@ -68,7 +67,7 @@ function RegisterContent() {
         phoneNumber: formData.phoneNumber,
       });
 
-      console.log("✅ Registration initiated:", data);
+      console.log("Registration initiated:", data);
 
       // Navigate to OTP verification
       navigate("/register/otp");
@@ -83,16 +82,11 @@ function RegisterContent() {
   return (
     <div className="relative">
       {/* Header */}
-      <div className="bg-[#FF9A25] h-28 w-full rounded-t-[28px]">
-        <div className="pt-[env(safe-area-inset-top)] px-4">
-          <div className="pt-4">
-            <BackButton />
-          </div>
-        </div>
-      </div>
+      <OrangeHeader />
+
 
       {/* White card */}
-      <div className="relative -mt-4 z-10 bg-white rounded-t-3xl px-6 pt-4 pb-10">
+      <WhiteCardContainer>
         <div className="flex justify-center pt-6">
           <BrandLogo size="md" align="center" />
         </div>
@@ -153,7 +147,8 @@ function RegisterContent() {
             </Link>
           </div>
         </form>
-      </div>
+      </WhiteCardContainer>
+
     </div>
   );
 }

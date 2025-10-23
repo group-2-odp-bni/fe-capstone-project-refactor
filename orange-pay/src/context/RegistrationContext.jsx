@@ -12,6 +12,7 @@ export const RegistrationProvider = ({ children }) => {
   const [userData, setUserData] = useState({
     fullName: "",
     email: "",
+    phoneNumber: "",
   });
 
   const setRegistrationData = (data) => {
