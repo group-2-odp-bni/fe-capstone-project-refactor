@@ -19,14 +19,13 @@ import ProfilePage from "../pages/ProfilePage";
 import LoginPhone from "../components/login/LoginPhone";
 import OtpStage from "../components/login/OtpStage";
 import PinStage from "../components/login/PinStage";
-import ResetPhone from "../components/login/ResetPhone";
-import ResetOtp from "../components/login/ResetOtp";
 import ResetSetPin from "../components/login/ResetSetPin";
 import ResetPin from "../components/login/ResetPin";
 import ResetPinOtp from "../components/login/ResetPinOtp";
 import DashboardPage from "../pages/DashboardPage";
 import HistoryTransactionPage from "../pages/HistoryTransactionPage";
 import TopUpPage from "../pages/TopUpPage";
+import SplitBillPage from "../pages/SplitBillPage";
 import { isAuthenticated } from "../services/authService";
 
 /* login flow context & step guard */
@@ -127,7 +126,7 @@ export default function AppRoutes() {
           <Route path="transactions" element={<HistoryTransactionPage />} />
           <Route path="topup" element={<TopUpPage />} />
           <Route path="profile" element={<ProfilePage />} />
-
+          <Route path="splitbill" element={<SplitBillPage />} />
           {/* ----------- Transfer Flow ----------- */}
           <Route
             path="transfer/*"
