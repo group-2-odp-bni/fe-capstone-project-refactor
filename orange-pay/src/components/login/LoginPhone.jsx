@@ -1,6 +1,10 @@
 import React, { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useLoginFlow } from "../../context/LoginFlowContext";
+import OrangePayLogo from "../register/OrangePayLogo";
+import OrangeHeader from "../register/OrangeHeader";
+import WhiteCardContainer from "../register/WhiteCardContainer";
+import LoginTextContainer from "./LoginTextContainer";
 
 export default function LoginPhone() {
   const nav = useNavigate();
@@ -31,28 +35,22 @@ export default function LoginPhone() {
       setErr("Gagal memulai proses login. Coba lagi.");
       return;
     }
-    nav("/login/otp", { state: { phone: `+62${phone}` }, replace: true});
+    nav("/login/otp", { state: { phone: `+62${phone}` }, replace: true });
   };
 
   return (
-    <div className="flex-1 bg-[#FF9A25]" relative>
-      <button
-        onClick={() => nav("/welcome")}
-        aria-label="Back"
-        className="absolute left-4 top-4 w-9 h-9 grid place-items-center rounded-full bg-white text-[#FF9A25] shadow-md font-semibold"
-      >
-        🡨
-      </button>
-      <div className="h-28" />
-      <section className="flex-2 bg-white rounded-t-3xl px-6 pb-[env(safe-area-inset-bottom)] -mt-10 min-h-[100vh]">
-        <div className="flex justify-center pt-6">
-          <img src="/Orangepay.svg" alt="OrangePay" className="h-12" />
-        </div>
+    <div>
+      <OrangeHeader />
+      <WhiteCardContainer>
+        <OrangePayLogo />
+
 
         <h2 className="mt-6 text-2xl font-bold text-center">Welcome Back</h2>
-        <p className="text-sm text-gray-500 text-center mt-1">
+        <LoginTextContainer>
           Please sign in to continue
-        </p>
+        </LoginTextContainer>
+
+
 
         <div className="mt-6">
           <label className="block text-sm text-gray-700 mb-1">
@@ -74,13 +72,13 @@ export default function LoginPhone() {
           </div>
           {err ? <p className="text-red-500 text-xs mt-1">{err}</p> : null}
         </div>
-        <br/>
-        <br/>
-        <br/>
-        <br/>
-        <br/>
-        <br/>
-        <br/>
+        <br />
+        <br />
+        <br />
+        <br />
+        <br />
+        <br />
+        <br />
         <div className="mt-6 text-left text-xs text-gray-500 px-1">
           <p>
             Dengan masuk atau mendaftar, Anda menyetujui
@@ -97,7 +95,10 @@ export default function LoginPhone() {
             Send OTP via WhatsApp
           </button>
         </div>
-      </section>
+      </WhiteCardContainer>
+
+
+
     </div>
   );
 }

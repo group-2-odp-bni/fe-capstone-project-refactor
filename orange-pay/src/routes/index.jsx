@@ -13,7 +13,7 @@ import RegisterPage from "../pages/register/RegisterPage";
 import OtpRegisterPage from "../pages/register/SetOtpPage";
 import SetPinPage from "../pages/register/SetPinPage";
 import WelcomePage from "../pages/WelcomePage";
-import LoginPage from "../pages/LoginPage";
+import LoginPage from "../pages/login/LoginPage";
 import ProfilePage from "../pages/ProfilePage";
 
 import LoginPhone from "../components/login/LoginPhone";

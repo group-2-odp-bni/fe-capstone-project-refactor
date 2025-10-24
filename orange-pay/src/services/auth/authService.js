@@ -1,20 +1,20 @@
 const ACCESS_TOKEN_KEY = "accessToken";
 const REFRESH_TOKEN_KEY = "refreshToken";
 
-// Helper to get token from sessionStorage
-export const getAccessToken = () => sessionStorage.getItem(ACCESS_TOKEN_KEY);
-export const getRefreshToken = () => sessionStorage.getItem(REFRESH_TOKEN_KEY);
+// Helper to get token from localStorage
+export const getAccessToken = () => localStorage.getItem(ACCESS_TOKEN_KEY);
+export const getRefreshToken = () => localStorage.getItem(REFRESH_TOKEN_KEY);
 
 // Save tokens after login or registration
 export const saveTokens = (accessToken, refreshToken) => {
-  sessionStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
-  sessionStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
+  localStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
+  localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
 };
 
 // Clear tokens when user logs out
 export const clearTokens = () => {
-  sessionStorage.removeItem(ACCESS_TOKEN_KEY);
-  sessionStorage.removeItem(REFRESH_TOKEN_KEY);
+  localStorage.removeItem(ACCESS_TOKEN_KEY);
+  localStorage.removeItem(REFRESH_TOKEN_KEY);
 };
 
 // Validate access token by calling backend or decoding locally
