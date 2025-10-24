@@ -10,7 +10,7 @@ import InputField from "../../components/register/RegisterGeneralInput";
 import OrangeHeader from "../../components/register/OrangeHeader";
 import WhiteCardContainer from "../../components/register/WhiteCardContainer";
 import OrangePayLogo from "../../components/register/OrangePayLogo";
-import RegisterTextContainer from "./RegisterTextContainer";
+import RegisterTextContainer from "../../components/register/RegisterTextContainer";
 
 export default function RegisterPage() {
   return (
@@ -89,7 +89,7 @@ function RegisterContent() {
         <RegisterTextContainer>
           Masukkan nama dan email aktif Anda untuk menikmati semua layanan kami.
         </RegisterTextContainer>
-        
+
 
         <form onSubmit={handleSubmit} className="space-y-5 mt-6">
           <InputField

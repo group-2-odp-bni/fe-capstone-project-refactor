@@ -14,7 +14,7 @@ import InputField from "../../components/register/RegisterGeneralInput";
 import { FullSubmitButton } from "../../components/button/FullSubmitButton";
 import { useRegistrationContext } from "../../context/RegistrationContext";
 import OrangePayLogo from "../../components/register/OrangePayLogo";
-import RegisterTextContainer from "./RegisterTextContainer";
+import RegisterTextContainer from "../../components/register/RegisterTextContainer";
 
 export default function OtpRegisterPage() {
 
