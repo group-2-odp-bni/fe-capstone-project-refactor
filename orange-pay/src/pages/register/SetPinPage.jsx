@@ -1,17 +1,15 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import BrandLogo from "../../components/common/BrandLogo";
+
 import CenteredNumberInputPad from "../../components/register/CenteredNumberInputPad";
-import PinDots from "../../components/register/PinDots";
-import usePinSetupLogic from "../../hooks/usePinSetupLogic";
 import PhoneLayoutBackground from "../../components/PhoneLayoutBackground";
 import MobileShell from "../../components/layout/MobileShell";
 import PageHeader from "../../components/page_header/PageHeader";
-import NumberPad from "../../components/register/Keypad";
 import { FullSubmitButton } from "../../components/button/FullSubmitButton";
 import { useRegistrationContext } from "../../context/RegistrationContext";
 import WhiteCardContainer from "../../components/register/WhiteCardContainer";
+import { saveTokens } from "../../services/auth/authService";
 
 export default function SetPinPage() {
 
@@ -72,12 +70,14 @@ function SetPinContent() {
 
       //catch data
       const data = await response.json();
+
+      //save token
+      saveTokens(data.data.accessToken, data.data.refreshToken);
+
       console.log("pin successfully set :", data);
 
       //set new navagation
-      navigate("/");
-
-
+      navigate("/app/dashboard");
 
     } catch {
 
