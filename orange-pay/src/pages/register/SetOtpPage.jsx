@@ -1,15 +1,10 @@
 import React, { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 
-import BackButton from "../../components/common/BackButton";
-import Button from "../../components/common/Button";
-import BrandLogo from "../../components/common/BrandLogo";
-import useOtpLogic from "../../hooks/useOtpLogic";
 import PhoneLayoutBackground from "../../components/PhoneLayoutBackground";
 import MobileShell from "../../components/layout/MobileShell";
 import WhiteCardContainer from "../../components/register/WhiteCardContainer";
 import OrangeHeader from "../../components/register/OrangeHeader";
-import RegisterOtpInput from "../../components/register/RegisterOtpInput";
 import InputField from "../../components/register/RegisterGeneralInput";
 import { FullSubmitButton } from "../../components/button/FullSubmitButton";
 import { useRegistrationContext } from "../../context/RegistrationContext";

@@ -31,7 +31,7 @@ import { isAuthenticated } from "../services/authService";
 import { RegistrationProvider } from "../context/RegistrationContext";
 
 /* login flow context & step guard */
-import { LoginFlowProvider } from "../context/LoginFlowContext";
+import { LoginProvider } from "../context/LoginContext";
 import RequireLoginStep from "./RequireLoginStep";
 
 /* transfer flow */
@@ -40,6 +40,8 @@ import TransferPage from "../pages/TransferPage";
 import RequireRegisterStep from "./RequireRegisterStep";
 import ProtectedRoute from "./ProtectedRoute";
 import { validateAccessToken } from "../services/auth/authService";
+import OtpLoginPage from "../pages/login/OtpLoginPage";
+import PinLoginPage from "../pages/login/PinLoginPage";
 
 export function PublicRoute({ children, redirectTo = "/app/dashboard" }) {
   const location = useLocation();
@@ -119,21 +121,23 @@ export default function AppRoutes() {
           path="/login/*"
           element={
             <PublicRoute>
-              <LoginFlowProvider>
+              <LoginProvider>
                 <Outlet />
-              </LoginFlowProvider>
+              </LoginProvider>
             </PublicRoute>
           }
         >
 
           <Route index element={<LoginPage />} />
           <Route path="reset" element={<ResetPin />} />
+          <Route path="otp" element={<OtpLoginPage />} />
+          <Route path="pin" element={<PinLoginPage />} />
 
           <Route path="reset/otp" element={<RequireLoginStep step="otp"><ResetPinOtp /></RequireLoginStep>} />
           <Route path="reset/pin" element={<RequireLoginStep step="pin"><ResetSetPin /></RequireLoginStep>} />
 
-          <Route path="otp" element={<RequireLoginStep step="otp"><OtpStage /></RequireLoginStep>} />
-          <Route path="pin" element={<RequireLoginStep step="pin"><PinStage /></RequireLoginStep>} />
+          {/* <Route path="otp" element={<RequireLoginStep step="otp"><OtpStage /></RequireLoginStep>} /> */}
+          {/* <Route path="pin" element={<RequireLoginStep step="pin"><PinStage /></RequireLoginStep>} /> */}
         </Route>
 
         {/* ---------- Protected /app routes ---------- */}
