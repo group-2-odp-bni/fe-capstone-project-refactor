@@ -1,15 +1,19 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import NextStep from "./NextStep";
+import HelpScreen from "./HelpScreen";
 
 export default function CameraPage() {
   const videoRef = useRef(null);
+  const fileInputRef = useRef(null);
   const [streaming, setStreaming] = useState(false);
   const [capturedImage, setCapturedImage] = useState(null);
   const [facing, setFacing] = useState("environment");
   const [errMsg, setErrMsg] = useState("");
+  const [showHelp, setShowHelp] = useState(false);
+  const [flashMode, setFlashMode] = useState("off");
 
-  // ★ Baru: helper untuk mematikan kamera secara tuntas
+  // Stop camera helper
   const stopCamera = (message) => {
     const el = videoRef.current;
     if (!el) {
@@ -24,7 +28,7 @@ export default function CameraPage() {
     try {
       el.pause && el.pause();
     } catch {}
-    el.srcObject = null; // penting untuk benar2 lepas dari DOM
+    el.srcObject = null;
     setStreaming(false);
     if (message) setErrMsg(message);
   };
@@ -32,7 +36,6 @@ export default function CameraPage() {
   const startCamera = async (mode = facing) => {
     setErrMsg("");
     try {
-      // ★ Pastikan stream lama dimatikan dulu
       stopCamera();
 
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -59,7 +62,6 @@ export default function CameraPage() {
   useEffect(() => {
     startCamera();
     return () => {
-      // ★ Cleanup saat komponen dilepas
       stopCamera();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -71,7 +73,14 @@ export default function CameraPage() {
     await startCamera(next);
   };
 
-  // Capture: crop ke 9:16 (match preview)
+  const toggleFlash = () => {
+    const modes = ["off", "on", "auto"];
+    const currentIndex = modes.indexOf(flashMode);
+    const nextIndex = (currentIndex + 1) % modes.length;
+    setFlashMode(modes[nextIndex]);
+  };
+
+  // Capture with crop
   const handleCapture = () => {
     const video = videoRef.current;
     if (!video || !video.videoWidth || !video.videoHeight) return;
@@ -99,70 +108,146 @@ export default function CameraPage() {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    // ambil frame dulu...
     ctx.drawImage(video, sx, sy, sWidth, sHeight, 0, 0, outW, outH);
     const imageData = canvas.toDataURL("image/png");
 
-    // ★ ...baru matikan kamera supaya LED/lampu webcam benar2 off
     stopCamera("Kamera dimatikan setelah capture.");
-
-    // lanjut ke NextStep
     setCapturedImage(imageData);
   };
 
+  // Handle gallery/file picker
+  const handleOpenGallery = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
+  // Handle file selection
+  const handleFileChange = (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    const validTypes = ["image/png", "image/jpeg", "image/jpg"];
+    if (!validTypes.includes(file.type)) {
+      setErrMsg("Format file tidak didukung. Gunakan PNG atau JPG.");
+      return;
+    }
+
+    // Read file as data URL
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const imageData = e.target?.result;
+      if (typeof imageData === "string") {
+        stopCamera("File dipilih dari galeri.");
+        setCapturedImage(imageData);
+      }
+    };
+    reader.onerror = () => {
+      setErrMsg("Gagal membaca file. Coba lagi.");
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleOpenHelp = () => {
+    stopCamera();
+    setShowHelp(true);
+  };
+
+  const handleCloseHelp = () => {
+    setShowHelp(false);
+    startCamera();
+  };
+
   if (capturedImage) {
-    return <NextStep image={capturedImage} />;
+    return <NextStep image={capturedImage} onRetake={() => setCapturedImage(null)} />;
+  }
+
+  if (showHelp) {
+    return <HelpScreen onClose={handleCloseHelp} />;
   }
 
   return (
-    <div className="w-full flex flex-col text-white">
-      {/* TOMBOL CLOSE */}
-      <div className="px-6 pb-[calc(env(safe-area-inset-bottom)+16px)] pt-3">
-        <div className="max-w-sm mx-auto flex items-center justify-between">
+    <div className="min-h-screen w-full bg-white flex flex-col relative overflow-hidden">
+      {/* Hidden file input for gallery/file picker */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/png,image/jpeg,image/jpg"
+        onChange={handleFileChange}
+        className="hidden"
+      />
+
+      {/* Top Controls */}
+      <div className="relative z-30 px-4 sm:px-6 pt-6 pb-4 bg-white">
+        <div className="max-w-2xl mx-auto flex items-center justify-between">
+          {/* Close button */}
           <button
             aria-label="Close"
             title="Tutup"
-            className="w-14 h-14 rounded-full flex items-center justify-center
-               bg-[#3A4148] active:scale-95 transition"
-            // Opsional: matikan kamera juga saat close (tidak wajib)
+            className="w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center
+                       bg-white border-2 border-gray-200
+                       shadow-lg shadow-gray-300/30
+                       hover:bg-gray-50 hover:scale-105 hover:border-gray-300
+                       active:scale-95 transition-all duration-300 group"
             onClick={() => stopCamera("Kamera dimatikan.")}
+            style={{
+              animation: "fadeInDown 0.6s ease-out both",
+            }}
           >
-            {/* Ikon X putih */}
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="transition-transform group-hover:rotate-90">
               <path
                 d="M6 6L18 18M6 18L18 6"
-                stroke="white"
-                strokeWidth="2.2"
+                stroke="#1F2937"
+                strokeWidth="2.5"
                 strokeLinecap="round"
               />
             </svg>
           </button>
 
-          {/* TOMBOL HELP */}
+          {/* Title */}
+          <h1 
+            className="text-lg sm:text-xl font-bold bg-gradient-to-r from-[#FF9A25] to-[#FF7A25] bg-clip-text text-transparent"
+            style={{
+              animation: "fadeInDown 0.6s ease-out 0.1s both",
+            }}
+          >
+            Scan Struk
+          </h1>
+
+          {/* Help button */}
           <button
             aria-label="Help"
             title="Bantuan"
-            className="w-14 h-14 rounded-full flex items-center justify-center
-               bg-[#3A4148] active:scale-95 transition"
+            className="w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center
+                       bg-white border-2 border-gray-200
+                       shadow-lg shadow-gray-300/30
+                       hover:bg-gray-50 hover:scale-105 hover:border-gray-300
+                       active:scale-95 transition-all duration-300 group"
+            onClick={handleOpenHelp}
+            style={{
+              animation: "fadeInDown 0.6s ease-out 0.2s both",
+            }}
           >
-            {/* Ikon tanda tanya putih */}
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-              <path
-                d="M12 18h.01M12 14a4 4 0 10-4-4"
-                stroke="white"
-                strokeWidth="2.2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-              <circle cx="12" cy="12" r="9" stroke="white" strokeWidth="2" />
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="transition-transform group-hover:scale-110">
+              <circle cx="12" cy="12" r="9" stroke="#1F2937" strokeWidth="2" />
+              <path d="M12 16h.01M10.5 8.5a2 2 0 113 1.5c-1 0-1.5 1-1.5 2" stroke="#1F2937" strokeWidth="2" strokeLinecap="round" />
             </svg>
           </button>
         </div>
       </div>
 
-      {/* Kamera (preview 9:16) */}
-      <div className="flex-1 flex items-center justify-center px-4">
-        <div className="w-full max-w-sm aspect-[9/16] rounded-2xl overflow-hidden relative">
+      {/* Camera Preview with Frame */}
+      <div className="flex-1 flex items-center justify-center px-4 py-8 relative z-10">
+        <div 
+          className="w-full max-w-md aspect-[9/16] rounded-3xl overflow-hidden relative
+                     border-2 border-gray-200
+                     shadow-2xl shadow-gray-400/30"
+          style={{
+            animation: "zoomIn 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) 0.3s both",
+          }}
+        >
+          {/* Video element */}
           <video
             ref={videoRef}
             autoPlay
@@ -170,77 +255,206 @@ export default function CameraPage() {
             muted
             className="absolute inset-0 w-full h-full object-cover"
           />
+
+          {/* Scan guide overlay */}
+          <div className="absolute inset-0 pointer-events-none">
+            {/* Corner brackets */}
+            <svg className="absolute inset-4 w-[calc(100%-32px)] h-[calc(100%-32px)]" viewBox="0 0 100 100" preserveAspectRatio="none">
+              <path d="M 0,15 L 0,0 L 15,0" stroke="url(#gradient1)" strokeWidth="2.5" fill="none" strokeLinecap="round" />
+              <path d="M 85,0 L 100,0 L 100,15" stroke="url(#gradient1)" strokeWidth="2.5" fill="none" strokeLinecap="round" />
+              <path d="M 0,85 L 0,100 L 15,100" stroke="url(#gradient1)" strokeWidth="2.5" fill="none" strokeLinecap="round" />
+              <path d="M 100,85 L 100,100 L 85,100" stroke="url(#gradient1)" strokeWidth="2.5" fill="none" strokeLinecap="round" />
+              
+              <defs>
+                <linearGradient id="gradient1" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#FF9A25" stopOpacity="0.9" />
+                  <stop offset="100%" stopColor="#FFCE52" stopOpacity="0.9" />
+                </linearGradient>
+              </defs>
+            </svg>
+
+            {/* Center guide text */}
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div 
+                className="backdrop-blur-md bg-white/90 px-4 py-2 rounded-full border border-gray-200 shadow-lg"
+                style={{
+                  animation: "pulse 2s ease-in-out infinite",
+                }}
+              >
+                <p className="text-gray-800 text-sm font-semibold">
+                  Posisikan struk di dalam frame
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Error/Loading overlay */}
           {!streaming && (
-            <div className="absolute bottom-2 left-2 right-2 text-xs opacity-90">
-              <span>{errMsg || "Menyiapkan kamera..."}</span>
+            <div className="absolute inset-0 bg-white backdrop-blur-sm flex items-center justify-center">
+              <div className="text-center px-6">
+                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-[#FF9A25] to-[#FF7A25] flex items-center justify-center animate-pulse shadow-xl shadow-[#FF9A25]/30">
+                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+                    <path
+                      d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"
+                      fill="white"
+                    />
+                    <circle cx="12" cy="13" r="4" fill="#FF9A25" />
+                  </svg>
+                </div>
+                <p className="text-gray-800 text-sm font-medium">
+                  {errMsg || "Menyiapkan kamera..."}
+                </p>
+              </div>
             </div>
           )}
         </div>
       </div>
 
-      {/* Bottom bar seperti gambar (di luar kamera) */}
-      <div className="px-6 pb-[calc(env(safe-area-inset-bottom)+16px)] pt-3">
-        <div className="max-w-sm mx-auto flex items-center justify-between">
-          {/* KIRI: GALERI */}
+      {/* Bottom Controls */}
+      <div className="relative z-30 px-4 sm:px-6 pb-6 pt-4 bg-white">
+        <div className="max-w-2xl mx-auto flex items-center justify-between">
+          {/* Gallery button - Now functional */}
           <button
+            onClick={handleOpenGallery}
             aria-label="Open gallery"
-            className="w-14 h-14 rounded-full flex items-center justify-center active:scale-95 transition"
-            style={{ backgroundColor: "#3A4148" }}
+            title="Buka Galeri / Pilih File"
+            className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center
+                       bg-white border-2 border-gray-200
+                       shadow-lg shadow-gray-300/30
+                       hover:bg-gray-50 hover:scale-105 hover:border-gray-300
+                       active:scale-95 transition-all duration-300 group"
+            style={{
+              animation: "fadeInUp 0.6s ease-out 0.4s both",
+            }}
           >
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-              <rect x="3" y="5" width="18" height="14" rx="2" stroke="white" strokeWidth="2" />
-              <path d="M8 13l2.5-3 3.5 5 2-2 3 4H6l2-4z" fill="white" />
-              <circle cx="9" cy="9" r="1.6" fill="white" />
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" className="transition-transform group-hover:scale-110">
+              <rect x="3" y="5" width="18" height="14" rx="2" stroke="#1F2937" strokeWidth="2" />
+              <path d="M8 13l2.5-3 3.5 5 2-2 3 4H6l2-4z" fill="#1F2937" opacity="0.6" />
+              <circle cx="9" cy="9" r="1.5" fill="#1F2937" />
             </svg>
           </button>
 
-          {/* TENGAH: CAPTURE double ring hitam */}
+          {/* Capture button - Orange gradient */}
           <button
             onClick={handleCapture}
             disabled={!streaming}
             aria-label="Capture"
-            className="relative active:scale-95 transition disabled:opacity-50"
-            style={{ width: 92, height: 92 }}
             title={streaming ? "Ambil foto" : "Kamera tidak aktif"}
+            className="relative active:scale-95 transition-all duration-300 disabled:opacity-50 group"
+            style={{
+              width: 80,
+              height: 80,
+              animation: "fadeInUp 0.6s ease-out 0.5s both, pulse 2s ease-in-out 1s infinite",
+            }}
           >
-            {/* outer ring */}
             <div
-              className="rounded-full"
-              style={{
-                width: 92,
-                height: 92,
-                border: "6px solid #000",
-              }}
+              className="absolute inset-0 rounded-full bg-gradient-to-br from-[#FF9A25] to-[#FF7A25] 
+                         shadow-2xl shadow-[#FF9A25]/40 group-hover:shadow-[#FF9A25]/60
+                         group-hover:scale-110 transition-all duration-300"
             />
-            {/* inner ring */}
-            <div
-              className="rounded-full absolute inset-0 m-[13px]"
-              style={{
-                border: "5px solid #000",
-              }}
-            />
-            {/* white core */}
-            <div
-              className="rounded-full absolute inset-0 m-[22px]"
-              style={{
-                background: "#fff",
-              }}
-            />
+            <div className="absolute inset-[6px] rounded-full bg-white" />
+            <div className="absolute inset-[14px] rounded-full bg-gradient-to-br from-[#FF9A25] to-[#FF7A25] group-hover:scale-105 transition-all duration-300" />
+            <div className="absolute inset-0 rounded-full bg-[#FF9A25]/20 animate-ping" style={{ animationDuration: "2s" }} />
           </button>
 
-          {/* KANAN: FLASH */}
+          {/* Flash toggle button */}
           <button
             aria-label="Flash"
-            className="w-14 h-14 rounded-full flex items-center justify-center active:scale-95 transition"
-            style={{ backgroundColor: "#3A4148" }}
-            title="Flash (simulasi)"
+            title={`Flash: ${flashMode}`}
+            onClick={toggleFlash}
+            className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex flex-col items-center justify-center
+                       bg-white border-2 border-gray-200
+                       shadow-lg shadow-gray-300/30
+                       hover:bg-gray-50 hover:scale-105 hover:border-gray-300
+                       active:scale-95 transition-all duration-300 group relative"
+            style={{
+              animation: "fadeInUp 0.6s ease-out 0.6s both",
+            }}
           >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="white">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill={flashMode === "on" ? "#FF9A25" : "#1F2937"} className="transition-all group-hover:scale-110">
               <path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z" />
             </svg>
+            <span className="text-[10px] text-gray-700 mt-0.5 uppercase font-bold">{flashMode}</span>
           </button>
         </div>
+
+        {/* Flip camera button (floating) */}
+        <button
+          onClick={toggleFacing}
+          aria-label="Flip camera"
+          title="Ganti kamera"
+          className="absolute right-6 bottom-28 w-12 h-12 rounded-full flex items-center justify-center
+                     bg-white border-2 border-gray-200
+                     shadow-lg shadow-gray-300/30
+                     hover:bg-gray-50 hover:scale-105 hover:rotate-180 hover:border-gray-300
+                     active:scale-95 transition-all duration-500 group"
+          style={{
+            animation: "fadeInRight 0.6s ease-out 0.7s both",
+          }}
+        >
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+            <path d="M21 9L17 5v3H7a3 3 0 000 6h2M3 15l4 4v-3h10a3 3 0 000-6h-2" stroke="#1F2937" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
       </div>
+
+      {/* Global Animations */}
+      <style jsx global>{`
+        @keyframes fadeInDown {
+          from {
+            opacity: 0;
+            transform: translateY(-20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        
+        @keyframes fadeInUp {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        @keyframes fadeInRight {
+          from {
+            opacity: 0;
+            transform: translateX(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0);
+          }
+        }
+        
+        @keyframes zoomIn {
+          from {
+            opacity: 0;
+            transform: scale(0.9);
+          }
+          to {
+            opacity: 1;
+            transform: scale(1);
+          }
+        }
+
+        @keyframes pulse {
+          0%, 100% {
+            opacity: 1;
+            transform: scale(1);
+          }
+          50% {
+            opacity: 0.8;
+            transform: scale(1.05);
+          }
+        }
+      `}</style>
     </div>
   );
 }
