@@ -20,19 +20,29 @@ export const clearTokens = () => {
 // Validate access token by calling backend or decoding locally
 export const validateAccessToken = async () => {
   const token = getAccessToken();
-  if (!token) return false;
+  if (!token) {
+    console.warn("No access token found");
+    return false;
+  }
 
   try {
-    // Option 1: Verify by calling backend endpoint (recommended)
-    const response = await fetch("/api/v1/auth/validate", {
-      method: "GET",
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    // Decode payload (middle part of JWT)
+    const [, payloadBase64] = token.split(".");
+    const payloadJson = atob(payloadBase64.replace(/-/g, "+").replace(/_/g, "/"));
+    const payload = JSON.parse(payloadJson);
 
-    if (!response.ok) {
-      // try refresh if backend supports it
-      const refreshed = await refreshAccessToken();
-      return refreshed;
+    const now = Math.floor(Date.now() / 1000);
+
+    // check token expired date
+    if (payload.exp && payload.exp < now) {
+      console.warn("Access token expired. Trying to refresh...");
+      return await refreshAccessToken();
+    }
+
+    // check issuer
+    if (payload.iss !== "auth-service" || payload.type !== "access") {
+      console.warn("Invalid token issuer or type");
+      return false;
     }
 
     return true;

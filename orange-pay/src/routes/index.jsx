@@ -38,20 +38,11 @@ import RequireLoginStep from "./RequireLoginStep";
 import { TransferProvider } from "../context/TransferContext";
 import TransferPage from "../pages/TransferPage";
 import RequireRegisterStep from "./RequireRegisterStep";
+import ProtectedRoute from "./ProtectedRoute";
+import { validateAccessToken } from "../services/auth/authService";
 
-/* ----------------- ProtectedRoute ----------------- */
-function ProtectedRoute() {
-  const loc = useLocation();
-  return isAuthenticated() ? (
-    <Outlet />
-  ) : (
-    <Navigate to="/login" replace state={{ from: loc }} />
-  );
-}
-
-/* ----------------- PublicRoute ----------------- */
-function PublicRoute({ children, redirectTo = "/app/dashboard" }) {
-  const loc = useLocation();
+export function PublicRoute({ children, redirectTo = "/app/dashboard" }) {
+  const location = useLocation();
   const [checking, setChecking] = React.useState(true);
   const [authed, setAuthed] = React.useState(false);
 
@@ -59,25 +50,35 @@ function PublicRoute({ children, redirectTo = "/app/dashboard" }) {
     let mounted = true;
     (async () => {
       try {
-        const maybe = isAuthenticated();
-        const res = maybe && typeof maybe.then === "function" ? await maybe : maybe;
+        const valid = await validateAccessToken();
         if (!mounted) return;
-        setAuthed(Boolean(res));
+        setAuthed(Boolean(valid));
       } catch (err) {
-        console.error("PublicRoute:isAuthenticated error:", err);
+        console.error("PublicRoute: validateAccessToken error:", err);
         if (!mounted) return;
         setAuthed(false);
       } finally {
         if (mounted) setChecking(false);
       }
     })();
+
     return () => {
       mounted = false;
     };
   }, []);
 
-  if (checking) return <div style={{ padding: 24, textAlign: "center" }}>Checking authentication...</div>;
-  if (authed) return <Navigate to={redirectTo} replace state={{ from: loc }} />;
+  if (checking) {
+    return (
+      <div style={{ padding: 24, textAlign: "center" }}>
+        Checking authentication...
+      </div>
+    );
+  }
+
+  if (authed) {
+    return <Navigate to={redirectTo} replace state={{ from: location }} />;
+  }
+
   return children;
 }
 
