@@ -16,7 +16,7 @@ import WelcomePage from "../pages/WelcomePage";
 import LoginPage from "../pages/login/LoginPage";
 import ProfilePage from "../pages/ProfilePage";
 
-import LoginPhone from "../components/login/LoginPhone";
+
 import OtpStage from "../components/login/OtpStage";
 import PinStage from "../components/login/PinStage";
 import ResetPhone from "../components/login/ResetPhone";
@@ -116,23 +116,22 @@ export default function AppRoutes() {
 
         {/* ---------- Login Flow (guest only) ---------- */}
         <Route
-          path="/login"
+          path="/login/*"
           element={
             <PublicRoute>
               <LoginFlowProvider>
-                <LoginPage />
+                <Outlet />
               </LoginFlowProvider>
             </PublicRoute>
           }
         >
-          <Route index element={<LoginPhone />} />
-          {/* reset (forgot PIN) - enter phone to reset PIN */}
+
+          <Route index element={<LoginPage />} />
           <Route path="reset" element={<ResetPin />} />
-          {/* reset OTP under login (reset flow) */}
+
           <Route path="reset/otp" element={<RequireLoginStep step="otp"><ResetPinOtp /></RequireLoginStep>} />
-          {/* reset set-pin (after OTP) under login reset flow */}
           <Route path="reset/pin" element={<RequireLoginStep step="pin"><ResetSetPin /></RequireLoginStep>} />
-          {/* OTP / PIN require login flow steps */}
+
           <Route path="otp" element={<RequireLoginStep step="otp"><OtpStage /></RequireLoginStep>} />
           <Route path="pin" element={<RequireLoginStep step="pin"><PinStage /></RequireLoginStep>} />
         </Route>
