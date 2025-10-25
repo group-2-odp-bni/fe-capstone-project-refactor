@@ -33,13 +33,12 @@ const delay = (ms = 300) => new Promise((res) => setTimeout(res, ms));
 
 
 const SAVED_CONTACTS_INITIAL = [
-  // <-- paste your saved-contacts array here if you have one
-  // Example item:
-  // { phone: "081234567890", name: "Belanda Belinda", accountId: "ACC-001", balance: 200000 },
-  { phone: "081234567890", name: "Belanda Belinda", accountId: "ACC-001", balance: 200000 },
-  { phone: "081298765432", name: "Belilindada haha", accountId: "ACC-002", balance: 500000 },
-  { phone: "081300011122", name: "Safafufu Zabulaza", accountId: "ACC-003", balance: 1200000 },
-  { phone: "087888123522", name: "Xaviera Azzahra", accountId: "ACC-004", balance: 1200000 },
+    { phone: "081234567890", name: "Belanda Belinda", accountId: "ACC-001", balance: 200000 },
+    { phone: "081298765432", name: "Belilindada haha", accountId: "ACC-002", balance: 500000 },
+    { phone: "081300011122", name: "Safafufu Zabulaza", accountId: "ACC-003", balance: 1200000 },
+    { phone: "087888123522", name: "Xaviera Azzahra", accountId: "ACC-004", balance: 1200000 },
+    { phone: "087888123523", name: "Bimbim Mama", accountId: "ACC-005", balance: 1200000 },
+    { phone: "087888122341", name: "Has Zabel", accountId: "ACC-006", balance: 1200000 },
 ];
 
 /* receipts helpers */

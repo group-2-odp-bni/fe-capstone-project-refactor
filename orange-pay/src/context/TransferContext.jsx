@@ -3,7 +3,8 @@ import React, { createContext, useContext, useEffect, useMemo, useRef, useState 
 import { useLocation } from "react-router-dom";
 
 const TRANSFER_FLOW_KEY = "transferFlowState";
-const STEP_ORDER = ["select", "details", "amount", "confirm", "pin", "success"];
+const STEP_ORDER = ["select", "verify", "details", "amount", "confirm", "pin", "success"];
+
 
 const TransferContext = createContext(null);
 

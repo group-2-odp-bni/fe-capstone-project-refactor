@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
 
 /**
- * Hook dummy untuk simulasi ambil saldo kartu.
- * Tidak perlu API sungguhan dulu.
+DID NOT USED AGAIN, 
  */
 export default function useCardBalances() {
   const [data, setData] = useState([]);
