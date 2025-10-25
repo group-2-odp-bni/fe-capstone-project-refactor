@@ -1,13 +1,5 @@
-import {
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  useLayoutEffect,
-  forwardRef,
-  useImperativeHandle,
-} from "react";
-import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
+// src/components/dashboard/BalanceCard.jsx
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import useCardBalances from "../../hooks/api/useInitialBalances";
 import AddNewWalletCard from "../add_wallet/AddNewWalletDashboard";
@@ -487,9 +479,7 @@ export default function AtomicBalanceCard() {
     }, {});
   }, [data]);
 
-  // state UI
   const [activeIndex, setActiveIndex] = useState(0);
-  const [balance, setBalance] = useState(cards[0]?.initialBalance ?? 0);
   const [isHidden, setIsHidden] = useState(false);
 
   // sinkronkan angka kartu aktif dengan data API
@@ -517,9 +507,11 @@ export default function AtomicBalanceCard() {
 
   // viewport imperative
   const viewportRef = useRef(null);
+
   const goTo = (i) => {
-    setActiveIndex(i);
-    viewportRef.current?.scrollToIndex?.(i);
+    const clamped = Math.max(0, Math.min(items.length - 1, i));
+    setActiveIndex(clamped);
+    viewportRef.current?.scrollToIndex?.(clamped);
   };
 
   // loading per card (aktif prioritas skeleton)
@@ -534,12 +526,11 @@ export default function AtomicBalanceCard() {
   };
   return (
     <div className="w-full mx-auto md:px-4 mt-6 ">
-      <h3 className="px-3 font-semibold text-lg text-gray-900 mb-3 md:px-0 text-left">
-        Your Wallet
-      </h3>
-      {/* Tabs */}
+      <h3 className="px-3 font-semibold text-lg text-gray-900 mb-3 md:px-0 text-left">Your Wallet</h3>
+
+      {/* small preview badges - still render from tabs (UI only) */}
       <div className="flex flex-wrap items-center justify-center gap-2 ">
-        {cards.map((c, i) => (
+        {tabs.map((c, i) => (
           <div
             key={c.id}
             title={c.title}
@@ -550,7 +541,6 @@ export default function AtomicBalanceCard() {
         ))}
       </div>
 
-      {/* Viewport */}
       <CarouselViewport
         ref={viewportRef}
         items={displayItems}
@@ -592,9 +582,18 @@ export default function AtomicBalanceCard() {
         }}
       />
 
-      {/* Dots */}
+      {/* scroll-like progress */}
+      <div className="flex justify-center items-center gap-2 mt-4 px-4">
+        <div style={{ width: "100%", maxWidth: 520 }}>
+          <ScrollProgress
+            count={items.length}
+            activeIndex={activeIndex}
+            onChange={(idx) => goTo(idx)}
+            accent={tabs[activeIndex]?.accent || "#FFAE51"}
+          />
+        </div>
+      </div>
 
-      {/* Error */}
       {error && (
         <p className="text-center text-red-600 text-xs mt-3">
           Gagal memuat saldo.{" "}
@@ -607,11 +606,6 @@ export default function AtomicBalanceCard() {
       <style>{`
         /* hide webkit scrollbar */
         div::-webkit-scrollbar { height: 0; width: 0; }
-
-        /* outer glow heavier on larger screens */
-        @media (min-width: 768px) {
-          .card-outer-glow { filter: drop-shadow(0 24px 60px rgba(0,0,0,0.12)); }
-        }
       `}</style>
     </div>
   );
