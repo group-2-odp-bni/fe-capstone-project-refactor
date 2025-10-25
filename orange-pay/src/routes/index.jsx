@@ -35,7 +35,7 @@ import RequireLoginStep from "./RequireLoginStep";
 /* transfer flow */
 import { TransferProvider } from "../context/TransferContext";
 import TransferPage from "../pages/TransferPage";
-
+import AssignMemberPage from "../pages/AssignMemberPage";
 /* ----------------- ProtectedRoute ----------------- */
 function ProtectedRoute() {
   const loc = useLocation();
@@ -57,7 +57,8 @@ function PublicRoute({ children, redirectTo = "/app/dashboard" }) {
     (async () => {
       try {
         const maybe = isAuthenticated();
-        const res = maybe && typeof maybe.then === "function" ? await maybe : maybe;
+        const res =
+          maybe && typeof maybe.then === "function" ? await maybe : maybe;
         if (!mounted) return;
         setAuthed(Boolean(res));
       } catch (err) {
@@ -73,7 +74,12 @@ function PublicRoute({ children, redirectTo = "/app/dashboard" }) {
     };
   }, []);
 
-  if (checking) return <div style={{ padding: 24, textAlign: "center" }}>Checking authentication...</div>;
+  if (checking)
+    return (
+      <div style={{ padding: 24, textAlign: "center" }}>
+        Checking authentication...
+      </div>
+    );
   if (authed) return <Navigate to={redirectTo} replace state={{ from: loc }} />;
   return children;
 }
@@ -93,9 +99,30 @@ export default function AppRoutes() {
         <Route path="/welcome" element={<WelcomePage />} />
 
         {/* ---------- Registration (guest only) ---------- */}
-        <Route path="/register" element={<PublicRoute><RegisterPage /></PublicRoute>} />
-        <Route path="/register/otp" element={<PublicRoute><OtpRegisterPage /></PublicRoute>} />
-        <Route path="/register/setpin" element={<PublicRoute><SetPinPage /></PublicRoute>} />
+        <Route
+          path="/register"
+          element={
+            <PublicRoute>
+              <RegisterPage />
+            </PublicRoute>
+          }
+        />
+        <Route
+          path="/register/otp"
+          element={
+            <PublicRoute>
+              <OtpRegisterPage />
+            </PublicRoute>
+          }
+        />
+        <Route
+          path="/register/setpin"
+          element={
+            <PublicRoute>
+              <SetPinPage />
+            </PublicRoute>
+          }
+        />
 
         {/* ---------- Login Flow (guest only) ---------- */}
         <Route
@@ -112,12 +139,40 @@ export default function AppRoutes() {
           {/* reset (forgot PIN) - enter phone to reset PIN */}
           <Route path="reset" element={<ResetPin />} />
           {/* reset OTP under login (reset flow) */}
-          <Route path="reset/otp" element={<RequireLoginStep step="otp"><ResetPinOtp /></RequireLoginStep>} />
+          <Route
+            path="reset/otp"
+            element={
+              <RequireLoginStep step="otp">
+                <ResetPinOtp />
+              </RequireLoginStep>
+            }
+          />
           {/* reset set-pin (after OTP) under login reset flow */}
-          <Route path="reset/pin" element={<RequireLoginStep step="pin"><ResetSetPin /></RequireLoginStep>} />
+          <Route
+            path="reset/pin"
+            element={
+              <RequireLoginStep step="pin">
+                <ResetSetPin />
+              </RequireLoginStep>
+            }
+          />
           {/* OTP / PIN require login flow steps */}
-          <Route path="otp" element={<RequireLoginStep step="otp"><OtpStage /></RequireLoginStep>} />
-          <Route path="pin" element={<RequireLoginStep step="pin"><PinStage /></RequireLoginStep>} />
+          <Route
+            path="otp"
+            element={
+              <RequireLoginStep step="otp">
+                <OtpStage />
+              </RequireLoginStep>
+            }
+          />
+          <Route
+            path="pin"
+            element={
+              <RequireLoginStep step="pin">
+                <PinStage />
+              </RequireLoginStep>
+            }
+          />
         </Route>
 
         {/* ---------- Protected /app routes ---------- */}
@@ -125,6 +180,18 @@ export default function AppRoutes() {
           <Route path="dashboard" element={<DashboardPage />} />
           <Route path="transactions" element={<HistoryTransactionPage />} />
           <Route path="topup" element={<TopUpPage />} />
+
+          {/* === TESTING ROUTE (tanpa param): buka /app/members-test === */}
+          <Route
+            path="members-test"
+            element={
+              <AssignMemberPage walletIdOverride="d69f4f9d-ec91-4d43-8db0-3006185c1090" />
+            }
+          />
+          <Route
+            path="wallets/:walletId/members"
+            element={<AssignMemberPage />}
+          />
 
           {/* ----------- Transfer Flow ----------- */}
           <Route
@@ -141,9 +208,7 @@ export default function AppRoutes() {
           />
 
           {/* ----------- Reset flow placeholder ----------- */}
-          <Route path="reset">
-            {/* add reset pages later */}
-          </Route>
+          <Route path="reset">{/* add reset pages later */}</Route>
         </Route>
 
         {/* ---------- 404 ---------- */}
