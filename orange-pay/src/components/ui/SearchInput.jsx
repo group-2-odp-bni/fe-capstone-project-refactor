@@ -3,7 +3,7 @@ import React from "react";
 
 /**
  * Reusable search input with built-in icon.
- * Can be used across pages like Transfer, Contacts, or Wallet.
+ * Calls onChange(newValue) directly — not the DOM event.
  */
 export default function SearchInput({
   value,
@@ -11,6 +11,12 @@ export default function SearchInput({
   placeholder = "Search name or phone (e.g. 0812...)",
   inputMode = "tel",
 }) {
+  const handleChange = (e) => {
+    if (typeof onChange === "function") {
+      onChange(e.target?.value ?? "");
+    }
+  };
+
   return (
     <div className="mb-5 px-4">
       <div className="relative">
@@ -43,7 +49,7 @@ export default function SearchInput({
         {/* Input field */}
         <input
           value={value}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={handleChange}
           placeholder={placeholder}
           className="w-full bg-white border border-gray-200 rounded-xl py-3 pl-11 pr-4 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-100"
           inputMode={inputMode}

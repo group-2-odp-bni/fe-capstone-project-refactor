@@ -1,10 +1,10 @@
 // src/components/transfer/StepVerifyContact.jsx
-import React, { useEffect, useRef, useState } from "react";
-import { useTransfer } from "../../context/TransferContext";
+import React, { useRef, useState } from "react";
 import useTransferApi from "../../hooks/api/useTransferApi";
-import { useDebounce } from "../../hooks/useDebounce";
+import { useTransfer } from "../../context/TransferContext";
+import BottomConfirmSheet from "../ui/transfer/BottomConfirmSheet";
 
-/* normalize +62/62 -> 0xxx local style, strip spaces */
+/* small helpers */
 function normalizePhone(phone = "") {
   const digits = (phone || "").replace(/[^\d+]/g, "");
   if (!digits) return "";
@@ -12,236 +12,193 @@ function normalizePhone(phone = "") {
   if (digits.startsWith("62")) return "0" + digits.slice(2);
   return digits;
 }
-
-/* race a promise with a timeout; resolves { ok:true, value } or { ok:false, reason } */
-const raceWithTimeout = (promise, ms = 2500) =>
-  Promise.race([
-    promise.then((v) => ({ ok: true, value: v })).catch((e) => ({ ok: false, reason: e })),
-    new Promise((res) => setTimeout(() => res({ ok: false, reason: new Error("timeout") }), ms)),
-  ]);
-
-/* Bottom sheet kept identical to your UI */
-function BottomConfirmSheet({ visible, contact, onClose, onConfirm }) {
-  if (!visible) return null;
-  return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center " aria-hidden={!visible}>
-      <div className="absolute inset-0 bg-black/30" onClick={onClose} />
-      <div className="relative w-full  bg-white rounded-t-2xl p-12 shadow-lg" style={{ transform: "translateY(0%)" }}>
-        <div className="mx-auto w-12 h-1 rounded-full bg-gray-200 mb-3" />
-        <div className="text-sm text-gray-800 font-bold mb-2 text-center mb-16 ">Please verify before continue</div>
-        <div className="flex items-center space-x-3 mt-1 mb-2">
-        <img
-            src="/Orangepay.png"
-            alt="RangePay Logo"
-            className="h-5 md:h-6 w-auto drop-shadow"
-        />
-        </div>
-        <div className="mb-4 p-3 border rounded-lg flex items-center gap-3 ">
-          <div>
-            <div className="font-semibold">{contact?.name || "—"}</div>
-            <div className="text-xs text-gray-500">{contact?.phone || "—"}</div>
-          </div>
-        </div>
-        <div className="text-sm text-gray-800 mb-2 text-center p-3 mb-6 ">Make sure this is the right number before you continue</div>
-        <div className="flex gap-3">
-          <button onClick={onConfirm} className="flex-1 py-3 rounded-lg bg-orange-500 text-white">Confirm</button>
-        </div>
-      </div>
-    </div>
-  );
+function formatPhoneDisplay(phone = "") {
+  if (!phone) return "";
+  const digits = (phone || "").replace(/\D/g, "");
+  if (digits.startsWith("0")) return `+62 ${digits.slice(1)}`;
+  if (digits.startsWith("62")) return `+62 ${digits.slice(2)}`;
+  if (digits.startsWith("8")) return `+62 ${digits}`;
+  return `+${digits}`;
 }
 
 export default function StepVerifyContact() {
   const { data, setData, setStep } = useTransfer();
   const api = useTransferApi();
-
-  // stable refs to API functions (captured once)
-  const lookupRef = useRef(null); // preferred lookup function
-  const allContactsRef = useRef(null); // optional local fallback
-
-  useEffect(() => {
-    lookupRef.current = api.lookupMainByPhone || api.lookupContactByPhone || null;
-    allContactsRef.current = typeof api.getAllContacts === "function" ? api.getAllContacts : null;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // run once on mount
-
-  // phone input & debounce
-  const [phone, setPhone] = useState(data.phone || "");
-  const debouncedPhone = useDebounce(phone, 400);
-
-  const [contact, setContact] = useState(null);
-  const [status, setStatus] = useState("idle"); // idle | checking | found | notfound | error
-  const [error, setError] = useState(null);
-
-  const [sheetVisible, setSheetVisible] = useState(false);
   const mountedRef = useRef(true);
 
-  // request id to ignore stale responses
-  const currentRequestId = useRef(0);
+  const [contact, setContact] = useState(null);
+  const [status, setStatus] = useState("idle"); // idle | checking | found | notfound | invalid | error
+  const [errorMsg, setErrorMsg] = useState("");
+  const [sheetVisible, setSheetVisible] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editValue, setEditValue] = useState(data?.phone || "");
 
-  useEffect(() => {
+  React.useEffect(() => {
     mountedRef.current = true;
     return () => {
       mountedRef.current = false;
     };
   }, []);
 
-  useEffect(() => {
-    const raw = (debouncedPhone || "").trim();
+  const runVerify = async () => {
+    setErrorMsg("");
+    setContact(null);
 
+    const raw = (data?.phone || "").toString().trim();
     if (!raw) {
-      setContact(null);
-      setStatus("idle");
-      setError(null);
+      setStatus("invalid");
+      setErrorMsg("No phone to verify");
       return;
     }
 
     const normalized = normalizePhone(raw);
     if (!normalized) {
-      setContact(null);
-      setStatus("notfound");
-      setError(null);
+      setStatus("invalid");
+      setErrorMsg("Invalid phone format");
       return;
     }
 
-    // If lookup function missing, try quick local fallback (getAllContacts) if available
-    if (!lookupRef.current) {
-      if (allContactsRef.current) {
-        // local synchronous fallback
-        try {
-          const list = allContactsRef.current(); // should be sync in mock
-          const found = Array.isArray(list) ? list.find((c) => (c.phone || "") === normalized) : null;
-          if (!mountedRef.current) return;
-          if (found) {
-            setContact(found);
-            setStatus("found");
-            setError(null);
-            return;
-          } else {
-            setContact(null);
-            setStatus("notfound");
-            setError(null);
-            return;
-          }
-        } catch (err) {
-          if (!mountedRef.current) return;
-          setContact(null);
-          setStatus("notfound");
-          setError(null);
-          return;
-        }
-      } else {
-        // no lookup at all -> mark notfound (defensive)
-        setContact(null);
-        setStatus("notfound");
-        setError(null);
-        return;
-      }
-    }
-
-    // perform lookup with timeout + request id guard
-    const reqId = ++currentRequestId.current;
     setStatus("checking");
-    setError(null);
-
-    (async () => {
-      const res = await raceWithTimeout(lookupRef.current(normalized), 2500);
-
-      // ignore if unmounted or stale
-      if (!mountedRef.current || currentRequestId.current !== reqId) return;
-
-      if (!res.ok) {
-        // timeout or error
-        if (res.reason && res.reason.message === "timeout") {
-          // fallback: treat as not found (safe)
-          setContact(null);
-          setStatus("notfound");
-          setError(null);
-        } else {
-          setContact(null);
-          setStatus("error");
-          setError(res.reason?.message || "Lookup failed");
-        }
+    try {
+      const res = await api.verifyPhone(normalized);
+      if (!mountedRef.current) return;
+      if (res.status === "saved" || res.status === "main") {
+        setStatus("found");
+        setContact(res.contact || null);
+        setSheetVisible(true);
         return;
       }
-
-      const found = res.value;
-      if (found) {
-        setContact(found);
-        setStatus("found");
-        setError(null);
-      } else {
-        setContact(null);
-        setStatus("notfound");
-        setError(null);
-      }
-    })();
-
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedPhone]); // NOTE: lookupRef is stable via ref, not a dep
-
-  const verify = () => {
-    setError(null);
-    const raw = (phone || "").trim();
-    if (!raw) {
-      setError("Enter a valid phone number");
-      return;
+      setStatus("invalid");
+      setErrorMsg("Invalid phone");
+    } catch (err) {
+      if (!mountedRef.current) return;
+      setStatus("error");
+      setErrorMsg(err?.message || "Unexpected error");
     }
-    setSheetVisible(true);
   };
 
-  const onConfirm = () => {
+  const handleConfirm = async () => {
     if (contact) {
       setData({
         phone: contact.phone,
         contactName: contact.name,
         accountId: contact.accountId,
+        verified: true, // <-- mark verified
       });
     } else {
       setData({
-        phone: normalizePhone(phone) || phone.replace(/\s+/g, ""),
+        phone: normalizePhone(data?.phone || ""),
         contactName: "",
         accountId: null,
+        verified: true, // <-- mark verified even for fallback
       });
     }
     setSheetVisible(false);
     setStep("amount");
   };
+  
+
+  const handleSaveEdit = () => {
+    setData({ ...data, phone: editValue });
+    setIsEditing(false);
+  };
+
+  const formattedPhone = formatPhoneDisplay(data?.phone || "");
 
   return (
     <div>
-      <div className="mb-4">
-        <div className="text-sm text-gray-500 mb-2">Verify number</div>
-
-        <input
-          value={phone}
-          onChange={(e) => setPhone(e.target.value)}
-          placeholder="+62 812 6754 9123"
-          className="w-full border rounded-lg p-3 text-lg"
-          inputMode="tel"
-        />
-      </div>
-
-      {/* <div className="mb-3">
-        {status === "checking" && <div className="text-xs text-gray-500">Checking…</div>}
-        {status === "found" && contact && (
-          <div className="mb-4 p-3 rounded-lg border bg-white">
-            <div className="font-medium">{contact.name}</div>
-            <div className="text-xs text-gray-500">{contact.phone}</div>
-            <div className="text-xs text-gray-400 mt-2">Found in Orange-Pay</div>
+      {/* === PHONE CARD === */}
+      <div className="mb-4 border rounded-lg bg-white p-3 flex justify-between items-center">
+        <div className="flex-1 min-w-0">
+          <div className="text-base font-medium text-gray-800 pb-1">
+            Verifikasi Nomor
           </div>
-        )}
-        {status === "notfound" && <div className="text-xs text-gray-500 mb-2">Number not found on Orange-Pay</div>}
-        {status === "error" && <div className="text-sm text-red-600 mb-2">{error || "Lookup failed"}</div>}
-      </div> */}
 
-      <div className="mt-6">
-        <button onClick={verify} className="w-full py-3 rounded-lg bg-orange-500 text-white">
-          Verify
-        </button>
+          {isEditing ? (
+            <input
+              type="tel"
+              value={editValue}
+              onChange={(e) => setEditValue(e.target.value)}
+              className="w-full border-b border-gray-300 focus:border-orange-500 outline-none text-base font-medium text-gray-800 bg-transparent"
+              placeholder="Masukkan nomor"
+            />
+          ) : (
+            <div className="text-base font-medium text-gray-800 truncate">
+              {formattedPhone || "—"}
+            </div>
+          )}
+        </div>
+
+        {/* Toggle button: X when view mode, check when editing */}
+        <div className="ml-3">
+          <button
+            type="button"
+            onClick={() =>
+              isEditing ? handleSaveEdit() : setIsEditing(true)
+            }
+            className="h-8 w-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-500 transition"
+          >
+            {isEditing ? (
+              // check icon
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5 text-green-600"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M16.707 5.293a1 1 0 00-1.414 0L8 12.586 4.707 9.293a1 1 0 10-1.414 1.414l4 4a1 1 0 001.414 0l8-8a1 1 0 000-1.414z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            ) : (
+              // x icon
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M10 8.586L4.707 3.293a1 1 0 00-1.414 1.414L8.586 10l-5.293 5.293a1 1 0 001.414 1.414L10 11.414l5.293 5.293a1 1 0 001.414-1.414L11.414 10l5.293-5.293a1 1 0 00-1.414-1.414L10 8.586z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            )}
+          </button>
+        </div>
       </div>
 
-      <BottomConfirmSheet visible={sheetVisible} contact={contact || { name: `${phone}`, phone }} onClose={() => setSheetVisible(false)} onConfirm={onConfirm} />
+      {/* === ERROR TEXT === */}
+      {errorMsg ? (
+        <div className="text-xs text-red-500 mb-3 text-center">{errorMsg}</div>
+      ) : null}
+
+      {/* === VERIFY BUTTON === */}
+      <button
+        onClick={runVerify}
+        disabled={status === "checking"}
+        className={`w-full py-3 rounded-lg text-white font-medium transition ${
+          status === "checking"
+            ? "bg-gray-300 text-gray-600 cursor-not-allowed"
+            : "bg-orange-500 hover:bg-orange-600"
+        }`}
+      >
+        {status === "checking" ? "Checking…" : "Verify"}
+      </button>
+
+      {/* === CONFIRM SHEET === */}
+      <BottomConfirmSheet
+        visible={sheetVisible}
+        contact={{
+          name: contact?.name || "—",
+          phone: formatPhoneDisplay(data?.phone || "") || "—",
+        }}
+        onClose={() => setSheetVisible(false)}
+        onConfirm={handleConfirm}
+      />
     </div>
   );
 }

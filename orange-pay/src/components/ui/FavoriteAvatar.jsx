@@ -2,19 +2,37 @@
 import React from "react";
 
 /**
- * Avatar used in the favorites horizontal strip.
  * Props:
- * - initials: string (one or two chars)
- * - label: string shown under avatar
- * - onClick: handler
+ * - name: full name string
+ * - onClick: function
+ * - size: "sm" | "md" | "lg" (optional)
  */
-export default function FavoriteAvatar({ initials = "U", label = "User", onClick }) {
+export default function FavoriteAvatar({ name = "", onClick = () => {}, size = "md" }) {
+  const firstName = (name || "").split(" ")[0] || "";
+  const initial = (firstName[0] || "").toUpperCase() || "U";
+
+  const sizeMap = {
+    sm: { avatar: "h-8 w-8 text-sm", label: "text-xs" },
+    md: { avatar: "h-10 w-10 text-sm", label: "text-xs" },
+    lg: { avatar: "h-12 w-12 text-base", label: "text-sm" },
+  };
+
+  const s = sizeMap[size] || sizeMap.md;
+
   return (
-    <button onClick={onClick} className="flex-shrink-0 w-20 text-center">
-      <div className="mx-auto h-10 w-10 rounded-full bg-orange-100 flex items-center justify-center text-sm font-semibold text-orange-700">
-        {initials}
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex-shrink-0 w-20 text-center focus:outline-none"
+      aria-label={`Favorite ${name}`}
+      title={name}
+    >
+      <div className={["mx-auto flex items-center justify-center rounded-full bg-orange-100 text-orange-700 font-semibold", s.avatar].join(" ")}>
+        {initial}
       </div>
-      <div className="mt-2 text-xs text-gray-700 truncate">{label}</div>
+      <div className={["mt-2 truncate text-gray-700", s.label].join(" ")}>
+        {firstName}
+      </div>
     </button>
   );
 }
