@@ -2,17 +2,62 @@
 
 import { useEffect, useRef, useState, useMemo } from "react";
 import * as THREE from "three";
+import { useOCRImage } from "../../hooks/api/useOCRImage";
+import ReceiptResultPage from "./ReceiptResult";
 
 export default function Scanning({ image, onDone, onRetake, durationMs = 5000 }) {
+  // ===== STATE MANAGEMENT =====
+  const [showResult, setShowResult] = useState(false);
+  const [receiptData, setReceiptData] = useState(null);
+  
   const frameRef = useRef(null);
   const mountRef = useRef(null);
   const rafRef = useRef(null);
+
   const [progressPct, setProgressPct] = useState(0);
+  const prevPctRef = useRef(0);
+
   const progressRef = useRef(0);
+  const targetRef = useRef(0);
+
+  const onDoneRef = useRef(onDone);
+  useEffect(() => { onDoneRef.current = onDone; }, [onDone]);
+
+  const resultRef = useRef(null);
+
   const [imageDimensions, setImageDimensions] = useState({ width: 1, height: 1 });
   const [imageLoaded, setImageLoaded] = useState(false);
 
-  // Mobile detection & DPR clamp
+  // ===== OCR HOOK =====
+  const {
+    processOCRAsync,
+    ocrProgress,
+    ocrData,
+    isSuccess,
+    isError,
+  } = useOCRImage();
+
+  const apiProgressRef = useRef(0);
+  const apiDoneRef = useRef(false);
+  const apiErrorRef = useRef(null);
+
+  useEffect(() => {
+    apiProgressRef.current = Math.max(0, Math.min(1, (ocrProgress || 0) / 100));
+  }, [ocrProgress]);
+
+  useEffect(() => {
+    apiDoneRef.current = !!isSuccess || (ocrProgress >= 100);
+  }, [isSuccess, ocrProgress]);
+
+  useEffect(() => {
+    apiErrorRef.current = isError ? (ocrData?.error || new Error("OCR failed")) : null;
+  }, [isError, ocrData]);
+
+  useEffect(() => {
+    resultRef.current = ocrData;
+  }, [ocrData]);
+
+  // ===== MOBILE & DPR =====
   const [isMobile, setIsMobile] = useState(false);
   const [pixelRatio, setPixelRatio] = useState(1);
 
@@ -27,7 +72,7 @@ export default function Scanning({ image, onDone, onRetake, durationMs = 5000 })
     return () => window.removeEventListener("resize", check);
   }, []);
 
-  // Load image dimensions
+  // ===== LOAD IMAGE =====
   useEffect(() => {
     setImageLoaded(false);
     const img = new Image();
@@ -42,93 +87,25 @@ export default function Scanning({ image, onDone, onRetake, durationMs = 5000 })
     img.src = image;
   }, [image]);
 
-  // Calculate aspect ratio from actual image
+  // ===== START OCR =====
+  useEffect(() => {
+    if (imageLoaded && image) {
+      apiProgressRef.current = 0;
+      apiDoneRef.current = false;
+      apiErrorRef.current = null;
+      resultRef.current = null;
+      processOCRAsync(image).catch(() => {});
+    }
+  }, [imageLoaded, image, processOCRAsync]);
+
+  // ===== ASPECT RATIO =====
   const containerAspectRatio = useMemo(() => {
     return imageDimensions.width / imageDimensions.height;
   }, [imageDimensions]);
 
-  // ====== DETERMINISTIC RANDOM ======
-  const seeded = useMemo(() => {
-    const cyrb128 = (str) => {
-      let h1 = 1779033703, h2 = 3144134277, h3 = 1013904242, h4 = 2773480762;
-      for (let i = 0, k; i < str.length; i++) {
-        k = str.charCodeAt(i);
-        h1 = h2 ^ Math.imul(h1 ^ k, 597399067);
-        h2 = h3 ^ Math.imul(h2 ^ k, 2869860233);
-        h3 = h4 ^ Math.imul(h3 ^ k, 951274213);
-        h4 = h1 ^ Math.imul(h4 ^ k, 2716044179);
-      }
-      h1 = Math.imul(h3 ^ (h1 >>> 18), 597399067);
-      h2 = Math.imul(h4 ^ (h2 >>> 22), 2869860233);
-      h3 = Math.imul(h1 ^ (h3 >>> 17), 951274213);
-      h4 = Math.imul(h2 ^ (h4 >>> 19), 2716044179);
-      return (h1 ^ h2 ^ h3 ^ h4) >>> 0;
-    };
-    const mulberry32 = (a) => () => {
-      a |= 0; a = (a + 0x6d2b79f5) | 0;
-      let t = Math.imul(a ^ (a >>> 15), 1 | a);
-      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-    };
-    return { cyrb128, mulberry32 };
-  }, []);
+  // ===== HELPERS =====
+  const easeInOutCubic = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
 
-  // ====== GENERATE OCR BLOCKS ======
-  const [blocks, setBlocks] = useState([]);
-  useEffect(() => {
-    const el = frameRef.current;
-    if (!el || !imageLoaded) return;
-
-    const gen = () => {
-      const w = el.clientWidth || 360;
-      const h = el.clientHeight || 640;
-      const seed = seeded.cyrb128(`${image}|${w}|${h}`);
-      const rand = seeded.mulberry32(seed);
-
-      const out = [];
-      const rows = Math.floor(14 + rand() * 8);
-      const minH = Math.max(12, Math.min(26, h * 0.03));
-      const maxH = Math.max(minH + 2, Math.min(34, h * 0.045));
-
-      for (let i = 0; i < rows; i++) {
-        const yN = (i + 0.5) / (rows + 1);
-        const jitter = (rand() - 0.5) * 0.012;
-        const centerN = Math.min(0.98, Math.max(0.02, yN + jitter));
-        const lineHeight = minH + rand() * (maxH - minH);
-
-        const cols = 1 + Math.floor(rand() * 3);
-        let xCursor = 0.06 + rand() * 0.04;
-        for (let c = 0; c < cols; c++) {
-          const remain = 0.94 - xCursor;
-          if (remain < 0.2) break;
-          const wN = Math.max(0.18, Math.min(remain - 0.02, (0.25 + rand() * 0.45) * remain));
-          const gap = 0.02 + rand() * 0.03;
-          out.push({
-            x: xCursor,
-            y: centerN,
-            w: wN,
-            h: lineHeight / h,
-            delayN: rand() * 0.15,
-            glow: 0.5 + rand() * 0.7,
-          });
-          xCursor += wN + gap;
-        }
-      }
-      setBlocks(out);
-    };
-
-    const ro = new ResizeObserver(gen);
-    ro.observe(el);
-    gen();
-    return () => ro.disconnect();
-  }, [image, seeded, imageLoaded]);
-
-  // ====== EASING FUNCTION FOR SMOOTH ANIMATION ======
-  const easeInOutCubic = (t) => {
-    return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-  };
-
-  // ====== GET STATUS TEXT BASED ON PROGRESS ======
   const getStatusText = (progress) => {
     if (progress < 30) return "Membaca struk…";
     if (progress < 70) return "Menganalisis…";
@@ -136,7 +113,7 @@ export default function Scanning({ image, onDone, onRetake, durationMs = 5000 })
     return "Selesai!";
   };
 
-  // ====== THREE.JS SCENE ======
+  // ===== THREE.JS SCENE =====
   useEffect(() => {
     const container = mountRef.current;
     if (!container || !imageLoaded) return;
@@ -181,126 +158,99 @@ export default function Scanning({ image, onDone, onRetake, durationMs = 5000 })
 
     const fragmentShader = `
       precision highp float;
-
       uniform sampler2D uTexture;
       uniform float uTime;
       uniform float uProgress;
       uniform vec2 uResolution;
       uniform vec2 uImageSize;
       uniform vec2 uTexel;
-
       varying vec2 vUv;
 
-      float hash(vec2 p) {
-        return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
-      }
+      float hash(vec2 p){ return fract(sin(dot(p, vec2(127.1,311.7))) * 43758.5453123); }
+      float luma(vec3 c){ return dot(c, vec3(0.299,0.587,0.114)); }
 
-      float luma(vec3 c) {
-        return dot(c, vec3(0.299, 0.587, 0.114));
-      }
-
-      float sobel(vec2 uv) {
+      float sobel(vec2 uv){
         vec2 t = uTexel;
-        float tl = luma(texture2D(uTexture, uv + vec2(-t.x, -t.y)).rgb);
-        float l  = luma(texture2D(uTexture, uv + vec2(-t.x,  0.0)).rgb);
-        float bl = luma(texture2D(uTexture, uv + vec2(-t.x,  t.y)).rgb);
-        float t0 = luma(texture2D(uTexture, uv + vec2( 0.0, -t.y)).rgb);
-        float c0 = luma(texture2D(uTexture, uv).rgb);
-        float b0 = luma(texture2D(uTexture, uv + vec2( 0.0,  t.y)).rgb);
-        float tr = luma(texture2D(uTexture, uv + vec2( t.x, -t.y)).rgb);
-        float r  = luma(texture2D(uTexture, uv + vec2( t.x,  0.0)).rgb);
-        float br = luma(texture2D(uTexture, uv + vec2( t.x,  t.y)).rgb);
-        float gx = -tl - 2.0*l - bl + tr + 2.0*r + br;
-        float gy = -tl - 2.0*t0 - tr + bl + 2.0*b0 + br;
+        float tl=luma(texture2D(uTexture, uv+vec2(-t.x,-t.y)).rgb);
+        float l =luma(texture2D(uTexture, uv+vec2(-t.x, 0.0)).rgb);
+        float bl=luma(texture2D(uTexture, uv+vec2(-t.x, t.y)).rgb);
+        float t0=luma(texture2D(uTexture, uv+vec2( 0.0,-t.y)).rgb);
+        float c0=luma(texture2D(uTexture, uv).rgb);
+        float b0=luma(texture2D(uTexture, uv+vec2( 0.0, t.y)).rgb);
+        float tr=luma(texture2D(uTexture, uv+vec2( t.x,-t.y)).rgb);
+        float r =luma(texture2D(uTexture, uv+vec2( t.x, 0.0)).rgb);
+        float br=luma(texture2D(uTexture, uv+vec2( t.x, t.y)).rgb);
+        float gx=-tl-2.0*l-bl+tr+2.0*r+br;
+        float gy=-tl-2.0*t0-tr+bl+2.0*b0+br;
         return length(vec2(gx, gy));
       }
 
-      vec3 rgbShift(vec2 uv, float dist) {
-        float amp = 0.002 * exp(-abs(dist) * 18.0);
-        vec2 off = vec2(amp, 0.0);
-        float r = texture2D(uTexture, uv + off).r;
-        float g = texture2D(uTexture, uv).g;
-        float b = texture2D(uTexture, uv - off).b;
-        return vec3(r, g, b);
+      vec3 rgbShift(vec2 uv, float dist){
+        float amp=0.002*exp(-abs(dist)*18.0);
+        vec2 off=vec2(amp,0.0);
+        float r=texture2D(uTexture, uv+off).r;
+        float g=texture2D(uTexture, uv).g;
+        float b=texture2D(uTexture, uv-off).b;
+        return vec3(r,g,b);
       }
 
-      // Enhanced text detection
-      float detectText(vec2 uv) {
-        float e = sobel(uv);
-        float l = luma(texture2D(uTexture, uv).rgb);
-        
-        // Text has high edge density + medium luminance
-        float edgeStrength = smoothstep(0.15, 0.35, e);
-        float textLuma = smoothstep(0.2, 0.8, l) * smoothstep(0.8, 0.2, l);
-        
-        return edgeStrength * (0.7 + textLuma * 0.3);
+      float detectText(vec2 uv){
+        float e=sobel(uv);
+        float l=luma(texture2D(uTexture, uv).rgb);
+        float edgeStrength=smoothstep(0.15,0.35,e);
+        float textLuma=smoothstep(0.2,0.8,l)*smoothstep(0.8,0.2,l);
+        return edgeStrength*(0.7+textLuma*0.3);
       }
 
-      void main() {
-        vec2 uv = vUv;
-        
-        if (uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0) {
-          gl_FragColor = vec4(0.0);
-          return;
-        }
+      void main(){
+        vec2 uv=vUv;
+        if(uv.x<0.0||uv.x>1.0||uv.y<0.0||uv.y>1.0){ gl_FragColor=vec4(0.0); return; }
 
-        float prog = clamp(uProgress, 0.0, 1.0);
-        float y = vUv.y;
-        
-        // Scan line parameters
-        float thickness = 0.045;
-        float core = smoothstep(prog - thickness, prog, y) - smoothstep(prog, prog + thickness, y);
-        float glow = exp(-abs(y - prog) * 25.0);
-        float halo = exp(-abs(y - prog) * 8.0) * 0.3;
+        float prog=clamp(uProgress,0.0,1.0);
+        float y=vUv.y;
 
-        vec3 base = rgbShift(uv, y - prog);
-        vec3 color = base;
+        float thickness=0.045;
+        float core=smoothstep(prog-thickness,prog,y)-smoothstep(prog,prog+thickness,y);
+        float glow=exp(-abs(y-prog)*25.0);
+        float halo=exp(-abs(y-prog)*8.0)*0.3;
 
-        float n = hash(uv * (uImageSize + uTime * 8.0)) - 0.5;
+        vec3 base=rgbShift(uv, y-prog);
+        vec3 color=base;
 
-        float scannedMask = step(y, prog);
-        
-        // Text detection for scanned area
-        float textDetected = detectText(uv);
-        float isTextArea = textDetected * scannedMask;
-        
-        // Enhanced contrast for scanned area
-        vec3 boost = color * 1.05 + vec3(0.05, 0.03, 0.02);
-        color = mix(color, boost, scannedMask * 0.4);
-        
-        // Subtle grid on scanned area
-        float gridX = 0.02 * sin((uv.x * uImageSize.x + uTime * 35.0) * 0.015);
-        float gridY = 0.02 * sin((uv.y * uImageSize.y + uTime * 35.0) * 0.015);
-        float grid = (gridX + gridY) * 0.08;
-        color += grid * scannedMask * 0.12;
+        float n=hash(uv*(uImageSize+uTime*8.0))-0.5;
+        float scannedMask=step(y, prog);
 
-        // Edge detection
-        float e = sobel(uv);
-        float edge = smoothstep(0.12, 0.28, e);
-        
-        // Text highlighting - white overlay on detected text
-        vec3 textHighlight = vec3(1.0);
-        float textOverlay = isTextArea * 0.25;
-        color = mix(color, textHighlight, textOverlay);
-        
-        // Edge enhancement - stronger on text areas
-        float edgeBoost = edge * (0.08 * scannedMask + 0.5 * core + 0.2 * halo);
-        edgeBoost += edge * isTextArea * 0.3;
-        color += vec3(edgeBoost);
+        float textDetected=detectText(uv);
+        float isTextArea=textDetected*scannedMask;
 
-        // Scan line effect
-        vec3 scanColor = vec3(1.0, 0.604, 0.145);
-        color += scanColor * (core * 0.8 + glow * 0.22 + halo * 0.85);
-        
-        // Noise on scan line
-        color += n * (core + glow) * 0.1;
+        vec3 boost=color*1.05+vec3(0.05,0.03,0.02);
+        color=mix(color, boost, scannedMask*0.4);
 
-        // Subtle vignette
-        float dist = distance(vUv, vec2(0.5));
-        float vignette = smoothstep(0.98, 0.4, dist);
-        color *= vignette * 0.06 + 0.97;
+        float gridX=0.02*sin((uv.x*uImageSize.x+uTime*35.0)*0.015);
+        float gridY=0.02*sin((uv.y*uImageSize.y+uTime*35.0)*0.015);
+        float grid=(gridX+gridY)*0.08;
+        color+=grid*scannedMask*0.12;
 
-        gl_FragColor = vec4(color, 1.0);
+        float e=sobel(uv);
+        float edge=smoothstep(0.12,0.28,e);
+
+        vec3 textHighlight=vec3(1.0);
+        float textOverlay=isTextArea*0.25;
+        color=mix(color, textHighlight, textOverlay);
+
+        float edgeBoost=edge*(0.08*scannedMask+0.5*core+0.2*halo);
+        edgeBoost+=edge*isTextArea*0.3;
+        color+=vec3(edgeBoost);
+
+        vec3 scanColor=vec3(1.0,0.604,0.145);
+        color+=scanColor*(core*0.8+glow*0.22+halo*0.85);
+        color+=n*(core+glow)*0.1;
+
+        float dist=distance(vUv, vec2(0.5));
+        float vignette=smoothstep(0.98,0.4,dist);
+        color*=vignette*0.06+0.97;
+
+        gl_FragColor=vec4(color,1.0);
       }
     `;
 
@@ -357,21 +307,63 @@ export default function Scanning({ image, onDone, onRetake, durationMs = 5000 })
     const start = performance.now();
     const DURATION = Math.max(1200, durationMs);
 
+    const MAX_SPEED_PER_SEC = 0.9;
+    const MIN_STEP = 0.002;
+
     const animate = (now) => {
-      const t = now - start;
-      const linearProgress = Math.min(t / DURATION, 1);
-      const easedProgress = easeInOutCubic(linearProgress);
-      
-      uniforms.uProgress.value = easedProgress;
+      const elapsed = now - start;
+      const fallback = Math.min(elapsed / DURATION, 1);
+      const apiTarget = apiProgressRef.current;
+      const target = apiTarget > 0 ? apiTarget : fallback;
+      targetRef.current = target;
+
+      const last = progressRef.current;
+      const dt = (animate._lastTs ? (now - animate._lastTs) : 16.6) / 1000;
+      animate._lastTs = now;
+      const diff = target - last;
+      const maxStep = Math.max(MIN_STEP, (MAX_SPEED_PER_SEC * dt) || MIN_STEP);
+      const step = Math.sign(diff) * Math.min(Math.abs(diff), maxStep);
+      const next = Math.min(1, Math.max(0, last + step));
+      progressRef.current = next;
+
+      uniforms.uProgress.value = easeInOutCubic(next);
       uniforms.uTime.value = now * 0.001;
 
-      progressRef.current = easedProgress;
-      setProgressPct(Math.round(linearProgress * 100));
+      const pct = Math.round(next * 100);
+      if (pct !== prevPctRef.current) {
+        prevPctRef.current = pct;
+        setProgressPct(pct);
+      }
 
       renderer.render(scene, camera);
 
-      if (linearProgress < 1) rafRef.current = requestAnimationFrame(animate);
-      else setTimeout(() => onDone && onDone(), 350);
+      const animDone = next >= 0.995;
+      const apiDone = apiDoneRef.current || apiTarget >= 0.995;
+
+      if (animDone && apiDone) {
+        if (!animate._called) {
+          animate._called = true;
+          const payload = apiErrorRef.current
+            ? { error: true, message: apiErrorRef.current?.message || "OCR error" }
+            : (resultRef.current || { success: true });
+          
+          // ✅ FIXED: Add imageUrl to receiptData
+          setTimeout(() => {
+            if (payload.success && payload.items) {
+              setReceiptData({
+                ...payload,
+                imageUrl: image  // ✅ CRITICAL FIX
+              });
+              setShowResult(true);
+            } else {
+              onDoneRef.current?.(payload);
+            }
+          }, 300);
+        }
+        return;
+      }
+
+      rafRef.current = requestAnimationFrame(animate);
     };
 
     rafRef.current = requestAnimationFrame(animate);
@@ -389,23 +381,53 @@ export default function Scanning({ image, onDone, onRetake, durationMs = 5000 })
       }
       placeholder.dispose();
     };
-  }, [image, onDone, durationMs, isMobile, pixelRatio, imageLoaded]);
+  }, [image, imageLoaded, isMobile, pixelRatio, durationMs]);
 
-  // Show loading state
+  // ===== RESULT PAGE HANDLERS =====
+  const handleResultBack = () => {
+    setShowResult(false);
+    if (onRetake) onRetake();
+  };
+
+  const handleResultConfirm = (data) => {
+    if (onDone) {
+      onDone({
+        ...receiptData,
+        selectedItems: data.selectedItems,
+        calculatedSubtotal: data.calculatedSubtotal,
+        finalTotal: data.finalTotal
+      });
+    }
+  };
+
+  // ===== SHOW RESULT PAGE =====
+  if (showResult && receiptData) {
+    return (
+      <ReceiptResultPage
+        receiptData={receiptData}
+        onBack={handleResultBack}
+        onConfirm={handleResultConfirm}
+      />
+    );
+  }
+
+  // ===== LOADING STATE =====
   if (!imageLoaded) {
     return (
-      <div className="w-full min-h-screen flex flex-col items-center justify-center text-black">
-        <div className="flex flex-col items-center gap-4">
+      <div className="w-full flex flex-col items-center justify-center text-black min-h-screen bg-white relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-[#FF9A25]/10 to-[#FFCE52]/5 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-0 w-80 h-80 bg-gradient-to-tr from-[#FF9A25]/8 to-[#FFB452]/5 rounded-full blur-3xl pointer-events-none" />
+        <div className="flex flex-col items-center gap-4 relative z-10">
           <div className="w-12 h-12 border-4 border-[#FF9A25] border-t-transparent rounded-full animate-spin" />
-          <p className="text-black text-sm font-medium">Memuat gambar...</p>
+          <p className="text-gray-800 text-sm font-semibold">Memuat gambar...</p>
         </div>
       </div>
     );
   }
 
+  // ===== SCANNING UI =====
   return (
     <div className="w-full flex flex-col items-center justify-between text-black min-h-screen">
-      {/* Preview Area */}
       <div className="w-full flex items-center justify-center mt-4 sm:mt-8 px-4 sm:px-6 flex-1">
         <div
           ref={frameRef}
@@ -422,12 +444,9 @@ export default function Scanning({ image, onDone, onRetake, durationMs = 5000 })
             draggable={false}
             loading="eager"
           />
-
           <div ref={mountRef} className="absolute inset-0 z-10 w-full h-full" />
-
-          <OverlayOCRBlocks blocks={blocks} progress01={progressRef.current} />
+          <OverlayOCRBlocks progress01={progressRef.current} />
           <CornerFX progress01={progressRef.current} />
-
           <div
             className="absolute inset-0 pointer-events-none z-30"
             style={{
@@ -437,14 +456,13 @@ export default function Scanning({ image, onDone, onRetake, durationMs = 5000 })
         </div>
       </div>
 
-      {/* Progress */}
-      <div className="w-full pb-[max(24px,calc(env(safe-area-inset-bottom)+16px))] px-4 sm:px-6">
+      <div className="w-full pb-[max(24px,calc(env(safe-area-inset-bottom)+16px))] px-4 sm:px-6 relative z-10">
         <div className="mt-6 max-w-sm mx-auto text-center">
-          <p className="text-base sm:text-lg font-semibold mb-3 text-black">{getStatusText(progressPct)}</p>
+          <p className="text-base sm:text-lg font-bold text-gray-800 mb-3">{getStatusText(progressPct)}</p>
 
-          <div className="relative w-full h-3 sm:h-4 rounded-full bg-black/10 overflow-hidden ring-1 ring-black/15">
+          <div className="relative w-full h-3 sm:h-4 rounded-full bg-gray-100 overflow-hidden border-2 border-gray-200 shadow-inner">
             <div
-              className="absolute left-0 top-0 h-full bg-gradient-to-r from-[#FF9A25] via-[#FFB347] to-[#FF9A25] rounded-full transition-[width] duration-100 ease-out"
+              className="absolute left-0 top-0 h-full bg-gradient-to-r from-[#FF9A25] via-[#FFB347] to-[#FF9A25] shadow-lg shadow-[#FF9A25]/30 rounded-full transition-[width] duration-100 ease-out will-change-[width]"
               style={{ width: `${progressPct}%` }}
             />
             <div
@@ -455,11 +473,11 @@ export default function Scanning({ image, onDone, onRetake, durationMs = 5000 })
             />
           </div>
 
-          <p className="mt-2 text-black/80 text-xs sm:text-sm font-medium tabular-nums">{progressPct}%</p>
+          <p className="mt-2 text-gray-600 text-xs sm:text-sm font-semibold tabular-nums">{progressPct}%</p>
         </div>
       </div>
 
-      <style jsx global>{`
+      <style>{`
         @keyframes ocr-shimmer {
           0% { background-position: -200% 0; }
           100% { background-position: 200% 0; }
@@ -473,37 +491,9 @@ export default function Scanning({ image, onDone, onRetake, durationMs = 5000 })
   );
 }
 
-function OverlayOCRBlocks({ blocks, progress01 }) {
+function OverlayOCRBlocks({ progress01 }) {
   return (
     <div className="absolute inset-0 z-20 pointer-events-none">
-      {blocks.map((b, i) => {
-        const hit = progress01 >= b.y - 0.01;
-        const opacity = hit ? 1 : 0;
-        const delayMs = Math.round(60 + b.delayN * 180);
-        const scale = hit ? 1 : 0.985;
-        return (
-          <span
-            key={i}
-            className="absolute rounded-sm sm:rounded-md"
-            style={{
-              left: `${b.x * 100}%`,
-              width: `${b.w * 100}%`,
-              top: `calc(${(b.y - b.h / 2) * 100}%)`,
-              height: `calc(${b.h * 100}%)`,
-              background: "linear-gradient(90deg, rgba(255,255,255,0.75) 25%, rgba(255,255,255,0.9) 50%, rgba(255,255,255,0.75) 75%)",
-              boxShadow: "0 3px 10px rgba(16, 24, 40, 0.15), inset 0 1px 2px rgba(255,255,255,0.7), 0 0 0 1px rgba(255,255,255,0.5)",
-              transform: `translateZ(0) scale(${scale})`,
-              opacity,
-              transition: `opacity 280ms cubic-bezier(0.4, 0.0, 0.2, 1) ${delayMs}ms, transform 300ms cubic-bezier(0.4, 0.0, 0.2, 1) ${delayMs}ms`,
-              backgroundSize: "200% 100%",
-              animation: hit ? `ocr-shimmer ${1100 + Math.round(b.glow * 500)}ms ease-in-out 1` : "none",
-              border: "1px solid rgba(255,255,255,0.6)",
-              backdropFilter: "blur(1px)",
-            }}
-          />
-        );
-      })}
-
       <div
         className="absolute left-0 w-full"
         style={{
@@ -515,7 +505,6 @@ function OverlayOCRBlocks({ blocks, progress01 }) {
         }}
       />
       
-      {/* Subtle glow around scan line */}
       <div
         className="absolute left-0 w-full"
         style={{

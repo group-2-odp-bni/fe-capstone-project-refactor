@@ -39,10 +39,6 @@ Dengan begitu, proses berbagi biaya, pembayaran, dan tanpa perlu menghitung seca
 
   return (
     <div className="min-h-screen w-full bg-white flex flex-col relative overflow-hidden">
-      {/* Background Decoration - Orange Gradient Orbs */}
-      <div className="absolute top-0 right-0 w-72 h-72 md:w-96 md:h-96 bg-gradient-to-br from-[#FF9A25]/10 to-[#FFCE52]/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
-      <div className="absolute bottom-0 left-0 w-64 h-64 md:w-80 md:h-80 bg-gradient-to-tr from-[#FF9A25]/8 to-[#FFB452]/5 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2 pointer-events-none" />
-
       {/* Top bar - Responsive */}
       <div className="px-4 sm:px-6 pt-4 sm:pt-6 pb-3 sm:pb-4 bg-white sticky top-0 z-50">
         <div className="w-full max-w-2xl mx-auto flex items-center justify-between">
@@ -160,9 +156,6 @@ function QuestionCard({ title, content, isExpanded, onToggle, index }) {
             transition: "all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)",
           }}
         >
-          {/* Decorative orange gradient corner */}
-          <div className="absolute top-0 right-0 w-24 h-24 sm:w-32 sm:h-32 bg-gradient-to-br from-[#FF9A25]/15 to-transparent rounded-bl-full" />
-
           {/* Content */}
           <div className="relative z-10">
             <h3 className="text-sm sm:text-base font-bold text-gray-800 mb-3 sm:mb-4 flex items-center gap-2">
