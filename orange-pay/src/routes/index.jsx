@@ -29,6 +29,7 @@ import HistoryTransactionPage from "../pages/HistoryTransactionPage";
 import TopUpPage from "../pages/TopUpPage";
 import { isAuthenticated } from "../services/authService";
 import { RegistrationProvider } from "../context/RegistrationContext";
+import AddWalletPage from "../pages/AddWalletPage";
 
 /* login flow context & step guard */
 import { LoginProvider } from "../context/LoginContext";
@@ -146,7 +147,9 @@ export default function AppRoutes() {
           <Route path="transactions" element={<HistoryTransactionPage />} />
           <Route path="topup" element={<TopUpPage />} />
           <Route path="profile" element={<ProfilePage />} />
-
+          <Route path="wallets">
+            <Route path="new" element={<AddWalletPage />} />
+          </Route>
           {/* ----------- Transfer Flow ----------- */}
           <Route
             path="transfer/*"
@@ -162,9 +165,7 @@ export default function AppRoutes() {
           />
 
           {/* ----------- Reset flow placeholder ----------- */}
-          <Route path="reset">
-            {/* add reset pages later */}
-          </Route>
+          <Route path="reset">{/* add reset pages later */}</Route>
         </Route>
 
         {/* ---------- 404 ---------- */}
