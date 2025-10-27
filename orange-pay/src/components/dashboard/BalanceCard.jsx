@@ -54,7 +54,7 @@ export default function AtomicBalanceCard() {
     if (typeof addWallet !== "function") {
       // fallback to route if hook doesn't expose addWallet
       window.location.href = "/app/wallets/new";
-      return;
+      return; 
     }
     try {
       setCreating(true);
