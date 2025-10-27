@@ -66,8 +66,9 @@ const AddBalanceFromWalletPage = () => {
           <img src="/orangepay_card.svg" alt="logo" className="h-6" />
           <h1 className="text-lg font-semibold">Pilih Sumber Dana</h1>
         </div>
+        
         <Link to="/app/dashboard" className="text-sm text-gray-600 hover:underline">
-          Kembali
+          Back
         </Link>
       </header>
 
