@@ -1,0 +1,9 @@
+version: "3.8"
+
+services:
+  orange-pay-app:
+    build: .
+    container_name: orange-pay-app
+    restart: unless-stopped
+    ports:
+      - "8080:80"
