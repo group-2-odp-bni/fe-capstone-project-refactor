@@ -37,7 +37,7 @@ export default function QuickTransfer() {
     const titleName = metaOrDetails?.name || metaOrDetails?.fullName || metaOrDetails?.displayName || "—";
     navigate("/app/transfer", {
       state: {
-        step: "enter-amount",
+        step: "amount",
         to: {
           name: titleName,
           phone: metaOrDetails?.phone,

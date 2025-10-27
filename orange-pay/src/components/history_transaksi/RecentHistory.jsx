@@ -26,6 +26,7 @@ export default function RecentHistory({ walletId, onExpandChange }) {
   // 📏 POSISI SHEET DINAMIS — MELEKAT PADA BUTTON ATAS
   // =======================================================
   const [sheetTop, setSheetTop] = useState(window.innerHeight * 0.45);
+
   const startY = useRef(0);
   const startTop = useRef(0);
 

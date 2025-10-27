@@ -8,7 +8,6 @@ import TransferStepGuard from "../components/transfer/TransferStepGuard";
 
 import StepSelectContacts from "../components/transfer/StepSelectContacts";
 import StepVerifyContact from "../components/transfer/StepVerifyContact";
-import StepContactDetails from "../components/transfer/StepContactDetails";
 import StepEnterAmount from "../components/transfer/StepEnterAmount";
 import StepConfirm from "../components/transfer/StepConfirm";
 import StepPin from "../components/transfer/StepPin";
@@ -21,7 +20,6 @@ export default function TransferPage() {
 
   const headerTitle = {
     select: "Transfer",
-    details: "Transfer",
     amount: "Transfer",
     confirm: "Transfer",
     pin: "Enter PIN",
@@ -67,12 +65,6 @@ export default function TransferPage() {
           {step === "select" && <StepSelectContacts />}
 
           {step === "verify" && <StepVerifyContact />}
-
-          {step === "details" && (
-            <TransferStepGuard require={{ requireData: ["phone"], step: "details" }}>
-              <StepContactDetails />
-            </TransferStepGuard>
-          )}
 
           {step === "amount" && (
             <TransferStepGuard require={{ requireData: ["phone"], step: "amount" }}>
