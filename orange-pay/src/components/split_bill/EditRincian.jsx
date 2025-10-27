@@ -9,8 +9,10 @@ function parseNumberLoose(v) {
   const n = parseFloat(s);
   return Number.isFinite(n) ? n : 0;
 }
+
 const clampInt = (n, min = 0) =>
   Math.max(min, Number.isFinite(+n) ? Math.floor(+n) : min);
+
 const fmtID = (n) => Number(n || 0).toLocaleString("id-ID");
 
 /* ===== Komponen utama ===== */
@@ -23,11 +25,17 @@ export default function EditRincian({ receiptData, onBack, onSave }) {
       const priceNum = parseNumberLoose(it?.price ?? 0);
       const priceText = priceNum > 0 ? String(priceNum) : "";
       const total = qty * priceNum;
-      return { name: it?.name ?? "", quantity: qty, priceText, total };
+      return { 
+        name: it?.name ?? "", 
+        quantity: qty, 
+        priceText, 
+        total,
+        qtyFocused: false // Track apakah input QTY sedang di-focus
+      };
     });
   });
 
-  // Biaya tambahan (tampil saja, tidak bisa diedit)
+  // Biaya tambahan (read-only di UI ini)
   const [pajakText] = useState(() => {
     const n = parseNumberLoose(receiptData?.pajak ?? receiptData?.tax ?? 0);
     return n !== 0 ? String(n) : "";
@@ -45,47 +53,63 @@ export default function EditRincian({ receiptData, onBack, onSave }) {
     return n !== 0 ? String(n) : "";
   });
 
-  // Modal + Validasi tampilan
   const [deleteIdx, setDeleteIdx] = useState(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const [showErrors, setShowErrors] = useState(false); // merah hanya setelah tekan "Konfirmasi"
+  const [showErrors, setShowErrors] = useState(false);
 
-  // Derived totals
-  const subtotal = useMemo(() => items.reduce((s, it) => s + it.total, 0), [items]);
+  const subtotal = useMemo(
+    () => items.reduce((s, it) => s + it.total, 0),
+    [items]
+  );
   const pajakNum = parseNumberLoose(pajakText);
   const serviceNum = parseNumberLoose(serviceText);
   const discountNum = parseNumberLoose(discountText);
   const otherNum = parseNumberLoose(otherText);
   const total = subtotal + pajakNum + serviceNum + discountNum + otherNum;
 
-  // Handlers
   const updateItem = (idx, patch) => {
     setItems((prev) => {
       const next = [...prev];
       const old = next[idx];
       const name = patch.name !== undefined ? String(patch.name) : old.name;
-      const quantity = patch.quantity !== undefined ? clampInt(patch.quantity, 1) : old.quantity;
+
+      // qty: ambil hanya digit
+      let quantity = old.quantity;
+      if (patch.quantity !== undefined) {
+        const digits = String(patch.quantity).replace(/\D/g, "");
+        quantity = digits === "" ? 1 : clampInt(digits, 1);
+      }
+
       const priceText =
-        patch.priceText !== undefined ? sanitizeNumericText(patch.priceText) : old.priceText;
+        patch.priceText !== undefined
+          ? sanitizeNumericText(patch.priceText)
+          : old.priceText;
+
+      const qtyFocused = patch.qtyFocused !== undefined ? patch.qtyFocused : old.qtyFocused;
 
       const priceNum = parseNumberLoose(priceText);
       const total = quantity * priceNum;
-      next[idx] = { name, quantity, priceText, total };
+
+      next[idx] = { name, quantity, priceText, total, qtyFocused };
       return next;
     });
   };
 
   const addItem = () =>
-    setItems((p) => [...p, { name: "", quantity: 1, priceText: "", total: 0 }]);
+    setItems((p) => [
+      ...p,
+      { name: "", quantity: 1, priceText: "", total: 0, qtyFocused: false },
+    ]);
 
   const askRemoveItem = (idx) => setDeleteIdx(idx);
+  
   const confirmRemoveItem = () => {
     if (deleteIdx === null) return;
     setItems((p) => p.filter((_, i) => i !== deleteIdx));
     setDeleteIdx(null);
   };
 
-  // Klik "Konfirmasi" → validasi dulu
+  // -------------- KONFIRMASI --------------
   const openConfirmSave = () => {
     const hasEmptyName = items.some((it) => !(it.name || "").trim());
     if (hasEmptyName) {
@@ -107,7 +131,7 @@ export default function EditRincian({ receiptData, onBack, onSave }) {
           total: Math.max(0, quantity * Math.max(0, price)),
         };
       })
-      .filter((it) => it.name); // kirim hanya yang namanya terisi
+      .filter((it) => it.name);
 
     onSave?.({
       ...receiptData,
@@ -132,10 +156,18 @@ export default function EditRincian({ receiptData, onBack, onSave }) {
             aria-label="Kembali"
           >
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-              <path d="M15 18l-6-6 6-6" stroke="#1F2937" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              <path
+                d="M15 18l-6-6 6-6"
+                stroke="#1F2937"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
             </svg>
           </button>
-          <h1 className="text-base md:text-lg font-bold text-gray-800">Ubah Rincian</h1>
+          <h1 className="text-base md:text-lg font-bold text-gray-900">
+            Ubah Rincian
+          </h1>
           <div className="w-10" />
         </div>
       </div>
@@ -143,68 +175,105 @@ export default function EditRincian({ receiptData, onBack, onSave }) {
       {/* Content */}
       <div className="flex-1 overflow-auto px-4 py-5">
         <div className="mx-auto w-full max-w-screen-sm md:max-w-2xl space-y-4">
-
-          {/* ======= 1 CARD: Daftar Item + Ringkasan ======= */}
           <div className="bg-white rounded-2xl p-4 md:p-5 border border-gray-200 shadow-sm">
             {/* Daftar item */}
             <div className="space-y-4">
               {items.map((it, idx) => {
                 const isError = showErrors && !(it.name || "").trim();
+                
+                // Tampilkan dengan "x" jika tidak sedang focus
+                const displayQty = it.qtyFocused ? String(it.quantity) : `${it.quantity}x`;
+
                 return (
                   <div key={idx} className="space-y-2">
-                    {/* Grid agar kolom tegak lurus & sejajar */}
-                    <div className="grid grid-cols-[60px_1fr_auto] md:grid-cols-[68px_1fr_auto] gap-x-2.5 md:gap-x-3 gap-y-2 items-start">
-                      {/* Qty */}
-                      <div className="col-span-1">
+                    {/* Grid: Qty | Nama (wide) | Hapus  → baris 2: (spacer) | Harga | Total */}
+                    <div className="grid grid-cols-[60px_1fr_auto] md:grid-cols-[68px_2fr_auto] gap-x-3 gap-y-2 items-start">
+                      {/* Qty - tampil 'x' hanya saat blur */}
+                      <div>
                         <div
-                          className={`h-11 md:h-12 w-full grid place-items-center rounded-xl bg-white border shadow-[0_2px_9px_rgba(0,0,0,.08)] ${isError ? "border-red-500" : "border-gray-200"}`}
+                          className={`h-11 md:h-12 w-full grid place-items-center rounded-xl bg-white border shadow-[0_2px_9px_rgba(0,0,0,.08)] ${
+                            isError ? "border-red-500" : "border-gray-200"
+                          }`}
                         >
                           <input
-                            type="number"
+                            type="text"
                             inputMode="numeric"
-                            pattern="[0-9]*"
-                            value={it.quantity}
-                            onChange={(e) => updateItem(idx, { quantity: e.target.value })}
-                            className={`w-full h-full bg-transparent text-center font-bold outline-none text-sm md:text-base ${isError ? "text-red-600" : "text-gray-700"}`}
+                            value={displayQty}
+                            onFocus={() => updateItem(idx, { qtyFocused: true })}
+                            onBlur={() => updateItem(idx, { qtyFocused: false })}
+                            onChange={(e) => {
+                              // Hanya ambil digit, abaikan karakter lain
+                              const digits = e.target.value.replace(/\D/g, "");
+                              updateItem(idx, { quantity: digits || "1" });
+                            }}
+                            className={`w-full h-full bg-transparent text-center font-bold outline-none text-[13px] ${
+                              isError ? "text-red-600" : "text-gray-700"
+                            }`}
                             aria-label="Jumlah"
                           />
                         </div>
                       </div>
 
                       {/* Nama item */}
-                      <div className="col-span-1">
+                      <div>
                         <input
                           type="text"
                           value={it.name}
-                          onChange={(e) => updateItem(idx, { name: e.target.value })}
+                          onChange={(e) =>
+                            updateItem(idx, { name: e.target.value })
+                          }
                           placeholder="Nama pesanan"
-                          className={`w-full h-11 md:h-12 rounded-xl bg-white border px-3 md:px-4 text-gray-900 font-semibold tracking-wide uppercase text-xs md:text-sm shadow-[0_2px_9px_rgba(0,0,0,.08)] focus:outline-none ${isError ? "border-red-500 focus:ring-2 focus:ring-red-300" : "border-gray-200 focus:ring-2 focus:ring-[#FF9A25]/30"}`}
+                          className={`w-full h-11 md:h-12 rounded-xl bg-white border px-3 md:px-4 text-gray-900 font-semibold tracking-wide uppercase text-[13px] shadow-[0_2px_9px_rgba(0,0,0,.08)] focus:outline-none ${
+                            isError
+                              ? "border-red-500 focus:ring-2 focus:ring-red-300"
+                              : "border-gray-200 focus:ring-2 focus:ring-[#FF9A25]/30"
+                          }`}
                           aria-label="Nama item"
                         />
                       </div>
 
-                      {/* Hapus */}
-                      <div className="col-span-1 flex justify-end">
+                      {/* Hapus (kanan) */}
+                      <div className="row-span-2 flex items-start justify-end">
                         <button
                           type="button"
                           onClick={() => askRemoveItem(idx)}
-                          className="shrink-0 w-10 h-10 md:w-11 md:h-11 rounded-full grid place-items-center bg-white border border-red-200 text-red-500 shadow-[0_2px_9px_rgba(0,0,0,.08)] hover:bg-red-50 active:scale-95 transition"
+                          className="shrink-0 w-10 h-10 md:w-11 md:h-11 rounded-full grid place-items-center bg-white border border-[#FFB18A] text-[#FF5A1F] shadow-md hover:bg-orange-50 active:scale-95 transition"
                           aria-label="Hapus item"
                           title="Hapus item"
                         >
                           <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                            <path d="M3 6h18M8 6l1-2h6l1 2M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                            <path d="M10 11v6M14 11v6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                            <path
+                              d="M3 6h18M8 6l1-2h6l1 2M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
+                            <path
+                              d="M10 11v6M14 11v6"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                            />
                           </svg>
                         </button>
                       </div>
 
+                      {/* Baris kedua */}
+                      <div />{/* spacer untuk kolom qty */}
+
                       {/* Harga */}
-                      <div className={`col-start-2 col-end-3`}>
+                      <div className="grid grid-cols-[1fr_auto] gap-x-2 gap-y-1 items-center">
                         <div
-                          className={`flex h-10 md:h-11 rounded-xl bg-white border shadow-[0_2px_9px_rgba(0,0,0,.08)] items-center justify-end px-3 md:px-4 relative ${isError ? "border-red-500" : "border-gray-200"}`}
+                          className={`flex h-10 md:h-11 rounded-xl bg-white border shadow-[0_2px_9px_rgba(0,0,0,.08)] items-center justify-end px-3 md:px-4 relative flex-1 ${
+                            isError ? "border-red-500" : "border-gray-200"
+                          }`}
                         >
-                          <span className={`absolute left-3 text-xs md:text-sm font-semibold ${isError ? "text-red-500" : "text-gray-500"}`}>
+                          <span
+                            className={`absolute left-3 text-[12px] font-semibold ${
+                              isError ? "text-red-500" : "text-gray-500"
+                            }`}
+                          >
                             Rp
                           </span>
                           <input
@@ -212,22 +281,36 @@ export default function EditRincian({ receiptData, onBack, onSave }) {
                             inputMode="decimal"
                             value={it.priceText}
                             placeholder="0"
-                            onChange={(e) => updateItem(idx, { priceText: e.target.value })}
-                            onBlur={(e) => updateItem(idx, { priceText: normalizeMoneyText(e.target.value) })}
-                            className={`w-full bg-transparent text-right font-bold outline-none text-sm md:text-base pl-6 ${isError ? "text-red-600" : "text-gray-800"}`}
+                            onChange={(e) =>
+                              updateItem(idx, { priceText: e.target.value })
+                            }
+                            onBlur={(e) =>
+                              updateItem(idx, {
+                                priceText: normalizeMoneyText(e.target.value),
+                              })
+                            }
+                            className={`w-full bg-transparent text-right font-bold outline-none text-[13px] pl-6 ${
+                              isError ? "text-red-600" : "text-gray-800"
+                            }`}
                             aria-label="Harga"
                           />
                         </div>
-                        {isError && (
-                          <p className="pt-1 text-[11px] md:text-xs text-red-600 italic">Nama pesanan wajib diisi</p>
-                        )}
-                      </div>
 
-                      {/* Total */}
-                      <div className="col-start-3 col-end-4 flex items-center justify-end">
-                        <div className="h-10 md:h-11 w-[90px] md:w-[110px] rounded-xl bg-white border border-gray-200 text-[#FF9A25] font-extrabold grid place-items-center px-3 md:px-4 text-sm md:text-base shadow-[0_2px_9px_rgba(0,0,0,.06)]">
+                        {/* Total per item */}
+                        <div
+                          className={`h-10 md:h-11 min-w-[100px] rounded-xl bg-white border ${
+                            isError ? "border-red-500" : "border-gray-200"
+                          } text-[#FF9A25] font-extrabold grid place-items-center px-3 md:px-4 text-[13px] shadow-[0_2px_9px_rgba(0,0,0,.06)]`}
+                        >
                           {fmtID(it.total)}
                         </div>
+
+                        {/* Pesan error di bawahnya, melebar 2 kolom */}
+                        {isError && (
+                          <p className="col-span-2 pt-1 text-[12px] italic text-red-600 text-right font-bold">
+                            Silahkan isi nama pesanan Anda
+                          </p>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -239,11 +322,16 @@ export default function EditRincian({ receiptData, onBack, onSave }) {
                 <button
                   type="button"
                   onClick={addItem}
-                  className="w-full h-12 rounded-xl border border-[#F0A24A] text-[#E5963A] bg-white font-semibold text-sm md:text-base flex items-center justify-center gap-3 shadow-[0_2px_10px_rgba(229,150,58,.15)] hover:shadow-[0_4px_14px_rgba(229,150,58,.22)] active:translate-y-[1px] transition"
+                  className="w-full h-12 rounded-xl border border-[#F0A24A] text-[#E5963A] bg-white font-semibold text-[13px] flex items-center justify-center gap-3 shadow-[0_2px_10px_rgba(229,150,58,.15)] hover:shadow-[0_4px_14px_rgba(229,150,58,.22)] active:translate-y-[1px] transition"
                 >
                   <span className="inline-grid place-items-center w-7 h-7 rounded-full bg-[#FBD3A7]">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                      <path d="M12 5v14M5 12h14" stroke="#E5963A" strokeWidth="2.5" strokeLinecap="round" />
+                      <path
+                        d="M12 5v14M5 12h14"
+                        stroke="#E5963A"
+                        strokeWidth="2.5"
+                        strokeLinecap="round"
+                      />
                     </svg>
                   </span>
                   Tambah pesanan
@@ -251,7 +339,7 @@ export default function EditRincian({ receiptData, onBack, onSave }) {
               </div>
             </div>
 
-            {/* Ringkasan (read-only) — JUMLAHKAN DI DALAM CARD YANG SAMA */}
+            {/* Ringkasan */}
             <div className="mt-5 space-y-2.5">
               <SummaryRow label="Subtotal" value={fmtID(subtotal)} />
               {pajakNum !== 0 && <SummaryRow label="Pajak" value={fmtID(pajakNum)} />}
@@ -271,14 +359,13 @@ export default function EditRincian({ receiptData, onBack, onSave }) {
                 />
               )}
               <div className="flex justify-between items-center pt-3 md:pt-4 border-t border-gray-200">
-                <span className="font-extrabold text-gray-900 text-base md:text-lg">Jumlah total</span>
-                <span className="font-extrabold text-xl md:text-2xl">
-                  Rp {fmtID(total)}
+                <span className="font-extrabold text-gray-900 text-[13px]">
+                  Jumlah total
                 </span>
+                <span className="font-extrabold text-base">{fmtID(total)}</span>
               </div>
             </div>
           </div>
-          {/* ======= /1 CARD ======= */}
         </div>
       </div>
 
@@ -287,7 +374,7 @@ export default function EditRincian({ receiptData, onBack, onSave }) {
         <div className="mx-auto w-full max-w-screen-sm md:max-w-2xl">
           <button
             onClick={openConfirmSave}
-            className="w-full h-12 md:h-14 rounded-xl text-white font-bold text-sm md:text-base bg-gradient-to-r from-[#FF9A25] to-[#FF7A25] shadow-lg shadow-[#FF9A25]/30 hover:shadow-xl hover:shadow-[#FF9A25]/40 active:translate-y-[1px] transition"
+            className="w-full h-12 rounded-xl text-white font-bold text-[14px] bg-gradient-to-r from-[#FF9A25] to-[#FF7A25] shadow-lg shadow-[#FF9A25]/30 hover:shadow-xl hover:shadow-[#FF9A25]/40 active:translate-y-[1px] transition"
           >
             Konfirmasi
           </button>
@@ -296,20 +383,23 @@ export default function EditRincian({ receiptData, onBack, onSave }) {
 
       {/* MODAL: Hapus Item */}
       <Modal open={deleteIdx !== null} onClose={() => setDeleteIdx(null)}>
-        <div className="w-[90vw] max-w-xs bg-white rounded-xl shadow-lg border border-gray-200 p-5">
+        <div
+          className="w-[90vw] max-w-xs bg-white rounded-xl shadow-lg border border-gray-200 p-5"
+          onClick={(e) => e.stopPropagation()}
+        >
           <h3 className="text-center text-base md:text-lg font-bold text-gray-900 mb-4">
             Apakah Anda Yakin <br className="hidden md:block" /> Menghapus Item ini ?
           </h3>
-        <div className="flex items-center justify-center gap-3">
+          <div className="flex items-center justify-center gap-3">
             <button
               onClick={confirmRemoveItem}
-              className="px-5 py-2 rounded-full font-semibold text-white bg-[#E5963A] hover:opacity-95 active:scale-95 transition shadow-[0_2px_10px_rgba(229,150,58,.25)]"
+              className="px-5 py-2 rounded-full font-semibold text-white text-[13px] bg-[#E5963A] hover:opacity-95 active:scale-95 transition shadow-[0_2px_10px_rgba(229,150,58,.25)]"
             >
               Iya
             </button>
             <button
               onClick={() => setDeleteIdx(null)}
-              className="px-5 py-2 rounded-full font-semibold text-[#E5963A] border border-[#E5963A] bg-white hover:bg-orange-50 active:scale-95 transition"
+              className="px-5 py-2 rounded-full font-semibold text-[13px] text-[#E5963A] border border-[#E5963A] bg-white hover:bg-orange-50 active:scale-95 transition"
             >
               Tidak
             </button>
@@ -317,26 +407,28 @@ export default function EditRincian({ receiptData, onBack, onSave }) {
         </div>
       </Modal>
 
-      {/* MODAL: Konfirmasi Perubahan (muncul hanya bila valid) */}
+      {/* MODAL: Konfirmasi Perubahan */}
       <Modal open={!!confirmOpen} onClose={() => setConfirmOpen(false)}>
-        <div className="w-[90vw] max-w-xs bg-white rounded-xl shadow-lg border border-gray-200 p-5">
+        <div
+          className="w-[90vw] max-w-xs bg-white rounded-xl shadow-lg border border-gray-200 p-5"
+          onClick={(e) => e.stopPropagation()}
+        >
           <h3 className="text-center text-base md:text-lg font-bold text-gray-900 mb-2">
             Konfirmasi Perubahan ?
           </h3>
-          <p className="text-center text-gray-500 text-xs md:text-sm mb-5">
-            Setelah dikonfirmasi, perubahan akan <br className="hidden md:block" />
-            langsung berlaku di split bill ini
+          <p className="text-center text-gray-500 text-[12px] italic mb-5">
+            Setelah dikonfirmasi, perubahan akan langsung berlaku di split bill ini
           </p>
           <div className="flex items-center justify-center gap-3">
             <button
               onClick={doSave}
-              className="px-5 py-2 rounded-full font-semibold text-white bg-[#E5963A] hover:opacity-95 active:scale-95 transition shadow-[0_2px_10px_rgba(229,150,58,.25)]"
+              className="px-5 py-2 rounded-full font-semibold text-white text-[13px] bg-[#E5963A] hover:opacity-95 active:scale-95 transition shadow-[0_2px_10px_rgba(229,150,58,.25)]"
             >
               Konfirmasi
             </button>
             <button
               onClick={() => setConfirmOpen(false)}
-              className="px-5 py-2 rounded-full font-semibold text-[#E5963A] border border-[#E5963A] bg-white hover:bg-orange-50 active:scale-95 transition"
+              className="px-5 py-2 rounded-full font-semibold text-[13px] text-[#E5963A] border border-[#E5963A] bg-white hover:bg-orange-50 active:scale-95 transition"
             >
               Tidak
             </button>
@@ -351,9 +443,18 @@ export default function EditRincian({ receiptData, onBack, onSave }) {
 function sanitizeNumericText(s) {
   return String(s ?? "").replace(/[^\d\-,.]/g, "");
 }
+
 function normalizeMoneyText(s) {
   const raw = sanitizeNumericText(s).trim();
-  if (raw === "" || raw === "-" || raw === "," || raw === "." || raw === "-," || raw === "-.") return "";
+  if (
+    raw === "" ||
+    raw === "-" ||
+    raw === "," ||
+    raw === "." ||
+    raw === "-," ||
+    raw === "-."
+  )
+    return "";
   const normalized = raw.replace(/,/g, ".");
   const n = parseFloat(normalized);
   if (!Number.isFinite(n) || n === 0) return "";
@@ -362,9 +463,13 @@ function normalizeMoneyText(s) {
 
 function SummaryRow({ label, value, valueClass = "" }) {
   return (
-    <div className="flex justify-between items-center">
-      <span className="text-xs md:text-sm font-semibold text-gray-700">{label}</span>
-      <span className={`text-sm md:text-base font-bold text-gray-900 ${valueClass}`}>Rp {value}</span>
+    <div className="flex justify-between text-gray-700">
+      <span className="text-[13px]">{label}</span>
+      <span
+        className={`tabular-nums text-[13px] font-bold text-gray-900 ${valueClass}`}
+      >
+        {value}
+      </span>
     </div>
   );
 }
@@ -372,8 +477,13 @@ function SummaryRow({ label, value, valueClass = "" }) {
 function Modal({ open, onClose, children }) {
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center" aria-modal="true" role="dialog">
-      <div className="absolute inset-0 bg-black/60" onClick={onClose} />
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center"
+      onClick={onClose}
+      aria-modal="true"
+      role="dialog"
+    >
+      <div className="absolute inset-0 bg-black/60" />
       <div className="relative z-10">{children}</div>
     </div>
   );

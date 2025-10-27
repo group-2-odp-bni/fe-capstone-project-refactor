@@ -1,28 +1,20 @@
 "use client";
 import { useMemo, useState } from "react";
+import SearchInput from "../ui/SearchInput";
 
-/**
- * SelectContacts.jsx
- * UI “Pilih Anggota” mirip mockup:
- * - Header dengan back, judul, dan ikon bantuan
- * - Info jumlah anggota dipilih
- * - Kartu “Bayar ke” (default: Kamu) dan “Anggota” (dashed divider)
- * - Search bar
- * - Section: Rekomendasi, Kontakmu – Pengguna OrangePay, dan Kontakmu
- * - Checkbox di kanan setiap baris kontak
- * - Footer tombol Lanjut (aktif jika ada yang terpilih)
- *
- * Props:
- * - currentUser: { id, name, phoneMasked, avatarText }
- * - contacts: Array<{ id, name, phone, isOrangePayUser?: boolean }>
- * - recommendedIds?: string[]
- * - initialSelectedIds?: string[]
- * - onBack?: () => void
- * - onHelp?: () => void
- * - onConfirm?: ({ payerId, selectedIds }) => void
- */
+/* ================= Utils ================= */
+const getContactId = (c = {}) =>
+  c.id ?? c.accountId ?? c.phone ?? String(c.name || "");
+
+function maskPhoneLast4(p = "") {
+  const d = (p || "").replace(/[^\d]/g, "");
+  if (d.length < 4) return `*${d}`;
+  return `*${d.slice(-4)}`;
+}
+
+/* ================= Main Component ================= */
 export default function SelectContacts({
-  currentUser = { id: "me", name: "Kamu", phoneMasked: "*796", avatarText: "K" },
+  currentUser = { id: "me", name: "Kamu", phoneMasked: "*7195", avatarText: "K" },
   contacts = [],
   recommendedIds = [],
   initialSelectedIds = [],
@@ -31,11 +23,11 @@ export default function SelectContacts({
   onConfirm,
 }) {
   const [query, setQuery] = useState("");
-  const [payerId, setPayerId] = useState(currentUser?.id || "me");
   const [selected, setSelected] = useState(new Set(initialSelectedIds));
 
   const q = query.trim().toLowerCase();
 
+  /* ---------- Filtering & grouping ---------- */
   const filtered = useMemo(() => {
     const match = (c) => {
       if (!q) return true;
@@ -45,43 +37,63 @@ export default function SelectContacts({
       );
     };
 
-    const recos = contacts.filter((c) => recommendedIds.includes(c.id) && match(c));
-    const orange = contacts.filter((c) => c.isOrangePayUser && match(c));
-    const others = contacts.filter(
-      (c) => !c.isOrangePayUser && !recommendedIds.includes(c.id) && match(c)
+    const recoIdSet = new Set(recommendedIds);
+    const allContacts = contacts.filter(match);
+    const favorites = contacts.filter(
+      (c) => recoIdSet.has(getContactId(c)) && match(c)
     );
 
-    return { recos, orange, others };
+    return { allContacts, favorites };
   }, [contacts, q, recommendedIds]);
 
-  const toggle = (id) => {
+  const selectedContacts = useMemo(
+    () => contacts.filter((c) => selected.has(getContactId(c))),
+    [contacts, selected]
+  );
+
+  const selectedCount = selected.size;
+
+  /* ---------- Selection handlers ---------- */
+  const toggleByContact = (c) => {
+    const id = getContactId(c);
+    if (!id) return;
     setSelected((prev) => {
       const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
+      next.has(id) ? next.delete(id) : next.add(id);
       return next;
     });
   };
 
-  const selectedCount = selected.size;
-
-  const handleConfirm = () => {
-    if (!selectedCount) return;
-    onConfirm?.({ payerId, selectedIds: Array.from(selected) });
+  const removeFromSelection = (id) => {
+    setSelected((prev) => {
+      const n = new Set(prev);
+      n.delete(id);
+      return n;
+    });
   };
 
+  const handleSelectConfirm = () => {
+    if (!selectedCount) return;
+    onConfirm?.({
+      payerId: currentUser?.id || "me",
+      selectedIds: Array.from(selected),
+      selectedContacts,
+    });
+  };
+
+  /* ================= SELECT STEP (Layout) ================= */
   return (
     <div className="min-h-screen bg-white flex flex-col">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-4 pt-3 pb-2 sticky top-0 z-10">
-        <div className="max-w-sm md:max-w-md mx-auto">
+      <div className="bg-white border-b border-gray-200 px-4 pt-3 pb-2 sticky top-0 z-10 backdrop-blur-sm bg-white/95">
+        <div className="w-full max-w-2xl mx-auto">
           <div className="flex items-center justify-between">
             <button
               onClick={onBack}
-              className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-gray-100 active:scale-95 transition"
+              className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-gray-100 active:scale-95 transition-all duration-200"
               aria-label="Kembali"
             >
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
                 <path
                   d="M15 18l-6-6 6-6"
                   stroke="#1F2937"
@@ -91,13 +103,15 @@ export default function SelectContacts({
                 />
               </svg>
             </button>
-            <h1 className="text-base md:text-lg font-bold text-gray-900">Pilih Anggota</h1>
+            <h1 className="text-base md:text-lg font-bold text-gray-900">
+              Pilih Anggota
+            </h1>
             <button
               onClick={onHelp}
-              className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-gray-100 active:scale-95 transition"
+              className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-gray-100 active:scale-95 transition-all duration-200"
               aria-label="Bantuan"
             >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
                 <circle cx="12" cy="12" r="10" stroke="#9CA3AF" strokeWidth="2" />
                 <path
                   d="M9.5 9a2.5 2.5 0 115 0c0 1.5-2.5 2-2.5 3.5"
@@ -109,126 +123,163 @@ export default function SelectContacts({
               </svg>
             </button>
           </div>
-          <p className="text-xs text-gray-500 mt-1">{selectedCount} anggota dipilih</p>
+          <p className="text-xs text-gray-500 mt-1">
+            {selectedCount} anggota dipilih
+          </p>
         </div>
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-auto px-4 py-4">
-        <div className="max-w-sm md:max-w-md mx-auto space-y-4">
-          {/* Bayar ke / Anggota cards */}
-          <div className="bg-white border border-gray-200 rounded-xl p-3">
-            <div className="grid grid-cols-2 gap-3">
-              {/* Bayar ke */}
-              <div className="relative">
-                <div className="text-[13px] text-gray-500 mb-1">Bayar ke</div>
-                <button
-                  type="button"
-                  onClick={() => setPayerId(currentUser.id)}
-                  className={`w-full h-[72px] rounded-xl border ${
-                    payerId === currentUser.id ? "border-[#FF9A25]" : "border-gray-200"
-                  } bg-white grid grid-cols-[48px_1fr] items-center gap-3 px-3 shadow-sm`}
-                >
-                  <div className="grid place-items-center">
-                    <div className="w-10 h-10 rounded-full bg-[#FFE8D1] text-[#E5963A] grid place-items-center font-bold">
-                      {currentUser.avatarText || "K"}
+      <div className="flex-1 px-4 py-4 overflow-y-auto pb-24">
+        <div className="w-full max-w-2xl mx-auto space-y-4">
+          {/* Container utama dengan border */}
+          <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
+            {/* Section: Bayar ke & Anggota */}
+            <div className="p-5 relative">
+              {/* Garis putus-putus vertikal (posisi sesuai desain) */}
+              <div
+                aria-hidden
+                className="pointer-events-none absolute left-[38%] top-0 bottom-0 w-px border-l-2 border-dashed border-gray-500"
+              />
+              <div className="grid grid-cols-[38%_62%]">
+                {/* Bayar ke */}
+                <div className="pr-3 flex flex-col items-center">
+                  <h3 className="text-sm font-semibold text-gray-900 mb-3 w-full text-center">
+                    Bayar ke
+                  </h3>
+                  <div className="flex flex-col items-center justify-center py-2">
+                    <div className="w-16 h-16 md:w-[72px] md:h-[72px] rounded-full border-2 border-[#FFB469] bg-gradient-to-br from-[#FFD4A3] to-[#FFB469] flex items-center justify-center shadow-md mb-2">
+                      <svg className="w-8 h-8 md:w-9 md:h-9" viewBox="0 0 24 24" fill="none">
+                        <circle cx="12" cy="8" r="3.5" stroke="white" strokeWidth="1.8" />
+                        <path d="M5 19c0-3.9 3.1-7 7-7s7 3.1 7 7" stroke="white" strokeWidth="1.8" strokeLinecap="round" />
+                      </svg>
+                    </div>
+                    <div className="min-w-0 text-center">
+                      <div className="text-xs font-semibold text-gray-900 truncate">
+                        {currentUser?.name || "Kamu"}
+                      </div>
+                      <div className="text-xs text-gray-500 truncate">
+                        {currentUser?.phoneMasked || "*7195"}
+                      </div>
                     </div>
                   </div>
-                  <div className="text-left">
-                    <div className="text-sm font-semibold text-gray-900 leading-tight">Kamu</div>
-                    <div className="text-[11px] text-gray-500">
-                      {currentUser.phoneMasked || "*796"}
-                    </div>
+                </div>
+
+                {/* Anggota */}
+                <div className="pl-4">
+                  <h3 className="text-sm font-semibold text-gray-900 mb-3">
+                    Anggota
+                  </h3>
+                  <div className="flex items-center gap-3 overflow-x-auto py-2 scrollbar-hide min-h-[90px]">
+                    {selectedContacts.length === 0 ? (
+                      <div className="text-xs text-gray-400 py-4 mx-auto">Belum ada anggota</div>
+                    ) : (
+                      selectedContacts.map((c) => {
+                        const id = getContactId(c);
+                        return (
+                          <MemberCard
+                            key={id}
+                            name={c.name}
+                            phone={c.phone}
+                            onRemove={() => removeFromSelection(id)}
+                          />
+                        );
+                      })
+                    )}
                   </div>
-                </button>
-
-                {/* dashed divider */}
-                <div className="hidden md:block absolute top-0 right-[-12px] h-full border-r border-dashed border-gray-300" />
-              </div>
-
-              {/* Anggota label area */}
-              <div>
-                <div className="text-[13px] text-gray-500 mb-1">Anggota</div>
-                <div className="h-[72px] rounded-xl border border-gray-200 bg-gray-50 grid place-items-center text-gray-400 text-sm">
-                  Pilih dari kontak
                 </div>
               </div>
             </div>
+
+            {/* Garis putus-putus horizontal */}
+            <div className="h-0 border-t-2 border-dashed border-gray-500" aria-hidden />
+
+            {/* Search field */}
+            <div className="p-4">
+              <SearchInput
+                value={query}
+                onChange={(v) => setQuery(typeof v === "string" ? v : v?.target?.value ?? "")}
+                placeholder="Cari nama atau no HP"
+                inputMode="tel"
+                className="w-full h-11 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF9A25] focus:border-transparent pl-10 pr-3"
+                leftIcon={
+                  <svg className="w-5 h-5 text-gray-400" viewBox="0 0 24 24" fill="none">
+                    <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="2" />
+                    <path d="M20 20l-4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                  </svg>
+                }
+              />
+            </div>
+
+            {/* Daftar Rekomendasi (tetap mengikuti desain) */}
+            <div className="px-4">
+              <div className="text-sm font-semibold text-gray-900 mb-2">Rekomendasi</div>
+            </div>
+            <div className="px-2">
+              {filtered.favorites.length === 0 ? (
+                <div className="px-4 py-4 text-xs text-gray-400">Tidak ada rekomendasi</div>
+              ) : (
+                filtered.favorites.map((f, i) => {
+                  const id = getContactId(f);
+                  const checked = selected.has(id);
+                  return (
+                    <ContactRowWithCheck
+                      key={id || i}
+                      contact={f}
+                      checked={checked}
+                      onToggle={() => toggleByContact(f)}
+                    />
+                  );
+                })
+              )}
+            </div>
+
+            {/* Daftar Kontak – SCROLL VERTIKAL KHUSUS */}
+            <div className="px-4 pt-3">
+              <div className="text-sm font-semibold text-gray-900 mb-2">
+                Kontakku – Pengguna OrangePay
+              </div>
+            </div>
+            {/* Wrap daftar utama dengan max-height + overflow-y-auto */}
+            <div className="px-2 pb-4">
+              <div className="max-h-[380px] overflow-y-auto scrollbar-thin pr-1">
+                {filtered.allContacts.length === 0 ? (
+                  <div className="px-4 py-6 text-center text-xs text-gray-400">
+                    Tidak ada kontak ditemukan
+                  </div>
+                ) : (
+                  filtered.allContacts.map((c, i) => {
+                    const id = getContactId(c);
+                    const checked = selected.has(id);
+                    return (
+                      <ContactRowWithCheck
+                        key={id || i}
+                        contact={c}
+                        checked={checked}
+                        onToggle={() => toggleByContact(c)}
+                      />
+                    );
+                  })
+                )}
+              </div>
+            </div>
           </div>
-
-          {/* Search */}
-          <div className="relative">
-            <input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Cari nama atau no HP"
-              className="w-full h-11 pl-10 pr-3 rounded-xl border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#FF9A25]/30 focus:border-[#FF9A25] shadow-sm"
-            />
-            <svg
-              className="absolute left-3 top-1/2 -translate-y-1/2"
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-            >
-              <circle cx="11" cy="11" r="7" stroke="#9CA3AF" strokeWidth="2" />
-              <path d="M20 20l-3.5-3.5" stroke="#9CA3AF" strokeWidth="2" strokeLinecap="round" />
-            </svg>
-          </div>
-
-          {/* Sections */}
-          {filtered.recos.length > 0 && (
-            <Section title="Rekomendasi">
-              {filtered.recos.map((c) => (
-                <ContactRow
-                  key={c.id}
-                  contact={c}
-                  checked={selected.has(c.id)}
-                  onToggle={() => toggle(c.id)}
-                />
-              ))}
-            </Section>
-          )}
-
-          {filtered.orange.length > 0 && (
-            <Section title="Kontakmu – Pengguna OrangePay">
-              {filtered.orange.map((c) => (
-                <ContactRow
-                  key={c.id}
-                  contact={c}
-                  checked={selected.has(c.id)}
-                  onToggle={() => toggle(c.id)}
-                />
-              ))}
-            </Section>
-          )}
-
-          {filtered.others.length > 0 && (
-            <Section title="Kontakmu">
-              {filtered.others.map((c) => (
-                <ContactRow
-                  key={c.id}
-                  contact={c}
-                  checked={selected.has(c.id)}
-                  onToggle={() => toggle(c.id)}
-                />
-              ))}
-            </Section>
-          )}
         </div>
       </div>
 
-      {/* Footer */}
-      <div className="bg-white border-t border-gray-200 px-4 py-4 sticky bottom-0">
-        <div className="max-w-sm md:max-w-md mx-auto">
+      {/* Floating Confirm Button */}
+      <div className="sticky bottom-0 bg-white border-t border-gray-200 p-4 shadow-lg">
+        <div className="w-full max-w-2xl mx-auto">
           <button
+            onClick={handleSelectConfirm}
             disabled={!selectedCount}
-            onClick={handleConfirm}
-            className={`w-full h-12 rounded-xl text-white font-semibold bg-gradient-to-r from-[#FF9A25] to-[#FF7A25] hover:shadow-lg hover:shadow-[#FF9A25]/30 active:scale-[0.98] transition-all ${
-              selectedCount ? "opacity-100" : "opacity-60 cursor-not-allowed"
+            className={`w-full h-12 rounded-xl text-base font-semibold text-white transition-colors duration-200 active:scale-[0.98] ${
+              selectedCount
+                ? "bg-[#FF9A25] hover:bg-[#FF8800] shadow-md shadow-[#FF9A25]/50"
+                : "bg-gray-300 cursor-not-allowed"
             }`}
           >
-            Lanjut
+            Konfirmasi {selectedCount > 0 && `(${selectedCount})`}
           </button>
         </div>
       </div>
@@ -236,48 +287,76 @@ export default function SelectContacts({
   );
 }
 
-/* ---------- Subcomponents ---------- */
-function Section({ title, children }) {
-  return (
-    <div className="bg-white rounded-xl border border-gray-200 p-2.5 shadow-sm">
-      <div className="px-1 pb-1.5 text-[13px] font-semibold text-gray-800">{title}</div>
-      <div className="divide-y divide-gray-100">{children}</div>
-    </div>
-  );
-}
+/* ================= Subcomponents ================= */
 
-function ContactRow({ contact, checked, onToggle }) {
+// Baris kontak dengan checkbox kotak di kanan
+function ContactRowWithCheck({ contact, checked, onToggle }) {
+  const name = contact.name || "Unknown";
+  const phone = contact.phone || "";
+  const initial = (name || phone || "?").charAt(0).toUpperCase();
+
   return (
-    <label className="flex items-center gap-3 py-2.5 px-1 cursor-pointer select-none">
-      {/* Avatar */}
-      <div className="w-9 h-9 rounded-full bg-gray-200 grid place-items-center text-gray-700 font-bold text-sm">
-        {(contact.name || contact.phone || "?").charAt(0).toUpperCase()}
+    <button
+      type="button"
+      role="checkbox"
+      aria-checked={checked}
+      onClick={onToggle}
+      className="w-full text-left py-3 px-2 flex items-center justify-between border-b border-gray-50 hover:bg-gray-50 transition-colors duration-200 group"
+    >
+      <div className="flex items-center gap-3 flex-1 min-w-0">
+        <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-sm font-semibold text-gray-700 flex-shrink-0">
+          {initial}
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="text-sm font-medium text-gray-900 truncate">{name}</div>
+          <div className="text-xs text-gray-500 truncate">{phone}</div>
+        </div>
       </div>
 
-      {/* Name + phone */}
-      <div className="flex-1 min-w-0">
-        <div className="text-sm font-medium text-gray-900 truncate">
-          {contact.name || contact.phone}
-        </div>
-        {contact.name && (
-          <div className="text-[11px] text-gray-500 truncate">{formatPhone(contact.phone)}</div>
+      <div className="flex-shrink-0 ml-3">
+        {checked ? (
+          <div className="w-7 h-7 rounded-md bg-[#FF9A25] border-2 border-[#FF9A25] flex items-center justify-center shadow-sm">
+            <svg className="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none">
+              <path d="M5 13l4 4L19 7" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </div>
+        ) : (
+          <div className="w-7 h-7 rounded-md border-2 border-gray-300 bg-white group-hover:border-[#FF9A25]/60" />
         )}
       </div>
-
-      {/* Checkbox */}
-      <input
-        type="checkbox"
-        checked={checked}
-        onChange={onToggle}
-        className="w-5 h-5 rounded-md border-gray-300 text-[#FF9A25] focus:ring-[#FF9A25]"
-      />
-    </label>
+    </button>
   );
 }
 
-/* ---------- Utils ---------- */
-function formatPhone(p) {
-  if (!p) return "";
-  const digits = String(p).replace(/[^\d+]/g, "");
-  return digits;
+// Member Card - UKURAN SAMA DENGAN "KAMU", HORIZONTAL SCROLL
+function MemberCard({ name = "", phone = "", onRemove }) {
+  const initial = (name || phone || "?").charAt(0).toUpperCase();
+
+  return (
+    <div className="flex-shrink-0 flex flex-col items-center">
+      <div className="relative mb-2">
+        {/* Avatar sama dengan Kamu */}
+        <div className="w-16 h-16 md:w-[72px] md:h-[72px] rounded-full border-2 border-[#FFB469] bg-gradient-to-br from-[#FFD4A3] to-[#FFB469] flex items-center justify-center shadow-md">
+          <svg className="w-8 h-8 md:w-9 md:h-9" viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="8" r="3" stroke="white" strokeWidth="1.7" />
+            <path d="M6 19c0-3.3 2.7-6 6-6s6 2.7 6 6" stroke="white" strokeWidth="1.7" strokeLinecap="round" />
+          </svg>
+        </div>
+        {/* Remove Button */}
+        <button
+          onClick={onRemove}
+          className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-gray-200 hover:bg-gray-300 text-gray-600 flex items-center justify-center shadow transition-all duration-200 active:scale-90"
+          aria-label="Hapus"
+        >
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+            <path d="M18 6L6 18M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      <div className="text-center max-w-[70px]">
+        <div className="text-xs font-semibold text-gray-900 truncate">{name || "—"}</div>
+        <div className="text-xs text-gray-500">{maskPhoneLast4(phone)}</div>
+      </div>
+    </div>
+  );
 }
