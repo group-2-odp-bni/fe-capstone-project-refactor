@@ -4,41 +4,59 @@ import useRecentTransfer from "../../hooks/api/useRecentTransfer";
 import MonthChips, { MONTHS } from "../history_transaksi/MonthChips";
 
 // =======================================================
-// ⚙️ KONSTANTA & UTILITAS
+// ⚙️ UTILITAS
 // =======================================================
-
 const fmt = (n) => (Number(n) || 0).toLocaleString("id-ID");
 const getMonthShort = (d) => MONTHS[d.getMonth()];
 const isIncomeType = (type = "") =>
   String(type).toLowerCase().includes("terima") ||
   String(type).toLowerCase().includes("masuk");
 
-// Ukuran dan batas posisi bottom sheet
-const HEADER_HEIGHT_PX = 64;
-const TOP_OFFSET_PX = 12;
-const EXPANDED_TOP_PX = HEADER_HEIGHT_PX + TOP_OFFSET_PX;
 const SNAP_THRESHOLD_RATIO = 0.25;
 
 // =======================================================
 // ⚛️ KOMPONEN: RECENT HISTORY
 // =======================================================
-
 export default function RecentHistory({ walletId, onExpandChange }) {
   const navigate = useNavigate();
   const { users = [], loading } = useRecentTransfer({ walletId });
   const [activeMonth, setActiveMonth] = useState(getMonthShort(new Date()));
 
-  // posisi awal sheet (sekitar 40% dari tinggi layar)
-  const initialTop = useMemo(
-    () => Math.max(window.innerHeight * 0.6, EXPANDED_TOP_PX),
-    []
-  );
+  // =======================================================
+  // 📏 POSISI SHEET DINAMIS — MELEKAT PADA BUTTON ATAS
+  // =======================================================
+  const [sheetTop, setSheetTop] = useState(window.innerHeight * 0.45);
 
-  const [sheetTop, setSheetTop] = useState(initialTop);
   const startY = useRef(0);
   const startTop = useRef(0);
 
-  // Lock scroll body saat sheet aktif
+  // Deteksi posisi tombol terdekat di atas (baik arrowButton atau group)
+  useEffect(() => {
+    const adjustSheetPosition = () => {
+      // Coba cari tombol group (+ / user) atau arrowButton
+      const buttonGroup =
+        document.querySelector(".button-group") ||
+        document.querySelector(".arrow-button-container");
+
+      if (buttonGroup) {
+        const rect = buttonGroup.getBoundingClientRect();
+        const newTop = rect.bottom + 8; // jarak 8px di bawah tombol
+        setSheetTop(newTop);
+      } else {
+        // fallback kalau belum ketemu elemen
+        setSheetTop(window.innerHeight * 0.45);
+      }
+    };
+
+    // Jalankan setelah render
+    setTimeout(adjustSheetPosition, 100);
+
+    // Jalankan ulang saat resize supaya tetap responsif
+    window.addEventListener("resize", adjustSheetPosition);
+    return () => window.removeEventListener("resize", adjustSheetPosition);
+  }, []);
+
+  // Lock scroll body saat aktif
   useEffect(() => {
     document.body.style.overflow = "hidden";
     return () => (document.body.style.overflow = "auto");
@@ -47,7 +65,6 @@ export default function RecentHistory({ walletId, onExpandChange }) {
   // =======================================================
   // 🧩 FILTER & NORMALISASI DATA
   // =======================================================
-
   const filteredUsers = useMemo(() => {
     if (!walletId || !Array.isArray(users)) return users;
     return users.filter((u) => String(u.walletId) === String(walletId));
@@ -96,7 +113,6 @@ export default function RecentHistory({ walletId, onExpandChange }) {
   // =======================================================
   // 🖐️ HANDLER DRAG
   // =======================================================
-
   const handleTouchStart = (e) => {
     startY.current = e.touches[0].clientY;
     startTop.current = sheetTop;
@@ -104,9 +120,9 @@ export default function RecentHistory({ walletId, onExpandChange }) {
 
   const handleTouchMove = (e) => {
     const delta = e.touches[0].clientY - startY.current;
-    const BOTTOM_LIMIT_PX = window.innerHeight * 0.6;
+    const BOTTOM_LIMIT_PX = window.innerHeight * 0.65;
     const newTop = Math.min(
-      Math.max(startTop.current + delta, EXPANDED_TOP_PX),
+      Math.max(startTop.current + delta, 80), // 80px minimal dari atas
       BOTTOM_LIMIT_PX
     );
     setSheetTop(newTop);
@@ -114,22 +130,21 @@ export default function RecentHistory({ walletId, onExpandChange }) {
 
   const handleTouchEnd = () => {
     const isNowExpanded = sheetTop < window.innerHeight * SNAP_THRESHOLD_RATIO;
-    const newTop = isNowExpanded ? EXPANDED_TOP_PX : initialTop;
+    const newTop = isNowExpanded ? 80 : sheetTop;
     setSheetTop(newTop);
     onExpandChange?.(isNowExpanded);
   };
 
   const handleDragLineClick = () => {
-    const isCurrentlyExpanded = sheetTop < initialTop - 1;
-    const newTop = isCurrentlyExpanded ? initialTop : EXPANDED_TOP_PX;
+    const isCurrentlyExpanded = sheetTop < window.innerHeight * 0.2;
+    const newTop = isCurrentlyExpanded ? window.innerHeight * 0.45 : 80;
     setSheetTop(newTop);
     onExpandChange?.(!isCurrentlyExpanded);
   };
 
   // =======================================================
-  // 💸 KLIK ITEM UNTUK KE BUKTI TRANSFER
+  // 💸 NAVIGASI KE BUKTI TRANSFER
   // =======================================================
-
   const handleTransactionClick = (item) => {
     navigate(`/app/wallets/${walletId}/transfer/${item.id}`, {
       state: { transfer: item },
@@ -137,9 +152,8 @@ export default function RecentHistory({ walletId, onExpandChange }) {
   };
 
   // =======================================================
-  // 💸 RENDER ITEM TRANSAKSI
+  // 💳 ITEM TRANSAKSI
   // =======================================================
-
   const renderTransactionItem = (item) => {
     const isIncome = isIncomeType(item.type);
     const sign = isIncome ? "+" : "−";
@@ -178,12 +192,11 @@ export default function RecentHistory({ walletId, onExpandChange }) {
   // =======================================================
   // 🧱 RENDER UTAMA
   // =======================================================
-
   return (
     <section className="relative bg-transparent min-h-screen overflow-hidden">
       <div
         className="fixed inset-x-0 bottom-0 z-50 bg-white rounded-t-3xl border-t border-gray-200 shadow-xl flex flex-col transition-[top] duration-300 ease-in-out"
-        style={{ top: sheetTop }}
+        style={{ top: `${sheetTop}px` }}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
@@ -194,7 +207,7 @@ export default function RecentHistory({ walletId, onExpandChange }) {
           className="w-12 h-1.5 bg-gray-300 rounded-full mx-auto mt-3 cursor-pointer active:scale-95 transition"
         ></div>
 
-        {/* Isi scrollable */}
+        {/* Isi konten scroll */}
         <div className="flex-1 overflow-y-auto px-5 pb-6 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
           <div className="mt-3 mb-2">
             <MonthChips activeMonth={activeMonth} onChange={setActiveMonth} />

@@ -41,21 +41,24 @@ export default function HistoryTransactionPage() {
 
   return (
     <DynamicShell>
-      <div className="space-y-4 md:space-y-6">
+      <div className="space-y-4 md:space-y-6 relative pb-20">
+        {/* ===== Header ===== */}
         <PageHeader>{pageTitle}</PageHeader>
 
-        {/* ✅ BalanceCard tampil di atas */}
+        {/* ===== Balance Card ===== */}
         <div className="-mt-2 md:-mt-3">
           <BalanceCard walletId={walletId} />
         </div>
 
-        {/* ✅ Jika kartu utama → tampilkan ArrowButton */}
+        {/* ===== Tombol atas ===== */}
         {isMainCard ? (
-          <div className="mt-2 md:mt-3">
+          // Jika kartu utama → Arrow Button
+          <div className="mt-2 md:mt-3 flex justify-center arrow-button-container">
             <ArrowButton />
           </div>
         ) : (
-          <div className="flex justify-center gap-3 mt-2 md:mt-4">
+          // Jika bukan utama → tombol tambah & user
+          <div className="flex justify-center gap-3 mt-2 md:mt-4 button-group">
             {/* Tombol Tambah */}
             <button
               onClick={handleAddPerson}
@@ -74,7 +77,7 @@ export default function HistoryTransactionPage() {
           </div>
         )}
 
-        {/* ✅ History */}
+        {/* ===== Bottom Sheet (Recent History) ===== */}
         <RecentHistory
           walletId={mappedWalletId}
           onExpandChange={(expanded) =>
