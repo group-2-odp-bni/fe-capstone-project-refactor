@@ -8,6 +8,7 @@ export default function TopUpPage() {
   return (
     <DynamicShell>
       <PageHeader>Topup</PageHeader>
+      <TopUpFlow />
     </DynamicShell>
   );
 }

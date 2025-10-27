@@ -4,21 +4,22 @@ import { useNavigate, useLocation } from "react-router-dom";
 import Header from "../components/Header";
 import { useTransfer } from "../context/TransferContext";
 
+import TransferStepGuard from "../components/transfer/TransferStepGuard";
+
 import StepSelectContacts from "../components/transfer/StepSelectContacts";
-import StepContactDetails from "../components/transfer/StepContactDetails";
+import StepVerifyContact from "../components/transfer/StepVerifyContact";
 import StepEnterAmount from "../components/transfer/StepEnterAmount";
 import StepConfirm from "../components/transfer/StepConfirm";
 import StepPin from "../components/transfer/StepPin";
 import StepSuccess from "../components/transfer/StepSuccess";
 
 export default function TransferPage() {
-  const { step, prevStep, reset } = useTransfer();
+  const { step, prevStep, reset, goBack } = useTransfer();
   const navigate = useNavigate();
   const location = useLocation();
 
   const headerTitle = {
     select: "Transfer",
-    details: "Transfer",
     amount: "Transfer",
     confirm: "Transfer",
     pin: "Enter PIN",
@@ -26,13 +27,24 @@ export default function TransferPage() {
   }[step] || "Transfer";
 
   const handleBack = () => {
-    // If inside flow (not at the first step), go to previous step
-    if (step && step !== "select") {
+    // If we're at the first step, clear flow and go back to dashboard
+    if (step === "select") {
+      reset();
+      navigate("/app/dashboard");
+      return;
+    }
+
+    // Otherwise prefer history-aware goBack; fallback to prevStep.
+    if (typeof goBack === "function") {
+      goBack();
+      return;
+    }
+    if (typeof prevStep === "function") {
       prevStep();
       return;
     }
 
-    // Otherwise, user is at the first step — clear flow and go back to dashboard
+    // As a last fallback, clear and navigate
     reset();
     navigate("/app/dashboard");
   };
@@ -44,15 +56,39 @@ export default function TransferPage() {
   return (
     <div className="p-6">
       <Header title={headerTitle} onBack={handleBack} showBack centerTitle />
+
       {isSuccessPath ? (
         <StepSuccess />
       ) : (
         <>
+          {/* Select and Verify are entry steps — Verify is not recorded in history when you navigate there */}
           {step === "select" && <StepSelectContacts />}
-          {step === "details" && <StepContactDetails />}
-          {step === "amount" && <StepEnterAmount />}
-          {step === "confirm" && <StepConfirm />}
-          {step === "pin" && <StepPin />}
+
+          {step === "verify" && <StepVerifyContact />}
+
+          {step === "amount" && (
+            <TransferStepGuard require={{ requireData: ["phone"], step: "amount" }}>
+              <StepEnterAmount />
+            </TransferStepGuard>
+          )}
+
+          {step === "confirm" && (
+            <TransferStepGuard require={{ requireData: ["phone", "amount"], step: "confirm" }}>
+              <StepConfirm />
+            </TransferStepGuard>
+          )}
+
+          {step === "pin" && (
+            <TransferStepGuard require={{ requireData: ["phone", "amount"], step: "pin" }}>
+              <StepPin />
+            </TransferStepGuard>
+          )}
+
+          {step === "success" && (
+            <TransferStepGuard require={{ requireData: ["phone", "amount"], step: "success" }}>
+              <StepSuccess />
+            </TransferStepGuard>
+          )}
         </>
       )}
     </div>

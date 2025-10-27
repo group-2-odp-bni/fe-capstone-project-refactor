@@ -1,6 +1,9 @@
 import React, { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useLoginFlow } from "../../context/LoginFlowContext";
+import BackButton from "../common/BackButton";
+import PhoneLayoutBackground from "../PhoneLayoutBackground";
+import MobileShell from "../layout/MobileShell";
 
 export default function LoginPhone() {
   const nav = useNavigate();
@@ -35,16 +38,14 @@ export default function LoginPhone() {
   };
 
   return (
-    <div className="flex-1 bg-[#FF9A25]" relative>
-      <button
-        onClick={() => nav("/welcome")}
-        aria-label="Back"
-        className="absolute left-4 top-4 w-9 h-9 grid place-items-center rounded-full bg-white text-[#FF9A25] shadow-md font-semibold"
-      >
-        🡨
-      </button>
-      <div className="h-28" />
-      <section className="flex-2 bg-white rounded-t-3xl px-6 pb-[env(safe-area-inset-bottom)] -mt-10 min-h-[100vh]">
+
+    
+
+    <div className="flex-1 bg-[#FF9A25] pt-4">
+      <BackButton />
+      
+      <div className="h-30" />
+      <section className="flex-2 bg-white rounded-t-3xl px-6 pb-[env(safe-area-inset-bottom)] -mt-10 min-h-dvh">
         <div className="flex justify-center pt-6">
           <img src="/Orangepay.svg" alt="OrangePay" className="h-12" />
         </div>

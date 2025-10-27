@@ -1,61 +1,74 @@
 // src/components/transfer/TransferStepGuard.jsx
-import React, { useEffect } from "react";
+import React, { useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTransfer } from "../../context/TransferContext";
 
 /**
  * TransferStepGuard
- * Props:
- *  - require: { step?: string, requireData?: string[] }
- *    - step: minimal step name expected (e.g. "confirm" or "pin")
- *    - requireData: array of data keys that must be present (e.g. ["phone","amount"])
- *  - redirectTo: path to redirect when checks fail (default: "/app/transfer")
  *
- * Usage:
- * <TransferStepGuard require={{ step: 'pin', requireData: ['phone','amount','stepUpToken'] }}>
- *    <PinPage />
- * </TransferStepGuard>
+ * Props:
+ *  - require: { step?: string, requireData?: string[], allowBack?: boolean }
+ *    - step: minimal step name expected (e.g. "pin")
+ *    - requireData: array of data keys that must be present (e.g. ["phone","amount"])
+ *    - allowBack: if true, don't block browser back navigation to earlier steps
+ *  - redirectTo: path to redirect when checks fail (default: "/app/transfer")
  */
-export default function TransferStepGuard({ require: requirement = {}, redirectTo = "/app/transfer", children }) {
+export default function TransferStepGuard({
+  require: requirement = {},
+  redirectTo = "/app/transfer",
+  children,
+}) {
   const { step, data } = useTransfer();
   const navigate = useNavigate();
 
+  // destructure requirement into stable pieces
+  const reqStep = requirement?.step || null;
+  const reqKeys = Array.isArray(requirement?.requireData) ? requirement.requireData : [];
+  const allowBack = Boolean(requirement?.allowBack);
+
+  // compute a stable string to use as dep when require keys change
+  const reqKeysSignature = useMemo(() => reqKeys.join("|"), [reqKeys.join("|")]); // harmless guard
+
+  // check required data keys
+  const missingKeys = useMemo(() => {
+    if (!reqKeys || reqKeys.length === 0) return [];
+    return reqKeys.filter((k) => {
+      const v = data?.[k];
+      return v === undefined || v === null || (typeof v === "string" && v.trim() === "");
+    });
+  }, [data, reqKeysSignature]); // only re-evaluates when data or reqKeysSignature change
+
   useEffect(() => {
-    // If nothing to check, allow
-    if (!requirement) return;
+    // nothing to check
+    if (!reqStep && (!reqKeys || reqKeys.length === 0)) return;
 
-    // 1) check required data keys
-    if (Array.isArray(requirement.requireData) && requirement.requireData.length > 0) {
-      const missing = requirement.requireData.filter((k) => {
-        const v = data?.[k];
-        // treat empty string / null / undefined as missing
-        return v === undefined || v === null || (typeof v === "string" && v.trim() === "");
-      });
-      if (missing.length > 0) {
-        // redirect to base transfer page (or custom redirectTo)
-        navigate(redirectTo, { replace: true });
-        return;
-      }
+    // If any required data missing -> redirect
+    if (missingKeys.length > 0) {
+      navigate(redirectTo, { replace: true });
+      return;
     }
 
-    // 2) check step ordering (optional)
-    if (requirement.step && typeof requirement.step === "string") {
-      // if the current step is earlier than required step, redirect
-      const ordering = ["select", "details", "amount", "confirm", "pin", "success"];
+    // If a step requirement provided -> check ordering
+    if (reqStep) {
+      const ordering = ["select", "verify", "amount", "confirm", "pin", "success"];
       const currentIndex = ordering.indexOf(step);
-      const requiredIndex = ordering.indexOf(requirement.step);
-      if (requiredIndex === -1) {
-        // unknown requirement -> allow
-        return;
-      }
+      const requiredIndex = ordering.indexOf(reqStep);
+
+      // if unknown required step, allow by default
+      if (requiredIndex === -1) return;
+
+      // if current step is before the required step -> redirect
       if (currentIndex === -1 || currentIndex < requiredIndex) {
-        // we are before the required step; redirect
-        navigate(redirectTo, { replace: true });
+        // If allowBack is true, don't block navigation for earlier steps (useful when verify is forward-only)
+        if (!allowBack) {
+          navigate(redirectTo, { replace: true });
+        }
         return;
       }
     }
-    // all good -> do nothing
-  }, [requirement, data, step, navigate, redirectTo]);
+    // all good -> allow rendering children
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, missingKeys.join(","), reqStep, allowBack, redirectTo, navigate]);
 
   return <>{children}</>;
 }

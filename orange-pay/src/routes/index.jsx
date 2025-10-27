@@ -14,6 +14,7 @@ import OtpRegisterPage from "../pages/OtpRegisterPage";
 import SetPinPage from "../pages/SetPinPage";
 import WelcomePage from "../pages/WelcomePage";
 import LoginPage from "../pages/LoginPage";
+import ProfilePage from "../pages/ProfilePage";
 
 import LoginPhone from "../components/login/LoginPhone";
 import OtpStage from "../components/login/OtpStage";
@@ -27,6 +28,9 @@ import DashboardPage from "../pages/DashboardPage";
 import HistoryTransactionPage from "../pages/HistoryTransactionPage";
 import TopUpPage from "../pages/TopUpPage";
 import { isAuthenticated } from "../services/authService";
+import AddWalletPage from "../pages/AddWalletPage";
+import AddBalanceFromWalletPage from "../pages/AddBalanceFromWalletPageNew";
+
 
 /* login flow context & step guard */
 import { LoginFlowProvider } from "../context/LoginFlowContext";
@@ -36,6 +40,7 @@ import RequireLoginStep from "./RequireLoginStep";
 import { TransferProvider } from "../context/TransferContext";
 import TransferPage from "../pages/TransferPage";
 import AssignMemberPage from "../pages/AssignMemberPage";
+
 /* ----------------- ProtectedRoute ----------------- */
 function ProtectedRoute() {
   const loc = useLocation();
@@ -180,7 +185,7 @@ export default function AppRoutes() {
           <Route path="dashboard" element={<DashboardPage />} />
           <Route path="transactions" element={<HistoryTransactionPage />} />
           <Route path="topup" element={<TopUpPage />} />
-
+            
           {/* === TESTING ROUTE (tanpa param): buka /app/members-test === */}
           <Route
             path="members-test"
@@ -192,7 +197,12 @@ export default function AppRoutes() {
             path="wallets/:walletId/members"
             element={<AssignMemberPage />}
           />
-
+              
+          <Route path="profile" element={<ProfilePage />} />
+          <Route path="wallets">
+            <Route path="new" element={<AddWalletPage />} />
+            <Route path=":walletId" element={<HistoryTransactionPage />} /> {/* <— tambahan */}
+          </Route>
           {/* ----------- Transfer Flow ----------- */}
           <Route
             path="transfer/*"
@@ -212,6 +222,11 @@ export default function AppRoutes() {
         </Route>
 
         {/* ---------- 404 ---------- */}
+        {/* Standalone protected route for Add Balance From Wallet (accessible at /add-balance-from-wallet) */}
+        <Route path="/add-balance-from-wallet" element={<ProtectedRoute />}>
+          <Route index element={<AddBalanceFromWalletPage />} />
+        </Route>
+
         <Route path="*" element={<NotFound />} />
       </Routes>
     </BrowserRouter>
