@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import Swal from "sweetalert2"; 
+//import Swal from "sweetalert2"; 
 export default function usePinSetupLogic() {
   const navigate = useNavigate();
   const { state } = useLocation();
