@@ -39,8 +39,7 @@ import RequireLoginStep from "./RequireLoginStep";
 /* transfer flow */
 import { TransferProvider } from "../context/TransferContext";
 import TransferPage from "../pages/TransferPage";
-
-
+import AssignMemberPage from "../pages/AssignMemberPage";
 
 /* ----------------- ProtectedRoute ----------------- */
 function ProtectedRoute() {
@@ -186,6 +185,19 @@ export default function AppRoutes() {
           <Route path="dashboard" element={<DashboardPage />} />
           <Route path="transactions" element={<HistoryTransactionPage />} />
           <Route path="topup" element={<TopUpPage />} />
+            
+          {/* === TESTING ROUTE (tanpa param): buka /app/members-test === */}
+          <Route
+            path="members-test"
+            element={
+              <AssignMemberPage walletIdOverride="d69f4f9d-ec91-4d43-8db0-3006185c1090" />
+            }
+          />
+          <Route
+            path="wallets/:walletId/members"
+            element={<AssignMemberPage />}
+          />
+              
           <Route path="profile" element={<ProfilePage />} />
           <Route path="wallets">
             <Route path="new" element={<AddWalletPage />} />
