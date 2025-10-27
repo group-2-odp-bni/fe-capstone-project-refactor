@@ -179,7 +179,12 @@ export default function AtomicBalanceCard({ initialWalletId = null }) {
                     />
 
                     {/* CTASection is purely UI — pass only links and drag ref */}
-                    <CTASection links={linksWithWallet} walletId={card.id} isDraggingRef={isDraggingRef} />
+                    <CTASection
+                      links={linksWithWallet}
+                      walletId={card.id}
+                      type={card.type}             // <-- pass card.type
+                      isDraggingRef={extras?.isDraggingRef} // <-- pass dragging ref so transfer is blocked during drag
+                    />
                   </div>
                 </div>
               </GradientCardShell>
