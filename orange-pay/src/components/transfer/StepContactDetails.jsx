@@ -31,6 +31,8 @@ export default function StepContactDetails() {
           Back
         </button>
         <button
+
+
           onClick={() => setStep("amount")}
           className="flex-1 py-3 rounded-lg bg-orange-500 text-white"
         >

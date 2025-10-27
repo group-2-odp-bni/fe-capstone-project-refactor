@@ -2,15 +2,17 @@
 import { useMemo, useState, useEffect } from "react";
 import EditRincian from "./EditRincian";
 import CameraPage from "./CameraPage";
+import SelectContacts from "./SelectContacts"; // ⬅️ NEW
 
 export default function ReceiptResult({
   receiptData,
   onBack,
-  onConfirm,
+  onConfirm, // dipanggil setelah user pilih kontak di step berikutnya
 }) {
   const [showEditPage, setShowEditPage] = useState(false);
   const [showCameraPage, setShowCameraPage] = useState(false);
-  const [showImagePopup, setShowImagePopup] = useState(false); // ✅ New: Image popup state
+  const [showContacts, setShowContacts] = useState(false); // ⬅️ NEW
+  const [showImagePopup, setShowImagePopup] = useState(false);
   const [imageAspect, setImageAspect] = useState(9 / 16);
 
   const [editableData, setEditableData] = useState(receiptData);
@@ -20,7 +22,7 @@ export default function ReceiptResult({
 
   const receiptImage = editableData?.imageUrl || receiptData?.imageUrl || null;
 
-  // Calculate actual image aspect ratio
+  // Hitung aspek gambar
   useEffect(() => {
     if (receiptImage) {
       const img = new Image();
@@ -32,15 +34,15 @@ export default function ReceiptResult({
     }
   }, [receiptImage]);
 
-  // ✅ Prevent body scroll when popup is open
+  // Lock scroll saat popup
   useEffect(() => {
     if (showImagePopup) {
-      document.body.style.overflow = 'hidden';
+      document.body.style.overflow = "hidden";
     } else {
-      document.body.style.overflow = '';
+      document.body.style.overflow = "";
     }
     return () => {
-      document.body.style.overflow = '';
+      document.body.style.overflow = "";
     };
   }, [showImagePopup]);
 
@@ -57,8 +59,9 @@ export default function ReceiptResult({
   const other = Number(editableData?.other ?? 0);
   const total = subtotal + pajak + service + discount + other;
 
+  // Setelah konfirmasi → lanjut ke pilih kontak
   const handleProceed = () => {
-    onConfirm?.({ splitName, subtotal, total, receiptData: editableData });
+    setShowContacts(true); // ⬅️ pindah ke SelectContacts
   };
 
   // Edit handlers
@@ -79,11 +82,11 @@ export default function ReceiptResult({
   };
   const handleCameraBack = () => setShowCameraPage(false);
 
-  // ✅ Image popup handlers
+  // Image popup handlers
   const handleImageClick = () => setShowImagePopup(true);
   const handleClosePopup = () => setShowImagePopup(false);
 
-  // Routing
+  // ===== Routing antar-halaman =====
   if (showCameraPage) {
     return <CameraPage onBack={handleCameraBack} onDone={handleCameraDone} />;
   }
@@ -96,7 +99,38 @@ export default function ReceiptResult({
       />
     );
   }
+  if (showContacts) {
+    // ⬅️ STEP BARU: Pilih Kontak
+    return (
+      <SelectContacts
+        currentUser={{ id: "me", name: "Kamu", phoneMasked: "*796", avatarText: "K" }}
+        // ⬇️ contoh data; ganti dengan data kontak dari backend/app-mu
+        contacts={[
+          { id: "1", name: "Rully Roso", phone: "+628765443321", isOrangePayUser: true },
+          { id: "2", name: "Naufal Sandy", phone: "+6285634322183", isOrangePayUser: true },
+          { id: "3", name: "Bulan Santhi", phone: "+628765644432", isOrangePayUser: false },
+          { id: "4", name: "Della Permata", phone: "+6287765322212", isOrangePayUser: true },
+          { id: "5", name: "Sandro Pratama", phone: "+62812887221242", isOrangePayUser: false },
+        ]}
+        recommendedIds={["1", "2"]}
+        initialSelectedIds={[]}
+        onBack={() => setShowContacts(false)}
+        onConfirm={({ payerId, selectedIds }) => {
+          // Gabungkan hasil step 1 (rincian) + step 2 (kontak terpilih)
+          onConfirm?.({
+            splitName,
+            subtotal,
+            total,
+            receiptData: editableData,
+            payerId,
+            selectedMemberIds: selectedIds,
+          });
+        }}
+      />
+    );
+  }
 
+  // ===== Halaman Ringkasan Struk (step 1) =====
   return (
     <>
       <div className="min-h-screen bg-white flex flex-col">
@@ -110,8 +144,13 @@ export default function ReceiptResult({
               aria-label="Kembali"
             >
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                <path d="M15 18l-6-6 6-6" stroke="#1F2937" strokeWidth="2" 
-                      strokeLinecap="round" strokeLinejoin="round" />
+                <path
+                  d="M15 18l-6-6 6-6"
+                  stroke="#1F2937"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
               </svg>
             </button>
             <h1 className="text-lg font-bold text-gray-800">Split Bill</h1>
@@ -122,7 +161,6 @@ export default function ReceiptResult({
         {/* Content */}
         <div className="flex-1 overflow-auto px-4 py-6">
           <div className="max-w-2xl mx-auto space-y-6">
-
             {/* Nama Split Bill */}
             <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
               <label className="text-sm font-semibold text-gray-800 block mb-2">
@@ -141,63 +179,44 @@ export default function ReceiptResult({
 
             {/* Struk berhasil di-scan */}
             <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
-              <p className="font-semibold text-gray-800 mb-1">
-                Struk berhasil di-scan
-              </p>
-              <p className="text-xs text-gray-500 mb-3">
+              <p className="font-semibold text-gray-800 mb-1">Struk berhasil di-scan</p>
+              <p className="text-xs text-gray-500 italic mb-3">
                 Klik gambar di bawah buat liat foto struk lebih jelas
               </p>
 
               <div className="mt-4 flex items-center justify-center gap-6">
-                {/* ✅ Thumbnail - Opens popup instead of new tab */}
+                {/* Thumbnail → popup */}
                 {receiptImage ? (
                   <button
                     type="button"
                     onClick={handleImageClick}
                     className="rounded-md overflow-hidden shadow-md hover:shadow-lg 
                                hover:scale-105 active:scale-95 transition-all duration-200"
-                    style={{
-                      width: '80px',
-                      aspectRatio: imageAspect,
-                    }}
+                    style={{ width: "80px", aspectRatio: imageAspect }}
                   >
-                    <img 
-                      src={receiptImage}
-                      alt="Struk" 
-                      className="w-full h-full object-cover"
-                    />
+                    <img src={receiptImage} alt="Struk" className="w-full h-full object-cover" />
                   </button>
                 ) : (
-                  <div 
+                  <div
                     className="rounded-xl bg-gray-100 flex items-center justify-center"
-                    style={{
-                      width: '80px',
-                      aspectRatio: '9 / 16',
-                    }}
+                    style={{ width: "80px", aspectRatio: "9 / 16" }}
                   >
                     <span className="text-xs text-gray-400">No Image</span>
                   </div>
                 )}
 
                 {/* Foto ulang button */}
-                {/* Foto ulang button */}
-<button
-  type="button"
-  onClick={handleRetake}
-  className="inline-flex items-center gap-2 px-4 h-10 rounded-xl 
-             bg-white border border-gray-200
-             shadow-[0_4px_0_rgba(0,0,0,0.06)] hover:shadow-md 
-             active:translate-y-[1px] transition-all"
->
-  {/* pakai file .svg dari folder public */}
-  <img
-    src="/camera-icon.svg"
-    alt="Ikon kamera"
-    className="w-[18px] h-[18px]"
-  />
-  <span className="font-semibold text-sm text-gray-800">Foto ulang</span>
-</button>
-
+                <button
+                  type="button"
+                  onClick={handleRetake}
+                  className="inline-flex items-center gap-2 px-4 h-10 rounded-xl 
+                             bg-white border border-gray-200
+                             shadow-[0_4px_0_rgba(0,0,0,0.06)] hover:shadow-md 
+                             active:translate-y-[1px] transition-all"
+                >
+                  <img src="/camera-icon.svg" alt="Ikon kamera" className="w-[18px] h-[18px]" />
+                  <span className="font-semibold text-sm text-gray-800">Foto ulang</span>
+                </button>
               </div>
             </div>
 
@@ -207,16 +226,16 @@ export default function ReceiptResult({
               <div className="space-y-3 mb-4">
                 {items.map((it, idx) => (
                   <div key={idx} className="flex items-center justify-between">
-                    <p className="flex-1 pr-2 text-gray-900 font-semibold uppercase 
-                                 tracking-wide text-[13px] leading-tight">
+                    <p
+                      className="flex-1 pr-2 text-gray-900 font-semibold uppercase 
+                                 tracking-wide text-[13px] leading-tight"
+                    >
                       {it.name}
                     </p>
-                    <span className="w-12 shrink-0 text-right text-gray-700 
-                                   font-medium tabular-nums">
+                    <span className="w-12 shrink-0 text-right text-gray-700 font-medium tabular-nums">
                       x{it.quantity}
                     </span>
-                    <span className="w-24 shrink-0 text-right text-gray-800 
-                                   font-semibold tabular-nums">
+                    <span className="w-24 shrink-0 text-right text-gray-800 font-semibold tabular-nums">
                       {fmt(it.total)}
                     </span>
                   </div>
@@ -228,27 +247,25 @@ export default function ReceiptResult({
                 <Row label="Subtotal" value={fmt(subtotal)} />
                 <Row label="Pajak" value={fmt(pajak)} hideIfZero />
                 <Row label="Servis" value={fmt(service)} hideIfZero />
-                <Row 
-                  label="Diskon" 
-                  value={fmt(discount)} 
-                  hideIfZero 
-                  valueClass={discount < 0 ? "text-red-600" : ""} 
+                <Row
+                  label="Diskon"
+                  value={fmt(discount)}
+                  hideIfZero
+                  valueClass={discount < 0 ? "text-red-600" : ""}
                 />
-                <Row 
-                  label="Lainnya" 
-                  value={fmt(other)} 
-                  hideIfZero 
-                  valueClass={other < 0 ? "text-red-600" : ""} 
+                <Row
+                  label="Lainnya"
+                  value={fmt(other)}
+                  hideIfZero
+                  valueClass={other < 0 ? "text-red-600" : ""}
                 />
 
-                <p className="text-[#FF9A25] text-xs italic pt-1">
-                  Pastikan jumlah sudah benar
-                </p>
+                <p className="text-[#FF9A25] text-xs pt-1">Pastiin jumlah sudah benar</p>
 
                 <div className="flex justify-between items-center pt-3 border-t-2 
                               border-gray-200 font-bold text-base">
-                  <span className="text-gray-900">Jumlah Total</span>
-                  <span className="text-[#FF9A25] text-lg">{fmt(total)}</span>
+                  <span className="text-gray-900">Jumlah total</span>
+                  <span className="text-lg">{fmt(total)}</span>
                 </div>
 
                 {/* Ubah Rincian */}
@@ -262,17 +279,20 @@ export default function ReceiptResult({
                                flex items-center justify-center gap-2"
                   >
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                      <path d="M12 20h9" stroke="#FF9A25" strokeWidth="2" strokeLinecap="round"/>
-                      <path d="M16.5 3.5a2.121 2.121 0 013 3L8 18l-4 1 1-4 11.5-11.5z"
-                            stroke="#FF9A25" strokeWidth="2" strokeLinecap="round" 
-                            strokeLinejoin="round"/>
+                      <path d="M12 20h9" stroke="#FF9A25" strokeWidth="2" strokeLinecap="round" />
+                      <path
+                        d="M16.5 3.5a2.121 2.121 0 013 3L8 18l-4 1 1-4 11.5-11.5z"
+                        stroke="#FF9A25"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
                     </svg>
                     <span className="font-semibold text-gray-800">Ubah Rincian</span>
                   </button>
                 </div>
               </div>
             </div>
-
           </div>
         </div>
 
@@ -286,24 +306,23 @@ export default function ReceiptResult({
                          hover:shadow-lg hover:shadow-[#FF9A25]/30
                          active:scale-[0.98] transition-all duration-200"
             >
-              Lanjut ke Split Bill
+              Konfirmasi
             </button>
           </div>
         </div>
       </div>
 
-      {/* ✅ Image Popup Modal */}
+      {/* Popup Gambar */}
       {showImagePopup && receiptImage && (
-        <div 
+        <div
           className="fixed inset-0 z-50 flex items-center justify-center 
                      bg-black/80 backdrop-blur-sm animate-fadeIn"
           onClick={handleClosePopup}
         >
-          <div 
+          <div
             className="relative max-w-4xl max-h-[90vh] mx-4"
-            onClick={(e) => e.stopPropagation()} // Prevent close when clicking image
+            onClick={(e) => e.stopPropagation()}
           >
-            {/* Close button */}
             <button
               onClick={handleClosePopup}
               className="absolute -top-12 right-0 w-10 h-10 rounded-full 
@@ -313,32 +332,23 @@ export default function ReceiptResult({
               aria-label="Close"
             >
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                <path d="M6 6L18 18M6 18L18 6" stroke="white" strokeWidth="2.5" 
-                      strokeLinecap="round"/>
+                <path d="M6 6L18 18M6 18L18 6" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
               </svg>
             </button>
 
-            {/* Image */}
-            <img 
+            <img
               src={receiptImage}
               alt="Struk Detail"
               className="max-w-full max-h-[90vh] object-contain rounded-2xl shadow-2xl"
-              style={{ animation: 'zoomIn 0.3s ease-out' }}
+              style={{ animation: "zoomIn 0.3s ease-out" }}
             />
           </div>
         </div>
       )}
 
-      {/* ✅ Animations */}
       <style>{`
-        @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-        @keyframes zoomIn {
-          from { opacity: 0; transform: scale(0.9); }
-          to { opacity: 1; transform: scale(1); }
-        }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes zoomIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
       `}</style>
     </>
   );
