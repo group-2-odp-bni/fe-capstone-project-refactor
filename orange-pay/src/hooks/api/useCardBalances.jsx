@@ -28,6 +28,7 @@ export default function useBalanceCards() {
           split: "/app/main/split-bill",
           topup: "/app/topup",
           transfer: "/app/transfer",
+          addbalancefromwallet: "/add-balance-from-wallet",
         },
       },
       {
@@ -43,6 +44,7 @@ export default function useBalanceCards() {
           split: "/app/family/split-bill",
           topup: "/app/topup",
           transfer: "/app/transfer",
+          addbalancefromwallet: "/add-balance-from-wallet",
         },
       },
       {
@@ -58,6 +60,7 @@ export default function useBalanceCards() {
           split: "/app/personal/split-bill",
           topup: "/app/topup",
           transfer: "/app/transfer",
+          addbalancefromwallet: "/add-balance-from-wallet",
         },
       },
     ],
