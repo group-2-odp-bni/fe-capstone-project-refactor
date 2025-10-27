@@ -1,6 +1,5 @@
-// src/components/dashboard/BalanceCard.jsx
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import useCardBalances from "../../hooks/api/useCardBalances";
 import ScrollProgress from "../ui/ScrollProgress";
 import AddWalletCard from "../ui/AddWalletCard";
@@ -12,30 +11,48 @@ import {
   CarouselViewport,
 } from "../ui/BalanceCardUI";
 
-export default function AtomicBalanceCard() {
+export default function AtomicBalanceCard({ initialWalletId = null }) {
+  const navigate = useNavigate();
   const {
     baseCards = [],
     items = [],
     loading = false,
     error = null,
     refetch = () => {},
-    addWallet, // use the hook action
+    addWallet,
   } = useCardBalances();
 
-  // tabs: prefer baseCards (static defs). fallback: derive from items
+  // tabs (warna, judul, dll)
   const tabs = useMemo(() => {
     if (Array.isArray(baseCards) && baseCards.length) {
-      return baseCards.map((b) => ({ id: b.id, title: b.title, bg: b.bg, accent: b.accent }));
+      return baseCards.map((b) => ({
+        id: b.id,
+        title: b.title,
+        bg: b.bg,
+        accent: b.accent,
+      }));
     }
     return items
       .filter((it) => !it.isAddCard)
-      .map((it) => ({ id: it.id, title: it.title, bg: it.bg, accent: it.accent }));
+      .map((it) => ({
+        id: it.id,
+        title: it.title,
+        bg: it.bg,
+        accent: it.accent,
+      }));
   }, [baseCards, items]);
 
   const [activeIndex, setActiveIndex] = useState(0);
   const [isHidden, setIsHidden] = useState(false);
   const [creating, setCreating] = useState(false);
   const viewportRef = useRef(null);
+
+  // === NEW: pilih kartu otomatis sesuai initialWalletId ===
+  useEffect(() => {
+    if (!initialWalletId || !items.length) return;
+    const idx = items.findIndex((it) => it.id === initialWalletId);
+    if (idx >= 0) setActiveIndex(idx);
+  }, [initialWalletId, items]);
 
   const goTo = (i) => {
     const clamped = Math.max(0, Math.min(items.length - 1, i));
@@ -49,26 +66,29 @@ export default function AtomicBalanceCard() {
 
   const isCardLoading = (_id, _idx) => Boolean(loading);
 
-  // handler for AddWalletCard - creates a new wallet in-memory and navigates to it
+  // Tambahkan fungsi History click handler
+  const handleHistoryClick = (walletId) => {
+    navigate(`/app/history/${walletId}`);
+  };
+
+  // Tambah wallet card (sudah ada)
   const handleCreateWallet = async () => {
     if (typeof addWallet !== "function") {
-      // fallback to route if hook doesn't expose addWallet
       window.location.href = "/app/wallets/new";
       return;
     }
     try {
       setCreating(true);
-      // create with defaults; you can adapt to show a modal or form instead
-      const entry = await addWallet({ type: "personal", walletName: "New Wallet", initialBalance: 0 });
-      // after creation, try to navigate to the new wallet card
-      // new index will be previous items.length - 1 (because items include the add-card at end)
+      const entry = await addWallet({
+        type: "personal",
+        walletName: "New Wallet",
+        initialBalance: 0,
+      });
       const newIndex = Math.max(0, items.length - 1);
-      // give the hook a moment to update items (most hooks update state synchronously)
       setTimeout(() => {
         goTo(newIndex);
       }, 80);
     } catch (err) {
-      // swallow or report error as needed - keep simple UI for now
       console.error("Failed to add wallet", err);
     } finally {
       setCreating(false);
@@ -77,9 +97,10 @@ export default function AtomicBalanceCard() {
 
   return (
     <div className="w-full mx-auto md:px-4 mt-6 ">
-      <h3 className="px-3 font-semibold text-lg text-gray-900 mb-3 md:px-0 text-left">Your Wallet</h3>
+      <h3 className="px-3 font-semibold text-lg text-gray-900 mb-3 md:px-0 text-left">
+        Your Wallet
+      </h3>
 
-      {/* small preview badges - still render from tabs (UI only) */}
       <div className="flex flex-wrap items-center justify-center gap-2 ">
         {tabs.map((c, i) => (
           <div
@@ -98,21 +119,29 @@ export default function AtomicBalanceCard() {
         activeIndex={activeIndex}
         setActiveIndex={setActiveIndex}
         renderItem={(card, i = activeIndex) => {
-          // render UI-only Add Wallet card via AddWalletCard component
+          // ADD Wallet card
           if (card.isAddCard) {
             return (
               <div className="p-0" style={{ width: "100%", height: "100%" }}>
-                <AddWalletCard onCreate={handleCreateWallet} isCreating={creating} />
+                <AddWalletCard
+                  onCreate={handleCreateWallet}
+                  isCreating={creating}
+                />
               </div>
             );
           }
 
-          const amount = Number(card.displayBalance ?? card.balance ?? card.initialBalance ?? 0);
+          const amount = Number(
+            card.displayBalance ?? card.balance ?? card.initialBalance ?? 0
+          );
 
           return (
             <div className="p-0" style={{ width: "100%" }}>
               <GradientCardShell bg={card.bg}>
-                <div className="relative" style={{ transformStyle: "preserve-3d" }}>
+                <div
+                  className="relative"
+                  style={{ transformStyle: "preserve-3d" }}
+                >
                   <CardTopBar
                     title={card.title}
                     type={card.type}
@@ -132,7 +161,17 @@ export default function AtomicBalanceCard() {
                       loading={isCardLoading(card.id, i)}
                       active={i === activeIndex}
                     />
-                    <CTASection links={card.links} />
+
+                    {/* ✅ tombol History pakai navigate */}
+                    <CTASection
+                      links={[
+                        {
+                          label: "History",
+                          onClick: () => handleHistoryClick(card.id),
+                        },
+                      ]}
+                      walletId={card.id}
+                    />
                   </div>
                 </div>
               </GradientCardShell>
@@ -141,7 +180,6 @@ export default function AtomicBalanceCard() {
         }}
       />
 
-      {/* scroll-like progress */}
       <div className="flex justify-center items-center gap-2 mt-4 px-4">
         <div style={{ width: "100%", maxWidth: 520 }}>
           <ScrollProgress
@@ -163,7 +201,6 @@ export default function AtomicBalanceCard() {
       )}
 
       <style>{`
-        /* hide webkit scrollbar */
         div::-webkit-scrollbar { height: 0; width: 0; }
       `}</style>
     </div>

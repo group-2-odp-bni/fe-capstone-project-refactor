@@ -40,6 +40,8 @@ import RequireLoginStep from "./RequireLoginStep";
 import { TransferProvider } from "../context/TransferContext";
 import TransferPage from "../pages/TransferPage";
 
+
+
 /* ----------------- ProtectedRoute ----------------- */
 function ProtectedRoute() {
   const loc = useLocation();
@@ -187,6 +189,7 @@ export default function AppRoutes() {
           <Route path="profile" element={<ProfilePage />} />
           <Route path="wallets">
             <Route path="new" element={<AddWalletPage />} />
+            <Route path=":walletId" element={<HistoryTransactionPage />} /> {/* <— tambahan */}
           </Route>
           {/* ----------- Transfer Flow ----------- */}
           <Route
