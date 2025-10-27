@@ -30,7 +30,7 @@ export default function RecentHistory({ walletId, onExpandChange }) {
 
   // posisi awal sheet (sekitar 40% dari tinggi layar)
   const initialTop = useMemo(
-    () => Math.max(window.innerHeight * 0.4, EXPANDED_TOP_PX),
+    () => Math.max(window.innerHeight * 0.6, EXPANDED_TOP_PX),
     []
   );
 

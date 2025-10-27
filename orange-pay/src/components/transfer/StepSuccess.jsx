@@ -3,6 +3,7 @@ import React, { useEffect, useState, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import useTransferApi from "../../hooks/api/useTransferApi";
 import { useTransfer } from "../../context/TransferContext";
+import { Copy } from "lucide-react";
 /**
  * StepSuccess — receipt screen styled to match the provided design.
  * - Fetches receipt by ?tx=... (or location.state)
