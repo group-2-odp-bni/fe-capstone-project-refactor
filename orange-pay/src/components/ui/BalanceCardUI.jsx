@@ -170,12 +170,6 @@ export const CTASection = ({ links = {}, walletId, type = "utama", isDraggingRef
           <path d="M19 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2ZM12 8a1 1 0 0 1 1 1v2h2a1 1 0 0 1 0 2h-2v2a1 1 0 0 1-2 0v-2h-2a1 1 0 0 1 0-2h2V9a1 1 0 0 1 1-1Z" />
         </svg>
       </ActionIcon>
-
-      <ActionIcon to={links.addbalancefromwallet} label="Add Balance From Other Wallet">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" className="w-7 md:w-7 h-auto mb-[2px]">
-          <path d="M19 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2ZM12 8a1 1 0 0 1 1 1v2h2a1 1 0 0 1 0 2h-2v2a1 1 0 0 1-2 0v-2h-2a1 1 0 0 1 0-2h2V9a1 1 0 0 1 1-1Z" />
-        </svg>
-      </ActionIcon>
     </>
   );
 

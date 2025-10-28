@@ -74,8 +74,8 @@ export default function AtomicBalanceCard({ initialWalletId = null }) {
   const isCardLoading = (_id, _idx) => Boolean(loading);
 
   // create wallet (logic only)
-  const handleCreateWallet = () => {
-    navigate("/app/wallets/new");
+  const handleCreateWallet = async () => {
+      useNavigate("/app/wallets/new");
   };
 
   // helper: optional append wallet id as query param (UI can also handle)
