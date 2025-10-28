@@ -1,0 +1,85 @@
+/* =========================
+   Fonts
+========================= */
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap");
+
+/* =========================
+   Tailwind (v4)
+========================= */
+@import "tailwindcss";
+
+/* =========================
+   Theme Tokens (Tailwind v4 @theme)
+========================= */
+@theme {
+  --font-sans: "Poppins", ui-sans-serif, system-ui, -apple-system, "Segoe UI",
+               Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji",
+               "Segoe UI Emoji", "Segoe UI Symbol";
+
+  /* Colors */
+  --color-brand-bg: #FFFFFF;             /* White background */
+  --color-brand-text: #1F2937;
+  --color-brand-subtext: #6B7280;
+  --color-brand-orange: #FFB84D;
+  --color-brand-orange-soft: #FFE1B0;
+  --color-brand-green: #10B981;
+
+  /* Radius */
+  --radius-card: 20px;
+}
+
+/* =========================
+   Base styles
+========================= */
+:root {
+  color-scheme: light;
+}
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  @apply font-sans bg-brand-bg text-brand-text;
+}
+
+/* =========================
+   Layout Helpers
+========================= */
+.phone-frame {
+  @apply min-h-screen flex justify-center py-5;
+}
+
+.phone-inner {
+  @apply w-full max-w-[360px] px-4;
+}
+
+/* =========================
+   Splash Animations
+========================= */
+@keyframes splash-pop {
+  0% { transform: scale(0.9); opacity: 0; }
+  60% { transform: scale(1.03); opacity: 1; }
+  100% { transform: scale(1); }
+}
+
+.animate-splash-pop {
+  animation: splash-pop 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+/* Progress bar 3s */
+@keyframes splash-progress {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
+}
+
+.animate-splash-progress {
+  animation: splash-progress 3s linear forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-splash-pop,
+  .animate-splash-progress {
+    animation: none !important;
+  }
+}

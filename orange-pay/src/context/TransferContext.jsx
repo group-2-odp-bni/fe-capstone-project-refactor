@@ -169,12 +169,23 @@ export const TransferProvider = ({ children }) => {
       return { ...prev, step: next };
     });
 
-  const prevStep = () =>
-    setFlow((prev) => {
-      const idx = STEP_ORDER.indexOf(prev.step);
-      const prevName = idx <= 0 ? STEP_ORDER[0] : STEP_ORDER[idx - 1];
-      return { ...prev, step: prevName };
-    });
+    const prevStep = () =>
+      setFlow((prev) => {
+        const idx = STEP_ORDER.indexOf(prev.step);
+        let prevName = idx <= 0 ? STEP_ORDER[0] : STEP_ORDER[idx - 1];
+    
+        // If the previous step would be "verify" but the flow was already verified,
+        // skip the "verify" step and go back one more step.
+        // This ensures verify is one-time and not re-entered via "back".
+        if (prevName === "verify" && prev.data && prev.data.verified) {
+          const prevIdx = idx - 1; // index of current prevName (verify)
+          const skipIdx = Math.max(0, prevIdx - 1);
+          prevName = STEP_ORDER[skipIdx];
+        }
+    
+        return { ...prev, step: prevName };
+      });
+    
 
   // merge-data setter (do NOT persist pin)
   const setData = (patch) => {

@@ -30,6 +30,8 @@ import TopUpPage from "../pages/TopUpPage";
 import { isAuthenticated } from "../services/authService";
 import { RegistrationProvider } from "../context/RegistrationContext";
 import AddWalletPage from "../pages/AddWalletPage";
+import AddBalanceFromWalletPage from "../pages/AddBalanceFromWalletPageNew";
+
 
 /* login flow context & step guard */
 import { LoginProvider } from "../context/LoginContext";
@@ -169,6 +171,11 @@ export default function AppRoutes() {
         </Route>
 
         {/* ---------- 404 ---------- */}
+        {/* Standalone protected route for Add Balance From Wallet (accessible at /add-balance-from-wallet) */}
+        <Route path="/add-balance-from-wallet" element={<ProtectedRoute />}>
+          <Route index element={<AddBalanceFromWalletPage />} />
+        </Route>
+
         <Route path="*" element={<NotFound />} />
       </Routes>
     </BrowserRouter>

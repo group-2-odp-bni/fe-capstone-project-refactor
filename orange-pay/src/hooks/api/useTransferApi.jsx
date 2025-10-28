@@ -1,14 +1,9 @@
-// src/hooks/api/useTransferApi.js
 import { useState } from "react";
 
 /**
- * MAIN_CONTACTS = master DB (all accounts that exist in the system).
- *
- * SAVED_CONTACTS_INITIAL = your initial saved contacts (the "dataframe" you mentioned).
- * On first load, saved contacts will be seeded from SAVED_CONTACTS_INITIAL.
- * After that, saved contacts are persisted to sessionStorage to mock API behavior.
- *
- * If you prefer memory-only behavior (no sessionStorage), see the comment at bottom.
+ * MAIN_CONTACTS = mock master DB (all system accounts)
+ * SAVED_CONTACTS_INITIAL = initial saved contacts (user’s address book)
+ * Data is persisted in sessionStorage to simulate a backend
  */
 
 const MAIN_CONTACTS = [
@@ -31,14 +26,13 @@ const RECEIPTS_KEY = "mockReceipts";
 const SAVED_CONTACTS_KEY = "mockSavedContacts";
 const delay = (ms = 300) => new Promise((res) => setTimeout(res, ms));
 
-
 const SAVED_CONTACTS_INITIAL = [
-    { phone: "081234567890", name: "Belanda Belinda", accountId: "ACC-001", balance: 200000 },
-    { phone: "081298765432", name: "Belilindada haha", accountId: "ACC-002", balance: 500000 },
-    { phone: "081300011122", name: "Safafufu Zabulaza", accountId: "ACC-003", balance: 1200000 },
-    { phone: "087888123522", name: "Xaviera Azzahra", accountId: "ACC-004", balance: 1200000 },
-    { phone: "087888123523", name: "Bimbim Mama", accountId: "ACC-005", balance: 1200000 },
-    { phone: "087888122341", name: "Has Zabel", accountId: "ACC-006", balance: 1200000 },
+  { phone: "081234567890", name: "Belanda Belinda", accountId: "ACC-001", balance: 200000 },
+  { phone: "081298765432", name: "Belilindada haha", accountId: "ACC-002", balance: 500000 },
+  { phone: "081300011122", name: "Safafufu Zabulaza", accountId: "ACC-003", balance: 1200000 },
+  { phone: "087888123522", name: "Xaviera Azzahra", accountId: "ACC-004", balance: 1200000 },
+  { phone: "087888123523", name: "Bimbim Mama", accountId: "ACC-005", balance: 1200000 },
+  { phone: "087888122341", name: "Has Zabel", accountId: "ACC-006", balance: 1200000 },
 ];
 
 /* receipts helpers */
@@ -46,46 +40,37 @@ function loadReceipts() {
   try {
     const raw = sessionStorage.getItem(RECEIPTS_KEY);
     return raw ? JSON.parse(raw) : {};
-  } catch (e) {
+  } catch {
     return {};
   }
 }
 function saveReceipts(obj) {
   try {
     sessionStorage.setItem(RECEIPTS_KEY, JSON.stringify(obj));
-  } catch (e) {}
+  } catch {}
 }
 function generateTxId() {
   return `TRX${Date.now()}`;
 }
 
-/* saved contacts helpers: seed from initial array if sessionStorage is empty */
+/* saved contacts helpers */
 function loadSavedContacts() {
   try {
     const raw = sessionStorage.getItem(SAVED_CONTACTS_KEY);
     if (!raw) {
-      // no saved data in sessionStorage -> seed from initial dataset
-      // save the initial dataset to sessionStorage to simulate API persistence
       const seed = clone(SAVED_CONTACTS_INITIAL || []);
-      try {
-        sessionStorage.setItem(SAVED_CONTACTS_KEY, JSON.stringify(seed));
-      } catch (e) {
-        /* ignore */
-      }
+      sessionStorage.setItem(SAVED_CONTACTS_KEY, JSON.stringify(seed));
       return seed;
     }
     return JSON.parse(raw);
-  } catch (e) {
-    console.warn("useTransferApi: loadSavedContacts error", e);
+  } catch {
     return clone(SAVED_CONTACTS_INITIAL || []);
   }
 }
 function saveSavedContacts(list) {
   try {
     sessionStorage.setItem(SAVED_CONTACTS_KEY, JSON.stringify(list));
-  } catch (e) {
-    console.warn("useTransferApi: saveSavedContacts error", e);
-  }
+  } catch {}
 }
 
 /* phone helpers */
@@ -99,15 +84,14 @@ function phoneMatches(a = "", b = "") {
   return na === nb || na.endsWith(nb) || nb.endsWith(na);
 }
 
-/* clone helper */
+/* deep clone helper */
 const clone = (v) => (v ? JSON.parse(JSON.stringify(v)) : v);
 
+/* ========================================================== */
 export default function useTransferApi() {
   const [loading, setLoading] = useState(false);
 
-  /* === Saved contacts API (operates ONLY on saved contacts) === */
-
-  // return all saved contacts (seeded from SAVED_CONTACTS_INITIAL if nothing in session)
+  /* === Saved contacts API === */
   const fetchSavedContacts = async () => {
     setLoading(true);
     await delay(120);
@@ -118,7 +102,6 @@ export default function useTransferApi() {
     }
   };
 
-  // search only saved contacts (name includes OR phone contains digits)
   const searchSavedContacts = async (query = "") => {
     setLoading(true);
     await delay(120);
@@ -131,9 +114,7 @@ export default function useTransferApi() {
       const filtered = saved.filter((c) => {
         const name = (c.name || "").toLowerCase();
         const phone = normalizePhone(c.phone || "");
-        const matchesName = name.includes(qLower);
-        const matchesPhone = qDigits ? phone.includes(qDigits) : false;
-        return matchesName || matchesPhone;
+        return name.includes(qLower) || (qDigits && phone.includes(qDigits));
       });
       return clone(filtered);
     } finally {
@@ -141,8 +122,7 @@ export default function useTransferApi() {
     }
   };
 
-  /* === Main DB API (master accounts) === */
-
+  /* === Master DB lookup === */
   const lookupMainByPhone = async (phone) => {
     setLoading(true);
     await delay(250);
@@ -155,8 +135,39 @@ export default function useTransferApi() {
     }
   };
 
-  /* === Add main contact into saved contacts (mock API) === */
+  /* === Verify phone (for StepVerifyContact) === */
+  const verifyPhone = async (phone) => {
+    setLoading(true);
+    await delay(300);
+    try {
+      if (!phone) return { status: "invalid" };
 
+      const digits = (phone || "").replace(/\D/g, "");
+      const local = digits.startsWith("62")
+        ? "0" + digits.slice(2)
+        : digits.startsWith("0")
+        ? digits
+        : digits.startsWith("8")
+        ? "0" + digits
+        : digits;
+
+      const savedList = loadSavedContacts();
+      const savedFound = savedList.find((c) => phoneMatches(c.phone, local));
+      if (savedFound) return { status: "saved", contact: clone(savedFound) };
+
+      const mainFound = MAIN_CONTACTS.find((c) => phoneMatches(c.phone, local));
+      if (mainFound) return { status: "main", contact: clone(mainFound) };
+
+      return { status: "notfound" };
+    } catch (e) {
+      console.error("verifyPhone error:", e);
+      return { status: "error", error: e?.message || "Unknown error" };
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /* === Add new contact === */
   const addSavedContact = async (phoneOrContact) => {
     setLoading(true);
     await delay(120);
@@ -182,7 +193,8 @@ export default function useTransferApi() {
     }
   };
 
-  /* === performTransfer (updates MAIN and saved if present) === */
+  /* === Transfer logic === */
+  /* === performTransfer (updates MAIN, saved, and receipts) === */
   const performTransfer = async ({ phone, amount, note, pin }) => {
     setLoading(true);
     await delay(600);
@@ -190,24 +202,33 @@ export default function useTransferApi() {
       if (pin !== "123456") {
         return { status: "error", message: "Invalid PIN" };
       }
+  
       const amt = Number(amount);
       if (isNaN(amt) || amt <= 0) {
         return { status: "error", message: "Invalid amount" };
       }
-
+  
+      // find recipient in MAIN
       const mainIdx = MAIN_CONTACTS.findIndex((c) => phoneMatches(c.phone, phone));
       if (mainIdx === -1) return { status: "error", message: "Recipient not found" };
-
+  
       MAIN_CONTACTS[mainIdx].balance += amt;
-
-      // update saved contact if exists
+  
+      // --- update or add to saved contacts ---
       const saved = loadSavedContacts();
       const savedIdx = saved.findIndex((c) => phoneMatches(c.phone, phone));
+  
       if (savedIdx !== -1) {
+        // update balance if already saved
         saved[savedIdx].balance = MAIN_CONTACTS[mainIdx].balance;
-        saveSavedContacts(saved);
+      } else {
+        // not saved yet → add to saved contacts
+        const newContact = clone(MAIN_CONTACTS[mainIdx]);
+        saved.unshift(newContact);
       }
-
+      saveSavedContacts(saved);
+  
+      // --- record receipt ---
       const txId = generateTxId();
       const now = new Date();
       const receipt = {
@@ -224,18 +245,20 @@ export default function useTransferApi() {
         type: "Transfer",
         meta: { accountId: MAIN_CONTACTS[mainIdx].accountId },
       };
-
+  
       try {
         const all = loadReceipts();
         all[txId] = receipt;
         saveReceipts(all);
       } catch (e) {}
-
+  
+      // --- return receipt object ---
       return receipt;
     } finally {
       setLoading(false);
     }
   };
+  
 
   const getReceipt = async (transactionId) => {
     setLoading(true);
@@ -256,6 +279,7 @@ export default function useTransferApi() {
     fetchSavedContacts,
     searchSavedContacts,
     lookupMainByPhone,
+    verifyPhone, // ✅ used by StepVerifyContact
     addSavedContact,
     performTransfer,
     getReceipt,
