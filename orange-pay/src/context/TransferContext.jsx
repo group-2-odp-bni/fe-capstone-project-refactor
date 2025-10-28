@@ -79,6 +79,41 @@ export const TransferProvider = ({ children }) => {
 
   const [flow, setFlow] = useState(initialFlow);
 
+  // --- NEW: Apply incoming navigation state once (for Quick Transfer -> 'amount', etc.)
+  useEffect(() => {
+    const navState = location.state;
+    if (!navState || typeof navState !== "object") return;
+
+    const normalizeStep = (s) => {
+      if (s === "enter-amount") return "amount";
+      return s;
+    };
+
+    const incomingStep = normalizeStep(navState.step);
+    const incomingData = navState.data;
+
+    const validStep = incomingStep && (incomingStep === "verify" || STEP_ORDER.includes(incomingStep));
+
+    if (!validStep && !incomingData) return;
+
+    // avoid immediate persist/route-sync loop caused by our own setFlow
+    skipPersistRef.current = true;
+    skipRouteSyncRef.current = true;
+
+    setFlow((prev) => ({
+      ...prev,
+      step: validStep ? incomingStep : prev.step,
+      data: incomingData ? { ...prev.data, ...incomingData } : prev.data,
+    }));
+
+    // Clear the navigation state so it won’t re-apply on refresh/back
+    try {
+      window.history.replaceState({}, document.title, location.pathname);
+    } catch (_) {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.key]);
+  // -----------------------------------------
+
   // keep route-driven steps in sync for explicit subpaths (but allow suppression for one cycle)
   useEffect(() => {
     if (skipRouteSyncRef.current) {
@@ -165,9 +200,9 @@ export const TransferProvider = ({ children }) => {
   const nextStep = () =>
     setFlow((prev) => {
       const idx = STEP_ORDER.indexOf(prev.step);
-      // if current step is a runtime-only step (like 'verify'), advance to the logical next => 'details'
+      // if current step is a runtime-only step (like 'verify'), advance to the logical next:
       if (prev.step === "verify") {
-        return { ...prev, step: "details" };
+        return { ...prev, step: "amount" }; // fixed: 'details' no longer exists
       }
       const next = idx === -1 ? STEP_ORDER[0] : STEP_ORDER[Math.min(STEP_ORDER.length - 1, idx + 1)];
       return { ...prev, step: next };

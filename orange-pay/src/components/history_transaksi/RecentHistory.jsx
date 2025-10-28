@@ -40,7 +40,7 @@ export default function RecentHistory({ walletId, onExpandChange }) {
 
       if (buttonGroup) {
         const rect = buttonGroup.getBoundingClientRect();
-        const newTop = rect.bottom + 8; // jarak 8px di bawah tombol
+        const newTop = rect.bottom + 18; // jarak 8px di bawah tombol
         setSheetTop(newTop);
       } else {
         // fallback kalau belum ketemu elemen
