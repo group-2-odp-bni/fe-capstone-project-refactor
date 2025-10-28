@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import PageHeader from "../components/page_header/PageHeader";
@@ -8,7 +7,6 @@ import ArrowButton from "../components/common/ArrowButton";
 import DynamicShell from "../components/layout/DynamicShell";
 import { PlusIcon, UserIcon } from "@heroicons/react/24/solid";
 
-
 export default function HistoryTransactionPage() {
   const { walletId } = useParams();
   const navigate = useNavigate();
@@ -16,21 +14,16 @@ export default function HistoryTransactionPage() {
   const [pageTitle, setPageTitle] = useState("Wallet Detail");
   const [isMainCard, setIsMainCard] = useState(false);
 
-  // ✅ Deteksi apakah kartu utama (misal wallet-001 = utama)
   useEffect(() => {
     setIsMainCard(walletId === "wallet-001");
   }, [walletId]);
 
-  /* ====== Aksi tombol ====== */
   const handleAddPerson = () => {
-    console.log("Tambah orang untuk wallet:", walletId);
     alert(`Tambah orang untuk kartu ${walletId}`);
   };
 
   const handleViewPeople = () => {
-    console.log("Lihat orang di wallet:", walletId);
     alert(`Lihat daftar orang untuk kartu ${walletId}`);
-    // navigate(`/wallet/${walletId}/people`);
   };
 
   // ✅ Mapping walletId ke tipe wallet
@@ -43,25 +36,24 @@ export default function HistoryTransactionPage() {
 
   return (
     <DynamicShell>
-      <div className="space-y-4 md:space-y-6 relative pb-20">
-        {/* ===== Header ===== */}
+      <div className="space-y-4 md:space-y-6">
+        {/* Judul */}
         <PageHeader>{pageTitle}</PageHeader>
 
-        {/* ===== Balance Card ===== */}
+        {/* ✅ Kartu saldo */}
         <div className="-mt-2 md:-mt-3">
           <BalanceCard walletId={walletId} />
         </div>
 
-        {/* ===== Tombol atas ===== */}
+        {/* ✅ Tombol bawah kartu */}
         {isMainCard ? (
-          // Jika kartu utama → Arrow Button
-          <div className="mt-2 md:mt-3 flex justify-center arrow-button-container">
+          // Kartu utama: tetap gunakan class lama (jangan diubah)
+          <div className="arrow-button-container mt-2 md:mt-3">
             <ArrowButton />
           </div>
         ) : (
-          // Jika bukan utama → tombol tambah & user
-          <div className="flex justify-center gap-3 mt-2 md:mt-4 button-group">
-            {/* Tombol Tambah */}
+          // Kartu lain: gunakan .button-group agar RecentHistory tahu posisinya
+          <div className="button-group flex justify-center gap-3 mt-3 md:mt-4 relative">
             <button
               onClick={handleAddPerson}
               className="w-10 h-10 flex items-center justify-center rounded-xl bg-orange-500 text-white shadow-md active:scale-95 transition"
@@ -69,7 +61,6 @@ export default function HistoryTransactionPage() {
               <PlusIcon className="w-5 h-5" />
             </button>
 
-            {/* Tombol Orang */}
             <button
               onClick={handleViewPeople}
               className="w-10 h-10 flex items-center justify-center rounded-xl border border-orange-400 text-orange-500 bg-white shadow-sm active:scale-95 transition"
@@ -79,7 +70,7 @@ export default function HistoryTransactionPage() {
           </div>
         )}
 
-        {/* ===== Bottom Sheet (Recent History) ===== */}
+        {/* ✅ Riwayat transaksi (bottom sheet) */}
         <RecentHistory
           walletId={mappedWalletId}
           onExpandChange={(expanded) =>

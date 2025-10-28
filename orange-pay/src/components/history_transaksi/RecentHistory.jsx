@@ -23,40 +23,43 @@ export default function RecentHistory({ walletId, onExpandChange }) {
   const [activeMonth, setActiveMonth] = useState(getMonthShort(new Date()));
 
   // =======================================================
-  // 📏 POSISI SHEET DINAMIS — MELEKAT PADA BUTTON ATAS
+  // 📏 POSISI SHEET — DISAMAKAN & SEDIKIT LEBIH BAWAH
   // =======================================================
   const [sheetTop, setSheetTop] = useState(window.innerHeight * 0.45);
+  const baseTop = useRef(window.innerHeight * 0.45);
 
   const startY = useRef(0);
   const startTop = useRef(0);
 
-  // Deteksi posisi tombol terdekat di atas (baik arrowButton atau group)
+  // ✅ Deteksi posisi tombol (arrowButton / button-group)
   useEffect(() => {
     const adjustSheetPosition = () => {
-      // Coba cari tombol group (+ / user) atau arrowButton
-      const buttonGroup =
-        document.querySelector(".button-group") ||
-        document.querySelector(".arrow-button-container");
+      let buttonElement = document.querySelector(".arrow-button-container");
 
-      if (buttonGroup) {
-        const rect = buttonGroup.getBoundingClientRect();
-        const newTop = rect.bottom + 18; // jarak 8px di bawah tombol
+      if (!buttonElement) {
+        buttonElement = document.querySelector(".button-group");
+      }
+
+      if (buttonElement) {
+        const rect = buttonElement.getBoundingClientRect();
+        // 🔽 Tambahkan offset 18px supaya sedikit lebih turun
+        const newTop = rect.bottom + 18;
         setSheetTop(newTop);
+        baseTop.current = newTop;
       } else {
-        // fallback kalau belum ketemu elemen
+        // fallback default
         setSheetTop(window.innerHeight * 0.45);
+        baseTop.current = window.innerHeight * 0.45;
       }
     };
 
-    // Jalankan setelah render
     setTimeout(adjustSheetPosition, 100);
-
-    // Jalankan ulang saat resize supaya tetap responsif
     window.addEventListener("resize", adjustSheetPosition);
-    return () => window.removeEventListener("resize", adjustSheetPosition);
-  }, []);
 
-  // Lock scroll body saat aktif
+    return () => window.removeEventListener("resize", adjustSheetPosition);
+  }, [walletId]);
+
+  // Lock scroll body
   useEffect(() => {
     document.body.style.overflow = "hidden";
     return () => (document.body.style.overflow = "auto");
@@ -122,7 +125,7 @@ export default function RecentHistory({ walletId, onExpandChange }) {
     const delta = e.touches[0].clientY - startY.current;
     const BOTTOM_LIMIT_PX = window.innerHeight * 0.65;
     const newTop = Math.min(
-      Math.max(startTop.current + delta, 80), // 80px minimal dari atas
+      Math.max(startTop.current + delta, 80),
       BOTTOM_LIMIT_PX
     );
     setSheetTop(newTop);
@@ -130,16 +133,16 @@ export default function RecentHistory({ walletId, onExpandChange }) {
 
   const handleTouchEnd = () => {
     const isNowExpanded = sheetTop < window.innerHeight * SNAP_THRESHOLD_RATIO;
-    const newTop = isNowExpanded ? 80 : sheetTop;
+    const newTop = isNowExpanded ? 80 : baseTop.current;
     setSheetTop(newTop);
     onExpandChange?.(isNowExpanded);
   };
 
   const handleDragLineClick = () => {
-    const isCurrentlyExpanded = sheetTop < window.innerHeight * 0.2;
-    const newTop = isCurrentlyExpanded ? window.innerHeight * 0.45 : 80;
+    const isExpanded = sheetTop < window.innerHeight * 0.25;
+    const newTop = isExpanded ? baseTop.current : 80;
     setSheetTop(newTop);
-    onExpandChange?.(!isCurrentlyExpanded);
+    onExpandChange?.(!isExpanded);
   };
 
   // =======================================================
