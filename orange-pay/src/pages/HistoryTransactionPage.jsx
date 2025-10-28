@@ -7,6 +7,7 @@ export default function HistoryTransactionPage() {
   return (
     <DynamicShell>
       <HeaderSection />
+      <PageHeader>Transaction History</PageHeader>
       <BalanceCard />
       <RecentHistory />
     </DynamicShell>

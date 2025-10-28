@@ -9,13 +9,14 @@ import {
 } from "react-router-dom";
 
 import SplashPage from "../pages/SplashPage";
-import RegisterPage from "../pages/RegisterPage";
-import OtpRegisterPage from "../pages/OtpRegisterPage";
-import SetPinPage from "../pages/SetPinPage";
+import RegisterPage from "../pages/register/RegisterPage";
+import OtpRegisterPage from "../pages/register/SetOtpPage";
+import SetPinPage from "../pages/register/SetPinPage";
 import WelcomePage from "../pages/WelcomePage";
-import LoginPage from "../pages/LoginPage";
+import LoginPage from "../pages/login/LoginPage";
+import ProfilePage from "../pages/ProfilePage";
 
-import LoginPhone from "../components/login/LoginPhone";
+
 import OtpStage from "../components/login/OtpStage";
 import PinStage from "../components/login/PinStage";
 import ResetPhone from "../components/login/ResetPhone";
@@ -27,28 +28,26 @@ import DashboardPage from "../pages/DashboardPage";
 import HistoryTransactionPage from "../pages/HistoryTransactionPage";
 import TopUpPage from "../pages/TopUpPage";
 import { isAuthenticated } from "../services/authService";
+import { RegistrationProvider } from "../context/RegistrationContext";
+import AddWalletPage from "../pages/AddWalletPage";
+import AddBalanceFromWalletPage from "../pages/AddBalanceFromWalletPageNew";
+
 
 /* login flow context & step guard */
-import { LoginFlowProvider } from "../context/LoginFlowContext";
+import { LoginProvider } from "../context/LoginContext";
 import RequireLoginStep from "./RequireLoginStep";
 
 /* transfer flow */
 import { TransferProvider } from "../context/TransferContext";
 import TransferPage from "../pages/TransferPage";
+import RequireRegisterStep from "./RequireRegisterStep";
+import ProtectedRoute from "./ProtectedRoute";
+import { validateAccessToken } from "../services/auth/authService";
+import OtpLoginPage from "../pages/login/OtpLoginPage";
+import PinLoginPage from "../pages/login/PinLoginPage";
 
-/* ----------------- ProtectedRoute ----------------- */
-function ProtectedRoute() {
-  const loc = useLocation();
-  return isAuthenticated() ? (
-    <Outlet />
-  ) : (
-    <Navigate to="/login" replace state={{ from: loc }} />
-  );
-}
-
-/* ----------------- PublicRoute ----------------- */
-function PublicRoute({ children, redirectTo = "/app/dashboard" }) {
-  const loc = useLocation();
+export function PublicRoute({ children, redirectTo = "/app/dashboard" }) {
+  const location = useLocation();
   const [checking, setChecking] = React.useState(true);
   const [authed, setAuthed] = React.useState(false);
 
@@ -56,25 +55,35 @@ function PublicRoute({ children, redirectTo = "/app/dashboard" }) {
     let mounted = true;
     (async () => {
       try {
-        const maybe = isAuthenticated();
-        const res = maybe && typeof maybe.then === "function" ? await maybe : maybe;
+        const valid = await validateAccessToken();
         if (!mounted) return;
-        setAuthed(Boolean(res));
+        setAuthed(Boolean(valid));
       } catch (err) {
-        console.error("PublicRoute:isAuthenticated error:", err);
+        console.error("PublicRoute: validateAccessToken error:", err);
         if (!mounted) return;
         setAuthed(false);
       } finally {
         if (mounted) setChecking(false);
       }
     })();
+
     return () => {
       mounted = false;
     };
   }, []);
 
-  if (checking) return <div style={{ padding: 24, textAlign: "center" }}>Checking authentication...</div>;
-  if (authed) return <Navigate to={redirectTo} replace state={{ from: loc }} />;
+  if (checking) {
+    return (
+      <div style={{ padding: 24, textAlign: "center" }}>
+        Checking authentication...
+      </div>
+    );
+  }
+
+  if (authed) {
+    return <Navigate to={redirectTo} replace state={{ from: location }} />;
+  }
+
   return children;
 }
 
@@ -93,31 +102,45 @@ export default function AppRoutes() {
         <Route path="/welcome" element={<WelcomePage />} />
 
         {/* ---------- Registration (guest only) ---------- */}
-        <Route path="/register" element={<PublicRoute><RegisterPage /></PublicRoute>} />
-        <Route path="/register/otp" element={<PublicRoute><OtpRegisterPage /></PublicRoute>} />
-        <Route path="/register/setpin" element={<PublicRoute><SetPinPage /></PublicRoute>} />
-
-        {/* ---------- Login Flow (guest only) ---------- */}
         <Route
-          path="/login"
+          path="/register/*"
           element={
             <PublicRoute>
-              <LoginFlowProvider>
-                <LoginPage />
-              </LoginFlowProvider>
+              <RegistrationProvider>
+                <Outlet />
+              </RegistrationProvider>
             </PublicRoute>
           }
         >
-          <Route index element={<LoginPhone />} />
-          {/* reset (forgot PIN) - enter phone to reset PIN */}
+          <Route index element={<RegisterPage />} />
+          <Route path="otp" element={<OtpRegisterPage />} />
+          <Route path="setpin" element={<SetPinPage />} />
+          {/* <Route path="otp" element={<RequireRegisterStep step="otp"><OtpRegisterPage /></RequireRegisterStep>} /> */}
+          {/* <Route path="setpin" element={<RequireRegisterStep step="setpin"><SetPinPage /></RequireRegisterStep>} /> */}
+        </Route>
+
+        {/* ---------- Login Flow (guest only) ---------- */}
+        <Route
+          path="/login/*"
+          element={
+            <PublicRoute>
+              <LoginProvider>
+                <Outlet />
+              </LoginProvider>
+            </PublicRoute>
+          }
+        >
+
+          <Route index element={<LoginPage />} />
           <Route path="reset" element={<ResetPin />} />
-          {/* reset OTP under login (reset flow) */}
+          <Route path="otp" element={<OtpLoginPage />} />
+          <Route path="pin" element={<PinLoginPage />} />
+
           <Route path="reset/otp" element={<RequireLoginStep step="otp"><ResetPinOtp /></RequireLoginStep>} />
-          {/* reset set-pin (after OTP) under login reset flow */}
           <Route path="reset/pin" element={<RequireLoginStep step="pin"><ResetSetPin /></RequireLoginStep>} />
-          {/* OTP / PIN require login flow steps */}
-          <Route path="otp" element={<RequireLoginStep step="otp"><OtpStage /></RequireLoginStep>} />
-          <Route path="pin" element={<RequireLoginStep step="pin"><PinStage /></RequireLoginStep>} />
+
+          {/* <Route path="otp" element={<RequireLoginStep step="otp"><OtpStage /></RequireLoginStep>} /> */}
+          {/* <Route path="pin" element={<RequireLoginStep step="pin"><PinStage /></RequireLoginStep>} /> */}
         </Route>
 
         {/* ---------- Protected /app routes ---------- */}
@@ -125,7 +148,10 @@ export default function AppRoutes() {
           <Route path="dashboard" element={<DashboardPage />} />
           <Route path="transactions" element={<HistoryTransactionPage />} />
           <Route path="topup" element={<TopUpPage />} />
-
+          <Route path="profile" element={<ProfilePage />} />
+          <Route path="wallets">
+            <Route path="new" element={<AddWalletPage />} />
+          </Route>
           {/* ----------- Transfer Flow ----------- */}
           <Route
             path="transfer/*"
@@ -141,12 +167,15 @@ export default function AppRoutes() {
           />
 
           {/* ----------- Reset flow placeholder ----------- */}
-          <Route path="reset">
-            {/* add reset pages later */}
-          </Route>
+          <Route path="reset">{/* add reset pages later */}</Route>
         </Route>
 
         {/* ---------- 404 ---------- */}
+        {/* Standalone protected route for Add Balance From Wallet (accessible at /add-balance-from-wallet) */}
+        <Route path="/add-balance-from-wallet" element={<ProtectedRoute />}>
+          <Route index element={<AddBalanceFromWalletPage />} />
+        </Route>
+
         <Route path="*" element={<NotFound />} />
       </Routes>
     </BrowserRouter>

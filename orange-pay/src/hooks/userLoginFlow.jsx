@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { STAGES } from "../constants/loginStages";
 
-export default function useLoginFlow() {
+export default function useLoginContext() {
   const navigate = useNavigate();
   const [stage, setStage] = useState(STAGES.SPLASH1);
   const [phone, setPhone] = useState("");
@@ -182,7 +182,7 @@ export default function useLoginFlow() {
       localStorage.setItem("isLoggedIn", "true");
       try {
         sessionStorage.setItem("token", "dummy-token");
-      } catch {}
+      } catch { }
       navigate("/app/dashboard");
     } else {
       setPinError("PIN salah, coba lagi!");

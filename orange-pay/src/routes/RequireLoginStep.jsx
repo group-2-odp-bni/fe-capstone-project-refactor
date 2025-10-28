@@ -1,5 +1,5 @@
 import { Navigate, useLocation } from 'react-router-dom';
-import { useLoginFlow } from '../context/LoginFlowContext';
+import { useLoginContext } from '../context/LoginContext';
 
 const STORAGE_KEY = 'app:login_flow';
 function readFlowFromSession() {
@@ -16,7 +16,7 @@ export default function RequireLoginStep({ step, children }) {
   const location = useLocation();
   let loginFlow;
   try {
-    const ctx = useLoginFlow();
+    const ctx = useLoginContext();
     loginFlow = ctx?.loginFlow ?? readFlowFromSession();
   } catch (err) {
     // missing provider or hook error -> fallback to session storage

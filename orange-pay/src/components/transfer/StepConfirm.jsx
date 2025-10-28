@@ -6,31 +6,76 @@ import useTransferApi from "../../hooks/api/useTransferApi";
 
 export default function StepConfirm() {
   const { data, setData, setStep, prevStep } = useTransfer();
-  const { lookupContactByPhone, requestStepUpToken, loading: apiLoading } = useTransferApi();
+  const api = useTransferApi();
   const [receiver, setReceiver] = useState(null);
+  const [loadingReceiver, setLoadingReceiver] = useState(false);
   const [issuing, setIssuing] = useState(false);
+  const [lookupError, setLookupError] = useState(null);
   const navigate = useNavigate();
 
+  // Resolve receiver information: prefer saved contacts, then main DB
   useEffect(() => {
     let mounted = true;
     (async () => {
-      if (!data.phone) {
+      if (!data?.phone) {
         setReceiver(null);
         return;
       }
+
+      setLoadingReceiver(true);
+      setLookupError(null);
       try {
-        const r = await lookupContactByPhone(data.phone);
+        // 1) Try saved contacts (API may expose either fetchSavedContacts or getSavedContacts)
+        let savedList = [];
+        if (typeof api.fetchSavedContacts === "function") {
+          savedList = await api.fetchSavedContacts();
+        } else if (typeof api.getSavedContacts === "function") {
+          savedList = api.getSavedContacts();
+        }
+
         if (!mounted) return;
-        setReceiver(r);
-      } catch (err) {
-        console.error(err);
-        if (!mounted) return;
+
+        const matchFromSaved = Array.isArray(savedList)
+          ? savedList.find((c) => {
+              // normalize digits for simple matching
+              const a = (c.phone || "").replace(/\D/g, "");
+              const b = (data.phone || "").toString().replace(/\D/g, "");
+              return a && b && (a === b || a.endsWith(b) || b.endsWith(a));
+            })
+          : null;
+
+        if (matchFromSaved) {
+          setReceiver(matchFromSaved);
+          return;
+        }
+
+        // 2) Fallback: lookup in main DB
+        if (typeof api.lookupMainByPhone === "function") {
+          const mainFound = await api.lookupMainByPhone(data.phone);
+          if (!mounted) return;
+          if (mainFound) {
+            setReceiver(mainFound);
+            return;
+          }
+        }
+
+        // 3) Not found
         setReceiver(null);
+      } catch (err) {
+        if (!mounted) return;
+        console.error("StepConfirm: receiver lookup error", err);
+        setLookupError(err?.message || "Lookup failed");
+        setReceiver(null);
+      } finally {
+        if (mounted) setLoadingReceiver(false);
       }
     })();
-    return () => (mounted = false);
+
+    return () => {
+      mounted = false;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data.phone]);
+  }, [data?.phone]);
 
   const fmt = (v) => `Rp${Number(v || 0).toLocaleString("id-ID")}`;
   const nominal = Number(data.amount || 0);
@@ -40,7 +85,7 @@ export default function StepConfirm() {
   // From info (may be provided earlier via setData)
   const fromName = data.fromWalletName || "Ahong";
   const fromPhone = data.fromWalletPhone || "0812 6754 9123";
-  
+
   const goToPin = async () => {
     if (!data.phone || nominal <= 0) return;
     try {
@@ -70,8 +115,18 @@ export default function StepConfirm() {
       <div className="mb-6">
         <div className="text-sm text-gray-600 mb-2">To:</div>
         <div className="bg-white rounded-lg border px-4 py-3 shadow-sm">
-          <div className="font-semibold text-base">{data.contactName || "—"}</div>
-          <div className="text-sm text-gray-500 mt-1">{data.phone || "—"}</div>
+          {loadingReceiver ? (
+            <div className="text-sm text-gray-500">Resolving recipient…</div>
+          ) : lookupError ? (
+            <div className="text-sm text-red-500">Error: {lookupError}</div>
+          ) : (
+            <>
+              <div className="font-semibold text-base">
+                {receiver?.name || data.contactName || "—"}
+              </div>
+              <div className="text-sm text-gray-500 mt-1">{data.phone || "—"}</div>
+            </>
+          )}
         </div>
       </div>
 
@@ -119,12 +174,12 @@ export default function StepConfirm() {
 
           <button
             onClick={goToPin}
-            disabled={issuing || apiLoading || nominal <= 0}
+            disabled={issuing || loadingReceiver || nominal <= 0}
             className={`flex-1 py-3 rounded-lg text-sm font-semibold text-white ${
-              issuing || apiLoading || nominal <= 0 ? "bg-gray-300 cursor-not-allowed" : "bg-orange-500 hover:bg-orange-600"
+              issuing || loadingReceiver || nominal <= 0 ? "bg-gray-300 cursor-not-allowed" : "bg-orange-500 hover:bg-orange-600"
             }`}
           >
-            {issuing || apiLoading ? "Sending token..." : "Transfer"}
+            {issuing || loadingReceiver ? "Sending token..." : "Transfer"}
           </button>
         </div>
       </div>

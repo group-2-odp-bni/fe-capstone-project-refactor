@@ -1,16 +1,18 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import TopUpMethod from "./TopUpMethod";
 import TopUpAmount from "./TopUpAmount";
 import TopUpConfirmationStep from "./TopUpConfirmationStep";
+import TopUpSuccessPage from "./TopUpSuccessPage"; // ⬅️ tambahkan file ini (yang mirip screenshot sukses)
 import { useTopUp } from "../../hooks/api/useTopUp";
 
-const SS_KEY = "topupFlowState"; // simpan step di sessionStorage (opsional)
+const SS_KEY = "topupFlowState";
 
 export default function TopUpFlow() {
-  const [step, setStep] = useState("method"); // 'method' | 'amount' | 'confirmation'
+  // 'method' | 'amount' | 'confirmation' | 'success'
+  const [step, setStep] = useState("method");
   const [method, setMethod] = useState({ code: "BNI_VA", name: "BNI Virtual Account" });
-  const [amount, setAmount] = useState("");
-  const [confirmData, setConfirmData] = useState(null); // { va, expiresAt, trxId }
+  const [amount, setAmount] = useState(""); // simpan input apa adanya, kirim ke API sebagai number
+  const [confirmData, setConfirmData] = useState(null); // { va, expiresAt, trxId, completedAt? }
 
   const { createTopUpSafe, loading, error } = useTopUp();
 
@@ -27,7 +29,7 @@ export default function TopUpFlow() {
     } catch {}
   }, []);
 
-  // Persist state
+  // Persist state (opsional)
   useEffect(() => {
     sessionStorage.setItem(SS_KEY, JSON.stringify({ step, method, amount, confirmData }));
   }, [step, method, amount, confirmData]);
@@ -38,17 +40,20 @@ export default function TopUpFlow() {
   };
 
   const handleConfirmAmount = async (amt) => {
-    if (!amt) return;
-    setAmount(amt);
+    const nAmt = Number(amt);
+    if (!nAmt || Number.isNaN(nAmt)) return;
+
+    setAmount(nAmt);
 
     // Panggil API → tampilkan konfirmasi
-    const r = await createTopUpSafe({ amount: amt, methodCode: method.code });
-    if (!r) return; // error akan ditampilkan di Amount (via props)
+    const r = await createTopUpSafe({ amount: nAmt, methodCode: method.code });
+    if (!r) return; // error tampil via props di Amount
 
     setConfirmData({
       va: r.virtualAccount || "7152635469183646",
-      expiresAt: r.expiresAt,
-      trxId: r.trxId,
+      expiresAt: r.expiresAt || null,
+      trxId: r.trxId || r.referenceId || "",
+      completedAt: r.completedAt || new Date().toISOString(),
     });
     setStep("confirmation");
   };
@@ -56,13 +61,31 @@ export default function TopUpFlow() {
   const backFromAmount = () => setStep("method");
   const backFromConfirm = () => setStep("amount");
 
-  const finish = () => {
-    // reset flow (atau redirect ke dashboard)
+  // Dari konfirmasi → sukses (tanpa routing)
+  const goSuccess = () => setStep("success");
+
+  // Selesai di halaman sukses → reset ke awal
+  const resetFlow = () => {
     setStep("method");
     setAmount("");
     setConfirmData(null);
     sessionStorage.removeItem(SS_KEY);
   };
+
+  // Format data untuk halaman sukses (bisa ambil dari confirmData/API)
+  const successProps = useMemo(
+    () => ({
+      amount: Number(amount) || 0,
+      brand: "RANGE-PAY",
+      brandIcon: "/orange.jpg",
+      recipientName: "Ahong",            // kalau punya data penerima nyata, ganti dari state/props
+      recipientPhone: "+62 8567 7122 534",
+      refId: confirmData?.trxId || "",
+      completedAt: confirmData?.completedAt || new Date().toISOString(),
+      txType: "Top Up",
+    }),
+    [amount, confirmData]
+  );
 
   return (
     <div className="w-full">
@@ -75,7 +98,7 @@ export default function TopUpFlow() {
           method={method}
           loading={loading}
           error={error}
-          onBack={backFromAmount}
+          onBack={loading ? undefined : backFromAmount}
           onConfirm={handleConfirmAmount}
         />
       )}
@@ -86,7 +109,14 @@ export default function TopUpFlow() {
           va={confirmData.va}
           expiresAt={confirmData.expiresAt}
           onBack={backFromConfirm}
-          onDone={finish}
+          onDone={goSuccess}   // ⬅️ klik Done langsung ganti ke halaman sukses
+        />
+      )}
+
+      {step === "success" && confirmData && (
+        <TopUpSuccessPage
+          {...successProps}
+          onPrimary={resetFlow} // tombol "Done" pada halaman sukses
         />
       )}
     </div>

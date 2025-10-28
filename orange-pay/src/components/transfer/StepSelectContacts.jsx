@@ -1,72 +1,124 @@
-// src/components/transfer/StepSelectContacts.jsx
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import useTransferApi from "../../hooks/api/useTransferApi";
 import { useTransfer } from "../../context/TransferContext";
 import { useDebounce } from "../../hooks/useDebounce";
 
+// ✅ small UI components
+import SearchInput from "../ui/SearchInput";
+import FavoriteAvatar from "../ui/FavoriteAvatar";
+import ContactListItem from "../ui/ContactListItem";
+
+function normalizePhone(phone = "") {
+  const digits = (phone || "").replace(/[^\d+]/g, "");
+  if (!digits) return "";
+  if (digits.startsWith("+62")) return "0" + digits.slice(3);
+  if (digits.startsWith("62")) return "0" + digits.slice(2);
+  return digits;
+}
+
 export default function StepSelectContacts() {
-  const { fetchContacts } = useTransferApi();
+  const api = useTransferApi();
+  const {
+    fetchSavedContacts,
+    searchSavedContacts,
+    lookupMainByPhone,
+  } = api;
+
   const { data, setData, setStep } = useTransfer();
 
   const [query, setQuery] = useState(data?.phone ?? "");
-  const debouncedQuery = useDebounce(query, 300); // debounce 300ms
+  const debouncedQuery = useDebounce(query, 400);
 
-  const [allContacts, setAllContacts] = useState([]); // full list fetched on mount
-  const [results, setResults] = useState([]); // visible list (filtered)
+  const [savedContacts, setSavedContacts] = useState([]);
+  const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
+  const [dbFound, setDbFound] = useState(null);
+  const [inquiryLoading, setInquiryLoading] = useState(false);
 
-  // Helper to safely fetch all contacts on mount
-  const fetchAllContacts = async () => {
-    setLoading(true);
-    setErrorMsg(null);
-    try {
-      if (typeof fetchContacts !== "function") {
-        throw new Error("fetchContacts is not a function");
-      }
-      // Attempt calling with no args — adjust if your API requires a specific arg for full list
-      const res = await fetchContacts();
-      const list = Array.isArray(res) ? res : [];
-      setAllContacts(list);
-      setResults(list);
-    } catch (err) {
-      console.error("[StepSelectContacts] fetchAllContacts error:", err);
-      setAllContacts([]);
-      setResults([]);
-      setErrorMsg(err?.message || "Failed to load contacts");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const abortRef = useRef(false);
+  const lastLookupRef = useRef("");
 
-  // 1) Fetch all contacts once on mount
+  // 🧭 Load saved contacts on mount
   useEffect(() => {
-    fetchAllContacts();
-    // run only once on mount
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    let mounted = true;
+    (async () => {
+      setLoading(true);
+      try {
+        const saved =
+          typeof fetchSavedContacts === "function"
+            ? await fetchSavedContacts()
+            : [];
+        if (!mounted) return;
+        setSavedContacts(Array.isArray(saved) ? saved : []);
+        setResults(Array.isArray(saved) ? saved : []);
+      } catch (err) {
+        if (!mounted) return;
+        setErrorMsg(err?.message || "Failed to load contacts");
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, []); // run once
 
-  // 2) Filter locally when debouncedQuery changes
+  // 🔍 Search saved contacts
   useEffect(() => {
     const q = (debouncedQuery ?? "").trim();
+    abortRef.current = false;
 
     if (q === "") {
-      // empty query => show full list
-      setResults(allContacts);
+      setResults(savedContacts);
+      setDbFound(null);
       return;
     }
 
-    // local filter: match name or phone (case-insensitive)
-    const normalized = q.toLowerCase();
-    const filtered = allContacts.filter((c) => {
-      const name = (c.name || "").toLowerCase();
-      const phone = (c.phone || "").toLowerCase();
-      return name.includes(normalized) || phone.includes(normalized);
-    });
+    (async () => {
+      try {
+        const filtered =
+          typeof searchSavedContacts === "function"
+            ? await searchSavedContacts(q)
+            : [];
+        if (!abortRef.current) setResults(filtered);
+      } catch {
+        if (!abortRef.current) setResults([]);
+      }
+    })();
 
-    setResults(filtered);
-  }, [debouncedQuery, allContacts]);
+    return () => {
+      abortRef.current = true;
+    };
+  }, [debouncedQuery, savedContacts, searchSavedContacts]);
 
+  // 🔄 Background lookup (main DB)
+  useEffect(() => {
+    const q = (debouncedQuery ?? "").trim();
+    abortRef.current = false;
+
+    if (!q || (Array.isArray(results) && results.length > 0)) return;
+
+    const normalized = normalizePhone(q);
+    if (!normalized || lastLookupRef.current === normalized) return;
+    lastLookupRef.current = normalized;
+
+    (async () => {
+      try {
+        const found = await lookupMainByPhone(normalized);
+        if (abortRef.current) return;
+        setDbFound(found || false);
+      } catch {
+        if (!abortRef.current) setDbFound(false);
+      }
+    })();
+
+    return () => {
+      abortRef.current = true;
+    };
+  }, [debouncedQuery, results, lookupMainByPhone]);
+
+  // 🧩 Select contact
   const pick = (c) => {
     setData({
       phone: c.phone,
@@ -76,97 +128,135 @@ export default function StepSelectContacts() {
     setStep("details");
   };
 
-  const favorites = results.slice(0, 4);
+  // 🚦 Handle manual number entry (user types and clicks)
+  const handleShowConfirm = async () => {
+    const raw = query.trim();
+    if (!raw) return;
 
+    const normalized = normalizePhone(raw);
+
+    // Check if already saved
+    const alreadySaved = savedContacts.find(
+      (c) => c.phone && normalizePhone(c.phone) === normalized
+    );
+    if (alreadySaved) {
+      pick(alreadySaved);
+      return;
+    }
+
+    setInquiryLoading(true);
+    try {
+      const found = await lookupMainByPhone(normalized);
+
+      if (!found) {
+        // 🚫 not in saved or main contact
+        setInquiryLoading(false);
+        setDbFound(false);
+        return;
+      }
+
+      // ✅ Found in MAIN but not saved: go verify once
+      setData({
+        phone: found.phone || normalized,
+        contactName: found.name || "",
+        accountId: found.accountId || null,
+      });
+      setStep("verify");
+    } finally {
+      setInquiryLoading(false);
+    }
+  };
+
+  const favorites = Array.isArray(results) ? results.slice(0, 8) : [];
+
+  // 🧩 UI
   return (
     <div className="pt-2">
-      {/* Search input */}
-      <div className="mb-5">
-        <div className="relative">
-          <span className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-              className="text-gray-400"
-            >
-              <path
-                d="M21 21l-4.35-4.35"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-              <circle cx="11" cy="11" r="6" stroke="currentColor" strokeWidth="1.5" />
-            </svg>
-          </span>
-
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search name or phone (e.g. 0812...)"
-            className="w-full bg-gray-50 border border-gray-100 rounded-xl py-3 pl-11 pr-4 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-gray-200"
-          />
-        </div>
+      {/* 🔍 Search */}
+      <div className="mb-5 px-4">
+        <SearchInput
+          value={query}
+          onChange={setQuery}
+          placeholder="Search name or phone (e.g. 0812...)"
+          inputMode="tel"
+        />
       </div>
 
-      {/* Favorites */}
-      <div className="mb-4">
-        <div className="text-sm font-medium mb-3">Favorite</div>
-
-        <div className="flex gap-3 overflow-x-auto pb-2">
-          {favorites.length === 0 ? (
-            <div className="text-xs text-gray-400">No favorites</div>
+      {/* 🧾 Main container */}
+      <div
+        className="mx-4 mb-4 border rounded-lg p-4 border-gray-200 flex flex-col"
+        style={{ maxHeight: "calc(100vh - 180px)" }}
+      >
+        {/* 🚫 not in any contact */}
+        {query.trim() !== "" &&
+          Array.isArray(results) &&
+          results.length === 0 &&
+          (dbFound === false ? (
+            <div className="mb-4">
+              <div className="rounded-lg border border-gray-200 bg-gray-50 p-3 text-center text-sm text-gray-500 select-none">
+                This number is not available on Orange-Pay
+              </div>
+            </div>
           ) : (
-            favorites.map((f) => {
-              const firstName = f.name?.split(" ")[0] || f.name || "";
-              const initials = (firstName[0] || "").toUpperCase();
-              return (
-                <button key={f.phone} onClick={() => pick(f)} className="flex-shrink-0 w-20 text-center">
-                  <div className="mx-auto h-10 w-10 rounded-full bg-orange-100 flex items-center justify-center text-sm font-semibold text-orange-700">
-                    {initials}
-                  </div>
-                  <div className="mt-2 text-xs text-gray-700 truncate">{firstName}</div>
-                </button>
-              );
-            })
-          )}
-        </div>
-      </div>
-
-      {/* Contacts list */}
-      <div className="mb-2">
-        <div className="text-sm font-medium">Contact</div>
-      </div>
-
-      <div className="border-t border-gray-100 overflow-auto max-h-[320px]">
-        {loading ? (
-          <div className="py-6 text-center text-sm text-gray-400">Loading...</div>
-        ) : errorMsg ? (
-          <div className="py-6 text-center text-sm text-red-500">{errorMsg}</div>
-        ) : results.length === 0 ? (
-          <div className="py-6 text-center text-sm text-gray-400">No contacts found</div>
-        ) : (
-          results.map((c, idx) => (
-            <button
-              key={(c.phone ?? "") + idx}
-              onClick={() => pick(c)}
-              className="w-full text-left py-3 flex items-center justify-between border-b border-gray-50 hover:bg-gray-50"
-            >
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center text-sm font-semibold text-gray-700">
-                  {(c.name || "U").split(" ")[0][0]?.toUpperCase() || "U"}
-                </div>
-                <div>
-                  <div className="text-sm font-medium text-gray-900">{c.name}</div>
-                  <div className="text-xs text-gray-500">{c.phone}</div>
+            <div className="mb-4">
+              <div
+                role="button"
+                tabIndex={0}
+                onClick={!inquiryLoading ? handleShowConfirm : undefined}
+                onKeyDown={(e) => e.key === "Enter" && handleShowConfirm()}
+                className={`cursor-pointer rounded-lg border border-gray-200 bg-white p-3 shadow-sm hover:shadow-md focus:outline-none ${
+                  inquiryLoading ? "opacity-50 pointer-events-none" : ""
+                }`}
+              >
+                <div className="font-medium text-sm">Not in your contact</div>
+                <div className="text-xs text-gray-500">
+                  Click here to transfer to Orange-Pay
                 </div>
               </div>
-            </button>
-          ))
-        )}
+            </div>
+          ))}
+
+        {/* ⭐ Favorites */}
+        <div className="mb-4 flex-shrink-0">
+          <div className="text-sm font-medium mb-3">Favorite</div>
+          <div className="flex gap-3 overflow-x-auto pb-2">
+            {favorites.length === 0 ? (
+              <div className="text-xs text-gray-400">No favorites</div>
+            ) : (
+              favorites.map((f) => (
+                <FavoriteAvatar
+                  key={f.phone}
+                  name={f.name}
+                  onClick={() => pick(f)}
+                />
+              ))
+            )}
+          </div>
+        </div>
+
+        {/* 📞 Contacts */}
+        <div className="text-sm font-medium mb-2 flex-shrink-0">Contact</div>
+        <div className="flex-1 overflow-y-auto border-t border-gray-100 pt-3">
+          {loading ? (
+            <div className="py-6 text-center text-sm text-gray-400">
+              Loading...
+            </div>
+          ) : errorMsg ? (
+            <div className="py-6 text-center text-sm text-red-500">
+              {errorMsg}
+            </div>
+          ) : results.length === 0 ? (
+            dbFound === false ? null : (
+              <div className="py-6 text-center text-sm text-gray-400">
+                No contacts found
+              </div>
+            )
+          ) : (
+            results.map((c, idx) => (
+              <ContactListItem key={c.phone + idx} contact={c} onPick={pick} />
+            ))
+          )}
+        </div>
       </div>
     </div>
   );

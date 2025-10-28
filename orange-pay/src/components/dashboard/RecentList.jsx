@@ -63,7 +63,7 @@ export default function RecentList() {
 
                         {/* Right */}
                         <div className="text-right">
-                          <p className={`text-sm font-semibold ${amountColor}`}>
+                          <p className={`text-sm ${amountColor}`}>
                             {sign} Rp{formatRupiah(user.amount)}
                           </p>
                           <p className="text-[11px] text-gray-500">{rightSub}</p>
