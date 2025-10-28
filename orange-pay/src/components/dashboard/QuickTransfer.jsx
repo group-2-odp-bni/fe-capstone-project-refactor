@@ -33,19 +33,20 @@ export default function QuickTransfer() {
   }, [contacts]);
 
   const handleSelectContact = (metaOrDetails) => {
-    // metaOrDetails should contain name, phone, accountId etc.
-    const titleName = metaOrDetails?.name || metaOrDetails?.fullName || metaOrDetails?.displayName || "—";
+    const titleName =
+      metaOrDetails?.name || metaOrDetails?.fullName || metaOrDetails?.displayName || "—";
     navigate("/app/transfer", {
       state: {
-        step: "amount",
-        to: {
-          name: titleName,
-          phone: metaOrDetails?.phone,
-          accountId: metaOrDetails?.accountId,
+        step: "amount",               // matches STEP_ORDER
+        data: {                       // <-- use "data" not "to"
+          phone: metaOrDetails?.phone || "",
+          contactName: titleName,
+          accountId: metaOrDetails?.accountId || "",
         },
       },
     });
   };
+  
 
   // map items so UI is simple (UI does not compute names)
   const itemsForUI = uniqueRecent.map(({ name, meta }) => {

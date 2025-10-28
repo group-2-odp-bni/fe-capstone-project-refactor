@@ -30,7 +30,9 @@ import TopUpPage from "../pages/TopUpPage";
 import { isAuthenticated } from "../services/authService";
 import AddWalletPage from "../pages/AddWalletPage";
 import AddBalanceFromWalletPage from "../pages/AddBalanceFromWalletPageNew";
+import AllHistoryPage from "../pages/AllHistory";
 import ConfirmAddBalancePage from "../pages/ConfirmAddBalancePage";
+import ReceiptPage from "../pages/ReceiptPage";
 
 /* login flow context & step guard */
 import { LoginFlowProvider } from "../context/LoginFlowContext";
@@ -185,7 +187,7 @@ export default function AppRoutes() {
           <Route path="dashboard" element={<DashboardPage />} />
           <Route path="transactions" element={<HistoryTransactionPage />} />
           <Route path="topup" element={<TopUpPage />} />
-            
+          <Route path="receipt/:trxId" element={<ReceiptPage />} />
           {/* === TESTING ROUTE (tanpa param): buka /app/members-test === */}
           <Route
             path="members-test"
@@ -203,6 +205,7 @@ export default function AppRoutes() {
             <Route path="new" element={<AddWalletPage />} />
             <Route path=":walletId" element={<HistoryTransactionPage />} /> {/* <— tambahan */}
           </Route>
+          <Route path="allhistory" element={<AllHistoryPage />} />
           <Route path="confirm-add-balance" element={<ConfirmAddBalancePage />} />
           {/* ----------- Transfer Flow ----------- */}
           <Route
@@ -217,6 +220,7 @@ export default function AppRoutes() {
               </TransferProvider>
             }
           />
+          
 
           {/* ----------- Reset flow placeholder ----------- */}
           <Route path="reset">{/* add reset pages later */}</Route>

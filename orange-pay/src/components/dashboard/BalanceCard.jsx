@@ -74,27 +74,8 @@ export default function AtomicBalanceCard({ initialWalletId = null }) {
   const isCardLoading = (_id, _idx) => Boolean(loading);
 
   // create wallet (logic only)
-  const handleCreateWallet = async () => {
-    if (typeof addWallet !== "function") {
-      window.location.href = "/app/wallets/new";
-      return;
-    }
-    try {
-      setCreating(true);
-      await addWallet({
-        type: "personal",
-        walletName: "New Wallet",
-        initialBalance: 0,
-      });
-      // after creation, navigate to the new card (new item appended at end)
-      const newIndex = Math.max(0, items.length - 1);
-      // slight delay to allow new item to mount before scrolling
-      setTimeout(() => goTo(newIndex), 80);
-    } catch (err) {
-      console.error("Failed to add wallet", err);
-    } finally {
-      setCreating(false);
-    }
+  const handleCreateWallet = () => {
+    navigate("/app/wallets/new");
   };
 
   // helper: optional append wallet id as query param (UI can also handle)
