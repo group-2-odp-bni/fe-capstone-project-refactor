@@ -30,7 +30,7 @@ import TopUpPage from "../pages/TopUpPage";
 import { isAuthenticated } from "../services/authService";
 import AddWalletPage from "../pages/AddWalletPage";
 import AddBalanceFromWalletPage from "../pages/AddBalanceFromWalletPageNew";
-
+import ConfirmAddBalancePage from "../pages/ConfirmAddBalancePage";
 
 /* login flow context & step guard */
 import { LoginFlowProvider } from "../context/LoginFlowContext";
@@ -203,6 +203,7 @@ export default function AppRoutes() {
             <Route path="new" element={<AddWalletPage />} />
             <Route path=":walletId" element={<HistoryTransactionPage />} /> {/* <— tambahan */}
           </Route>
+          <Route path="confirm-add-balance" element={<ConfirmAddBalancePage />} />
           {/* ----------- Transfer Flow ----------- */}
           <Route
             path="transfer/*"
