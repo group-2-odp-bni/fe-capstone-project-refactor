@@ -18,15 +18,15 @@ export default function HistoryTransactionPage() {
     setIsMainCard(walletId === "wallet-001");
   }, [walletId]);
 
-  const handleAddPerson = () => {
-    alert(`Tambah orang untuk kartu ${walletId}`);
+  // ✅ navigate to Add Balance From Wallet
+  const handleAddBalanceFromWallet = () => {
+    navigate(`/add-balance-from-wallet?wallet=${walletId}`);
   };
 
   const handleViewPeople = () => {
     alert(`Lihat daftar orang untuk kartu ${walletId}`);
   };
 
-  // ✅ Mapping walletId ke tipe wallet
   const mappedWalletId =
     walletId === "wallet-001"
       ? "main"
@@ -37,25 +37,20 @@ export default function HistoryTransactionPage() {
   return (
     <DynamicShell>
       <div className="space-y-4 md:space-y-6">
-        {/* Judul */}
         <PageHeader>{pageTitle}</PageHeader>
 
-        {/* ✅ Kartu saldo */}
         <div className="-mt-2 md:-mt-3">
           <BalanceCard walletId={walletId} />
         </div>
 
-        {/* ✅ Tombol bawah kartu */}
         {isMainCard ? (
-          // Kartu utama: tetap gunakan class lama (jangan diubah)
           <div className="arrow-button-container mt-2 md:mt-3">
             <ArrowButton />
           </div>
         ) : (
-          // Kartu lain: gunakan .button-group agar RecentHistory tahu posisinya
           <div className="button-group flex justify-center gap-3 mt-3 md:mt-4 relative">
             <button
-              onClick={handleAddPerson}
+              onClick={handleAddBalanceFromWallet} // ✅ HERE
               className="w-10 h-10 flex items-center justify-center rounded-xl bg-orange-500 text-white shadow-md active:scale-95 transition"
             >
               <PlusIcon className="w-5 h-5" />
@@ -70,7 +65,6 @@ export default function HistoryTransactionPage() {
           </div>
         )}
 
-        {/* ✅ Riwayat transaksi (bottom sheet) */}
         <RecentHistory
           walletId={mappedWalletId}
           onExpandChange={(expanded) =>
