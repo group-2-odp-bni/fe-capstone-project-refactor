@@ -133,7 +133,7 @@ const AddBalanceFromWalletPage = () => {
               <button
                 type="button"
                 onClick={() => setDropdownOpen(!dropdownOpen)}
-                className="w-full flex justify-between bg-white border border-gray-200 rounded-2xl py-4 px-6 shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-orange-300 transition-all duration-200"
+                className="w-full flex justify-between items-center bg-white border border-gray-200 rounded-2xl py-4 px-6 shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-orange-300 transition-all duration-200"
               >
                 <div className="">
                   <div>
@@ -143,11 +143,11 @@ const AddBalanceFromWalletPage = () => {
                       className="block h-5 md:h-6 w-auto drop-shadow"
                     />
                   </div>
-                  <div>
-                  <span className="mt-1 text-lg font-semibold text-gray-800">
+                <div className="flex flex-col items-start pl-5">
+                  <span className="text-lg font-semibold text-gray-800">
                     {selected || "Pilih Wallet"}
                   </span>
-                  </div>
+                </div>
                 </div>
                 <ChevronDownIcon className="w-7 h-7 text-gray-500" />
               </button>
