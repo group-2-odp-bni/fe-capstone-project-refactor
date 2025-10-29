@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import useBalanceCards from "../hooks/api/useCardBalances";
 import PinKeypad from "../components/register/PinKeypad";
 import PinDots from "../components/register/PinDots";
+import Header from "../components/Header";
 import { EyeIcon, EyeSlashIcon, ChevronDownIcon } from "@heroicons/react/24/outline";
 
 /* ===== Komponen Kartu Balance ===== */
@@ -69,6 +70,7 @@ const AddBalanceFromWalletPage = () => {
       setSelected(baseCards[0].title);
   }, [baseCards, selected]);
 
+  const handleBack = () => navigate(-1);
   // Handle keypad
   const handleNumber = (n) => {
     setErrorMsg("");
@@ -102,28 +104,13 @@ const AddBalanceFromWalletPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
+    <div className="min-h-screen flex flex-col">
       {/* HEADER */}
-      <header className="bg-white border-b border-gray-200 p-4 flex items-center justify-between relative">
-        <button
-          onClick={() => navigate("/app/dashboard", { replace: true })}
-          aria-label="Back"
-          className="w-9 h-9 grid place-items-center rounded-full bg-white text-[#FF9A25] shadow-md font-semibold"
-        >
-          🡨
-        </button>
-
-        <h1 className="absolute left-1/2 transform -translate-x-1/2 text-xl font-bold text-center text-gray-800">
-          Add Balance
-        </h1>
-
-        <div className="w-9 h-9" />
-      </header>
+      <Header title="Add Balance" onBack={handleBack} showBack centerTitle />
 
       {/* MAIN CONTENT */}
-      <main className="flex-1 flex items-center justify-center p-4">
-        <form className="w-full max-w-md">
-          <div className="bg-gradient-to-br from-white to-gray-50 rounded-2xl p-6 shadow-lg">
+      <main className=" justify-center">
+          <div className="p-5">
             <p className="text-sm mb-4 font-bold">
               Personal Wallet
             </p>
@@ -142,21 +129,25 @@ const AddBalanceFromWalletPage = () => {
             <label className="block text-xs font-bold mb-2">
               Add Balance
             </label>
-            <div className="relative">
+            <div className="flex-col leading-tight">
               <button
                 type="button"
                 onClick={() => setDropdownOpen(!dropdownOpen)}
-                className="w-full flex justify-between items-center bg-white border border-gray-200 rounded-2xl py-4 px-6 shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-orange-300 transition-all duration-200"
+                className="w-full flex justify-between bg-white border border-gray-200 rounded-2xl py-4 px-6 shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-orange-300 transition-all duration-200"
               >
-                <div className="flex flex-col items-center gap-1">
-                  <img
-                    src="/orangepay_card.svg"
-                    alt="Logo"
-                    className="h-5 md:h-6 w-auto drop-shadow"
-                  />
-                  <span className="text-lg font-semibold text-gray-800">
+                <div className="">
+                  <div>
+                    <img
+                      src="/Orangepay.svg"
+                      alt="Logo"
+                      className="block h-5 md:h-6 w-auto drop-shadow"
+                    />
+                  </div>
+                  <div>
+                  <span className="mt-1 text-lg font-semibold text-gray-800">
                     {selected || "Pilih Wallet"}
                   </span>
+                  </div>
                 </div>
                 <ChevronDownIcon className="w-7 h-7 text-gray-500" />
               </button>
@@ -247,7 +238,6 @@ const AddBalanceFromWalletPage = () => {
               </button>
             </div>
           </div>
-        </form>
       </main>
     </div>
   );
