@@ -4,6 +4,7 @@ import EditRincian from "./EditRincian";
 import CameraPage from "./CameraPage";
 import SelectContacts from "./SelectContacts";
 import SplitBillConfirmation from "./SplitBillConfirmation";
+import SplitBillConfirmed from "./SplitBillConfirmed"; // TAMBAHKAN IMPORT INI
 
 export default function ReceiptResult({
   receiptData,
@@ -17,6 +18,10 @@ export default function ReceiptResult({
   const [showContacts, setShowContacts] = useState(false);
   const [showImagePopup, setShowImagePopup] = useState(false);
   const [imageAspect, setImageAspect] = useState(9 / 16);
+  
+  // TAMBAHKAN STATE UNTUK HALAMAN FINAL CONFIRMED
+  const [showFinalConfirmed, setShowFinalConfirmed] = useState(false);
+  const [finalConfirmedData, setFinalConfirmedData] = useState(null);
 
   const [editableData, setEditableData] = useState(receiptData);
   const [splitName, setSplitName] = useState(
@@ -93,17 +98,41 @@ export default function ReceiptResult({
     setShowContacts(true); // Kembali ke SelectContacts
   };
 
+  // HANDLER BARU: Dari SplitBillConfirmation ke SplitBillConfirmed (halaman final)
   const handleFinalConfirm = (payload) => {
-    // Panggil onConfirm prop dari ReceiptResult (menuju langkah berikutnya di aplikasi)
+    // Simpan data untuk ditampilkan di SplitBillConfirmed
+    const finalData = {
+      ...payload,
+      splitName: splitName,
+      receiptImage: receiptImage, // KIRIM FOTO STRUK
+      subtotal: subtotal,
+      total: total,
+      pajak: pajak,
+      service: service,
+      discount: discount,
+      other: other,
+      members: splitMembers,
+      currentUser: { id: "me", name: "Kamu", phoneMasked: "*7196" },
+    };
+    
+    setFinalConfirmedData(finalData);
+    setShowConfirmation(false);
+    setShowFinalConfirmed(true); // Tampilkan halaman final
+  };
+
+  // HANDLER: Kembali dari SplitBillConfirmed ke SplitBillConfirmation
+  const handleBackFromFinalConfirmed = () => {
+    setShowFinalConfirmed(false);
+    setShowConfirmation(true);
+  };
+
+  // HANDLER: Dari SplitBillConfirmed kembali ke home (selesai)
+  const handleBackToHomeFromFinalConfirmed = () => {
+    // Reset semua state dan kembali ke awal atau panggil onConfirm
     onConfirm?.({
-      ...payload, 
-      receiptData: editableData,
-      subtotal,
-      total,
-      members: splitMembers, // Pastikan anggota terkirim
+      ...finalConfirmedData,
+      completed: true,
     });
-    // Jika ingin menutup semua flow:
-    // setShowConfirmation(false);
   };
   
   /* ================================================= */
@@ -118,6 +147,18 @@ export default function ReceiptResult({
         receiptData={editableData}
         onBack={handleBackFromEdit}
         onSave={handleSaveEdit}
+      />
+    );
+  }
+
+  // TAMPILKAN HALAMAN FINAL: SplitBillConfirmed (receipt style)
+  if (showFinalConfirmed) {
+    return (
+      <SplitBillConfirmed
+        data={finalConfirmedData}
+        receiptImage={receiptImage} // KIRIM FOTO STRUK DI SINI
+        onBack={handleBackFromFinalConfirmed}
+        onBackToHome={handleBackToHomeFromFinalConfirmed}
       />
     );
   }
@@ -238,7 +279,7 @@ export default function ReceiptResult({
                                    text-[13px] text-gray-900 font-medium 
                                    focus:outline-none focus:border-[#FF9A25] 
                                    transition-all duration-150 ease-in-out
-                                   ${splitNameError ? "border-red-500 placeholder-red-400" : "border-gray-400"}`}
+                                   ${splitNameError ? "border-red-500" : "border-gray-400"}`}
                 placeholder="Masukkan nama split bill"
               />
 

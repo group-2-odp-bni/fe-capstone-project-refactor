@@ -72,12 +72,6 @@ export const useOCRImage = () => {
                   total: 20200,
                 },
                 {
-                  name: 'Abcde',
-                  quantity: 1,
-                  price: 20200,
-                  total: 20200,
-                },
-                {
                   name: 'CADBURY OREO 58.5G',
                   quantity: 1,
                   price: 20900,
@@ -86,8 +80,8 @@ export const useOCRImage = () => {
               ],
               
               subtotal: 121100,
-              pajak: 12900,
-              service: 3,
+              pajak: 12001,
+              service: 0,
               discount: -36000,
               other: -12001,
               total: 85100,
