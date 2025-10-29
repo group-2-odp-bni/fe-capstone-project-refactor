@@ -5,9 +5,18 @@ export default defineConfig({
   plugins: [react()],
   server: {
     proxy: {
-      // Auth service (8081)
-      '/api/v1/auth': {
-        target: 'http://localhost:8081',
+      "/api/v1/auth": {
+        target: "http://localhost:8081",
+        changeOrigin: true,
+        secure: false,
+      },
+      "/api/v1/wallets": {
+        target: "http://localhost:8080",
+        changeOrigin: true,
+        secure: false,
+      },
+      "/api/v1/users/me": {
+        target: "http://localhost:8080",
         changeOrigin: true,
         secure: false,
       },

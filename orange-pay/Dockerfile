@@ -2,6 +2,7 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci --legacy-peer-deps
+
 COPY . .
 RUN npm run build
 
@@ -15,4 +16,4 @@ COPY --from=builder /app/dist /usr/share/nginx/html
 EXPOSE 80
 
 HEALTHCHECK --interval=20s --timeout=5s --retries=5 \
-  CMD wget -qO- http://127.0.0.1/health || exit 1
+  CMD curl --fail http://127.0.0.1/health || exit 1

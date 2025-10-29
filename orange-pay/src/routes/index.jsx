@@ -16,7 +16,6 @@ import WelcomePage from "../pages/WelcomePage";
 import LoginPage from "../pages/login/LoginPage";
 import ProfilePage from "../pages/ProfilePage";
 
-
 import OtpStage from "../components/login/OtpStage";
 import PinStage from "../components/login/PinStage";
 import ResetPhone from "../components/login/ResetPhone";
@@ -31,7 +30,6 @@ import { isAuthenticated } from "../services/authService";
 import { RegistrationProvider } from "../context/RegistrationContext";
 import AddWalletPage from "../pages/AddWalletPage";
 import AddBalanceFromWalletPage from "../pages/AddBalanceFromWalletPageNew";
-
 
 /* login flow context & step guard */
 import { LoginProvider } from "../context/LoginContext";
@@ -115,8 +113,6 @@ export default function AppRoutes() {
           <Route index element={<RegisterPage />} />
           <Route path="otp" element={<OtpRegisterPage />} />
           <Route path="setpin" element={<SetPinPage />} />
-          {/* <Route path="otp" element={<RequireRegisterStep step="otp"><OtpRegisterPage /></RequireRegisterStep>} /> */}
-          {/* <Route path="setpin" element={<RequireRegisterStep step="setpin"><SetPinPage /></RequireRegisterStep>} /> */}
         </Route>
 
         {/* ---------- Login Flow (guest only) ---------- */}
@@ -130,17 +126,27 @@ export default function AppRoutes() {
             </PublicRoute>
           }
         >
-
           <Route index element={<LoginPage />} />
           <Route path="reset" element={<ResetPin />} />
           <Route path="otp" element={<OtpLoginPage />} />
           <Route path="pin" element={<PinLoginPage />} />
 
-          <Route path="reset/otp" element={<RequireLoginStep step="otp"><ResetPinOtp /></RequireLoginStep>} />
-          <Route path="reset/pin" element={<RequireLoginStep step="pin"><ResetSetPin /></RequireLoginStep>} />
-
-          {/* <Route path="otp" element={<RequireLoginStep step="otp"><OtpStage /></RequireLoginStep>} /> */}
-          {/* <Route path="pin" element={<RequireLoginStep step="pin"><PinStage /></RequireLoginStep>} /> */}
+          <Route
+            path="reset/otp"
+            element={
+              <RequireLoginStep step="otp">
+                <ResetPinOtp />
+              </RequireLoginStep>
+            }
+          />
+          <Route
+            path="reset/pin"
+            element={
+              <RequireLoginStep step="pin">
+                <ResetSetPin />
+              </RequireLoginStep>
+            }
+          />
         </Route>
 
         {/* ---------- Protected /app routes ---------- */}

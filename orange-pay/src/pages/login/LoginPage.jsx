@@ -46,12 +46,20 @@ function LoginContextContent() {
     setError("");
     setFormData((prev) => ({ ...prev, phoneNumber: value }));
   };
+  function isDevMode() {
+    if (typeof window === "undefined") return false;
+    const params = new URLSearchParams(window.location.search);
+    return (
+      window.location.hostname === "localhost" || params.get("dev") === "1"
+    );
+  }
 
   /** Handle form submit */
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
     setLoading(true);
+    const fullPhone = `+62${formData.phoneNumber}`;
 
     try {
       const response = await fetch("/api/v1/auth/request", {
@@ -88,9 +96,7 @@ function LoginContextContent() {
         <OrangePayLogo />
 
         <h2 className="mt-6 text-2xl font-bold text-center">Welcome Back</h2>
-        <LoginTextContainer>
-          Please sign in to continue
-        </LoginTextContainer>
+        <LoginTextContainer>Please sign in to continue</LoginTextContainer>
 
         <form onSubmit={handleSubmit}>
           <PhoneNumberInput
