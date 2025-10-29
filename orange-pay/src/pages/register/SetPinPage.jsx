@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-
 import CenteredNumberInputPad from "../../components/register/CenteredNumberInputPad";
 import PhoneLayoutBackground from "../../components/PhoneLayoutBackground";
 import MobileShell from "../../components/layout/MobileShell";
@@ -10,9 +9,10 @@ import { FullSubmitButton } from "../../components/button/FullSubmitButton";
 import { useRegistrationContext } from "../../context/RegistrationContext";
 import WhiteCardContainer from "../../components/register/WhiteCardContainer";
 import { saveTokens } from "../../services/auth/authService";
+import api from "../../lib/api";
+import { v4 as uuidv4 } from "uuid";
 
 export default function SetPinPage() {
-
   return (
     <PhoneLayoutBackground>
       <MobileShell>
@@ -20,89 +20,76 @@ export default function SetPinPage() {
         <WhiteCardContainer>
           <SetPinContent />
         </WhiteCardContainer>
-
       </MobileShell>
     </PhoneLayoutBackground>
   );
 }
 
-
 function SetPinContent() {
-
-  // init data and object
   const navigate = useNavigate();
   const { userData } = useRegistrationContext();
   console.log(userData.stateToken);
 
-
-  // init state
   const [pin, setPin] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-
-  // set handler when user click submit
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
     setLoading(true);
 
-    //hit api 1
     try {
-      console.log("--- sent request ---");
-      console.log(`pin : ${pin}`);
+      const pinRes = await api.post(
+        "/api/v1/auth/pin",
+        { pin },
+        {
+          headers: { Authorization: `Bearer ${userData.stateToken}` },
+        }
+      );
 
-      const response = await fetch('/api/v1/auth/pin', {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${userData.stateToken}`,
+      const accessToken = pinRes.data?.data?.accessToken;
+      const refreshToken = pinRes.data?.data?.refreshToken;
+      if (!accessToken) throw new Error("Access token tidak ditemukan");
+      saveTokens(accessToken, refreshToken);
+      const idemKey = `wallet-create-${uuidv4()}`;
+      const createWalletRes = await api.post(
+        "/api/v1/wallets",
+        {
+          type: "PERSONAL",
+          name: "Default Main Wallet",
+          metadata: { colors: "#2F5755" },
         },
-        body: JSON.stringify({
-          pin: pin,
-        }),
-      });
-
-      // throw error if failed
-      if (!response.ok) {
-        throw new Error("Failed to send request");
-      }
-
-      //catch data
-      const data = await response.json();
-
-      //save token
-      saveTokens(data.data.accessToken, data.data.refreshToken);
-
-      console.log("pin successfully set :", data);
-
-      //set new navagation
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Idempotency-Key": idemKey,
+          },
+        }
+      );
+      const walletId =
+        createWalletRes.data?.data?.id || createWalletRes.data?.data?.walletId; // fallback kalau BE pakai field berbeda
+      if (!walletId) throw new Error("Wallet ID tidak ditemukan dari response");
+      await api.put(
+        "/api/v1/users/me/receive/default",
+        { walletId },
+        { headers: { Authorization: `Bearer ${accessToken}` } }
+      );
       navigate("/app/dashboard");
-
     } catch {
-
       console.error(err);
       setError(err.message || "Something went wrong.");
-
-
     } finally {
-
       setLoading(false);
-
     }
-  }
-
+  };
 
   return (
     <form onSubmit={handleSubmit} className="pb-10">
-      <CenteredNumberInputPad
-        value={pin}
-        onChange={setPin}
-      />
+      <CenteredNumberInputPad value={pin} onChange={setPin} />
       <FullSubmitButton disabled={loading}>
         {loading ? "Menyimpan..." : "Simpan"}
       </FullSubmitButton>
     </form>
-  )
-
+  );
 }

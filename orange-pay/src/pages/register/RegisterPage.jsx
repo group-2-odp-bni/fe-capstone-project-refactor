@@ -1,6 +1,9 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { RegistrationProvider, useRegistrationContext } from "../../context/RegistrationContext";
+import {
+  RegistrationProvider,
+  useRegistrationContext,
+} from "../../context/RegistrationContext";
 import PhoneLayoutBackground from "../../components/PhoneLayoutBackground";
 import { FullSubmitButton } from "../../components/button/FullSubmitButton";
 import GoogleCaptcha from "../../components/recaptcha/GoogleCaptcha";
@@ -11,7 +14,7 @@ import OrangeHeader from "../../components/register/OrangeHeader";
 import WhiteCardContainer from "../../components/register/WhiteCardContainer";
 import OrangePayLogo from "../../components/register/OrangePayLogo";
 import RegisterTextContainer from "../../components/register/RegisterTextContainer";
-
+import api from "../../lib/api";
 export default function RegisterPage() {
   return (
     <PhoneLayoutBackground>
@@ -48,19 +51,9 @@ function RegisterContent() {
 
     //hit api
     try {
-      const response = await fetch('/api/v1/auth/request', {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          phoneNumber: formData.phoneNumber,
-        }),
+      const { data } = await api.post("/api/v1/auth/request", {
+        phoneNumber: formData.phoneNumber,
       });
-
-      if (!response.ok) {
-        throw new Error("Failed to send request");
-      }
-
-      const data = await response.json();
 
       //Save user info for later use
       setRegistrationData({
@@ -68,10 +61,6 @@ function RegisterContent() {
         email: formData.email,
         phoneNumber: formData.phoneNumber,
       });
-
-      console.log("Registration initiated:", data);
-
-      // Navigate to OTP verification
       navigate("/register/otp");
     } catch (err) {
       console.error(err);
@@ -89,7 +78,6 @@ function RegisterContent() {
         <RegisterTextContainer>
           Masukkan nama dan email aktif Anda untuk menikmati semua layanan kami.
         </RegisterTextContainer>
-
 
         <form onSubmit={handleSubmit} className="space-y-5 mt-6">
           <InputField
@@ -144,7 +132,6 @@ function RegisterContent() {
           </div>
         </form>
       </WhiteCardContainer>
-
     </div>
   );
 }
