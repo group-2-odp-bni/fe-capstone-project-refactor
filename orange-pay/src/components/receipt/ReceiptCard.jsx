@@ -1,5 +1,5 @@
 // src/components/receipt/ReceiptCard.jsx
-import React, { useMemo, useState, useRef } from "react";
+import React, { useMemo, useState, useRef, useEffect } from "react";
 import { ClipboardIcon, CheckIcon, ShareIcon } from "@heroicons/react/24/outline";
 import * as htmlToImage from "html-to-image";
 
@@ -28,7 +28,7 @@ function FieldBox({ label, name, phone }) {
   );
 }
 
-export default function ReceiptCard({ trx }) {
+export default function ReceiptCard({ trx, externalShareRef = null, hideInlineShare = true }) {
   const [copied, setCopied] = useState(false);
   const cardRef = useRef(null);
 
@@ -45,39 +45,32 @@ export default function ReceiptCard({ trx }) {
 
   const onShare = async () => {
     if (!cardRef.current) return;
-  
-    // Let layout settle + ensure fonts are loaded (so rendering matches UI)
+
     try {
       await Promise.race([
         new Promise((r) => setTimeout(r, 30)),
         (window.document.fonts && window.document.fonts.ready) || Promise.resolve(),
       ]);
     } catch {}
-  
+
     try {
       const dataUrl = await htmlToImage.toPng(cardRef.current, {
         cacheBust: true,
         pixelRatio: Math.max(window.devicePixelRatio || 1, 2),
         backgroundColor: "#ffffff",
-        // ⬇️ prevents reading cross-origin CSS rules (Google Fonts), avoiding SecurityError
         skipFonts: true,
-        // ⬇️ be explicit about CORS for any images you might include
         fetchRequestInit: { mode: "cors", credentials: "omit" },
       });
-  
+
       const res = await fetch(dataUrl);
       const blob = await res.blob();
       const file = new File([blob], `receipt-${refId || "trx"}.png`, { type: "image/png" });
-  
+
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        await navigator.share({
-          title: "Transaction Receipt",
-          text: `Ref: ${refId}`,
-          files: [file],
-        });
+        await navigator.share({ title: "Transaction Receipt", text: `Ref: ${refId}`, files: [file] });
         return;
       }
-  
+
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -88,25 +81,23 @@ export default function ReceiptCard({ trx }) {
       console.warn("Share/snapshot error:", err);
     }
   };
-  
+
+  // expose share() to parent via ref
+  useEffect(() => {
+    if (externalShareRef) externalShareRef.current = onShare;
+    return () => {
+      if (externalShareRef) externalShareRef.current = null;
+    };
+  }, [externalShareRef]);
 
   if (!trx) return null;
 
   return (
     <div className="p-4">
-      <div
-        ref={cardRef}
-        className="relative rounded-2xl bg-white shadow-xl p-6"
-      >
-
+      <div ref={cardRef} className="relative rounded-2xl border border-gray-200 bg-white p-6">
         <div className="flex flex-col items-center gap-2">
-          <img
-            src="/Orangepay.svg"
-            alt="logo"
-            className="h-20"
-            crossOrigin="anonymous"
-          />
-          <p className=" text-sm font-semibold">Transfer</p>
+          <img src="/Orangepay.svg" alt="logo" className="h-17 w-60" crossOrigin="anonymous" />
+          <p className="text-sm font-semibold">Transfer</p>
           <p className="text-2xl font-extrabold mt-2">{formatIDR(trx.amount)}</p>
         </div>
 
@@ -115,8 +106,9 @@ export default function ReceiptCard({ trx }) {
           <FieldBox label="To:" name={trx.receiver} phone={trx.receiverPhone} />
         </div>
 
-
-        <p className="text-xs font-semibold text-gray-800 pt-6 border-b pb-2 border-gray-200">Transaction detail</p>
+        <p className="text-xs font-semibold text-gray-800 pt-6 border-b pb-2 border-gray-200">
+          Transaction detail
+        </p>
 
         <div className="text-sm mt-3 space-y-3">
           <div className="flex justify-between">
@@ -144,17 +136,15 @@ export default function ReceiptCard({ trx }) {
             <span>{trx.notes}</span>
           </div>
 
-          {/* centered share button */}
-          <div className="w-full flex justify-center items-center mt-4">
-            <button
-              onClick={onShare}
-              className="bg-amber-400 rounded-lg p-2 shadow"
-            >
-              <ShareIcon className="h-4 w-4" />
-            </button>
-          </div>
+          {/* Inline share button is hidden by default; keep for reuse if needed */}
+          {!hideInlineShare && (
+            <div className="w-full flex justify-center items-center mt-4">
+              <button onClick={onShare} className="bg-amber-400 rounded-lg p-2 shadow">
+                <ShareIcon className="h-4 w-4" />
+              </button>
+            </div>
+          )}
         </div>
-
       </div>
     </div>
   );
