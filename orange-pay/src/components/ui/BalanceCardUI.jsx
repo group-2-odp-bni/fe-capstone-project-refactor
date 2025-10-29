@@ -7,7 +7,7 @@ import React, {
   useImperativeHandle,
 } from "react";
 import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 /* ========== ATOMS ========== */
 
@@ -37,9 +37,9 @@ export const IconToggle = ({ on, onToggle }) => (
   </button>
 );
 
-export const HistoryButton = ({ to }) => (
-  <Link to={to} className="shrink-0">
-    <button className="flex items-center justify-center gap-1 bg-[#FFAE51] backdrop-blur-sm border border-white/20 text-white text-[11px] md:text-xs px-3.5 md:px-4 py-[5px] md:py-[6px] pl-5 md:pl-5 md:w-auto md:px-12 md:pl-12  rounded-full shadow-sm hover:bg-[#CF7309] transition-all active:scale-[.98]">
+export const HistoryButton = ({ walletId }) => (
+  <Link to={`/app/wallets/${walletId}`} className="shrink-0">
+    <button className="flex items-center justify-center gap-1 bg-[#FFAE51] backdrop-blur-sm border border-white/20 text-white text-[11px] md:text-xs px-3.5 md:px-4 py-[5px] md:py-[6px] pl-5 md:pl-5 md:w-auto md:px-12 md:pl-12 rounded-full shadow-sm hover:bg-[#CF7309] transition-all active:scale-[.98]">
       <span>History</span>
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3 h-3">
         <path fillRule="evenodd" d="M10.293 15.707a1 1 0 0 1 0-1.414L13.586 11H4a1 1 0 1 1 0-2h9.586l-3.293-3.293a1 1 0 1 1 1.414-1.414l5 5a1 1 0 0 1 0 1.414l-5 5a1 1 0 0 1-1.414 0z" clipRule="evenodd" />
@@ -48,12 +48,29 @@ export const HistoryButton = ({ to }) => (
   </Link>
 );
 
-export const ActionIcon = ({ label, children, to }) => (
-  <Link to={to} className="flex flex-col items-center hover:text-white/90 transition-all cursor-pointer active:scale-[.98]">
-    <div className="w-6 md:w-7 h-auto mb-[2px]">{children}</div>
-    <span className="text-white text-[9.5px] md:text-[10px] leading-3">{label}</span>
-  </Link>
-);
+/**
+ * ActionIcon
+ * - renders a Link when `to` is provided (and neither onClick nor asButton),
+ * - renders a button when `onClick` or `asButton` is truthy.
+ */
+export const ActionIcon = ({ label, children, to, onClick, asButton = false }) => {
+  const commonClass = "flex flex-col items-center hover:text-white/90 transition-all cursor-pointer active:scale-[.98]";
+  if (asButton || onClick) {
+    return (
+      <button onClick={onClick} type="button" className={commonClass} style={{ background: "transparent", border: 0 }}>
+        <div className="w-6 md:w-7 h-auto mb-[2px]">{children}</div>
+        <span className="text-white text-[9.5px] md:text-[10px] leading-3">{label}</span>
+      </button>
+    );
+  }
+
+  return (
+    <Link to={to} className={commonClass}>
+      <div className="w-6 md:w-7 h-auto mb-[2px]">{children}</div>
+      <span className="text-white text-[9.5px] md:text-[10px] leading-3">{label}</span>
+    </Link>
+  );
+};
 
 /* ========== AmountText (measuring for eye icon) ========== */
 
@@ -118,11 +135,30 @@ export const CardTopBar = ({ title, type, isMain, onBadgeClick }) => (
   </div>
 );
 
-export const CTASection = ({ links }) => (
-  <div className="relative z-10 flex justify-between items-center mt-6 md:mt-14" style={{ transform: "translateZ(25px)" }}>
-    <HistoryButton to={links.history} />
+/* ========== CTASection (updated) ========== */
 
-    <div className="flex space-x-6 md:space-x-8 text-white">
+/**
+ * CTASection props:
+ * - links: object of route strings { split, topup, addbalancefromwallet, transfer }
+ * - walletId: current wallet id (string)
+ * - type: string, card.type (defaults to "utama")
+ * - isDraggingRef: optional ref to block navigation when dragging
+ */
+export const CTASection = ({ links = {}, walletId, type = "utama", isDraggingRef }) => {
+  const navigate = useNavigate();
+
+  const appendWalletQuery = (basePath) => {
+    const base = basePath || "/app/transfer";
+    return base;
+  };
+
+  const handleTransferClick = () => {
+    if (isDraggingRef && isDraggingRef.current) return;
+    navigate(appendWalletQuery(links.transfer));
+  };
+
+  const renderActionsForUtama = () => (
+    <>
       <ActionIcon to={links.split} label="Split Bill">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="currentColor" className="w-7 md:w-7 h-auto mb-[2px]">
           <path d="M416 32H96a48 48 0 0 0-48 48v368a16 16 0 0 0 25.6 12.8L128 416l54.4 44.8a16 16 0 0 0 20.8 0L256 416l54.4 44.8a16 16 0 0 0 20.8 0L384 416l54.4 44.8A16 16 0 0 0 464 448V80a48 48 0 0 0-48-48ZM160 144h192a16 16 0 0 1 0 32H160a16 16 0 0 1 0-32Zm0 96h192a16 16 0 0 1 0 32H160a16 16 0 0 1 0-32Zm0 96h96a16 16 0 0 1 0 32h-96a16 16 0 0 1 0-32Z" />
@@ -134,21 +170,45 @@ export const CTASection = ({ links }) => (
           <path d="M19 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2ZM12 8a1 1 0 0 1 1 1v2h2a1 1 0 0 1 0 2h-2v2a1 1 0 0 1-2 0v-2h-2a1 1 0 0 1 0-2h2V9a1 1 0 0 1 1-1Z" />
         </svg>
       </ActionIcon>
+    </>
+  );
 
-      <ActionIcon to={links.addbalancefromwallet} label="Add Balance From Other Wallet">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" className="w-7 md:w-7 h-auto mb-[2px]">
-          <path d="M19 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2ZM12 8a1 1 0 0 1 1 1v2h2a1 1 0 0 1 0 2h-2v2a1 1 0 0 1-2 0v-2h-2a1 1 0 0 1 0-2h2V9a1 1 0 0 1 464 448V80a481-1Z" />
-        </svg>
-      </ActionIcon>
+  return (
+    <div
+      className="relative z-10 flex justify-between items-center mt-6 md:mt-14"
+      style={{ transform: "translateZ(25px)" }}
+    >
+      {/* History always available */}
+      <Link to={`/app/wallets/${walletId}`} className="shrink-0">
+        <button className="flex items-center justify-center gap-1 bg-[#FFAE51] backdrop-blur-sm border border-white/20 text-white text-[11px] md:text-xs px-3.5 md:px-4 py-[5px] md:py-[6px] pl-5 md:pl-5 md:w-auto md:px-12 md:pl-12 rounded-full shadow-sm hover:bg-[#CF7309] transition-all active:scale-[.98]">
+          <span>History</span>
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3 h-3">
+            <path fillRule="evenodd" d="M10.293 15.707a1 1 0 0 1 0-1.414L13.586 11H4a1 1 0 1 1 0-2h9.586l-3.293-3.293a1 1 0 1 1 1.414-1.414l5 5a1 1 0 0 1 0 1.414l-5 5a1 1 0 0 1-1.414 0z" clipRule="evenodd" />
+          </svg>
+        </button>
+      </Link>
 
-      <ActionIcon to={links.transfer} label="Transfer">
-        <svg width="19" height="19" viewBox="0 0 20 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg" className="w-7 md:w-7 h-auto mb-[2px]">
-          <path d="M19.6877 0.359167C19.5416 0.191978 19.3564 0.0766741 19.1545 0.0271745C18.9525 -0.0223251 18.7423 -0.00392698 18.5492 0.0801298L0.690399 7.81817H0.686828C0.480918 7.90885 0.304472 8.0701 0.181598 8.27983C0.058724 8.48961 -0.0046263 8.73764 0.000263153 8.9902C0.00515261 9.24266 0.0780267 9.48729 0.208852 9.69059C0.339761 9.8939 0.522244 10.046 0.73147 10.1262L0.749753 10.1328L6.87934 13.1292C6.9989 13.1707 7.1259 13.1757 7.24767 13.1434C7.36935 13.1113 7.4816 13.0431 7.57309 12.9457L17.4108 2.45197C17.4402 2.41844 17.4749 2.39181 17.5132 2.37366C17.5515 2.35546 17.5926 2.34611 17.634 2.34611C17.6755 2.34611 17.7165 2.35546 17.7548 2.37366C17.7931 2.39181 17.828 2.41844 17.8573 2.45197C17.8866 2.48556 17.9098 2.52537 17.9257 2.56922C17.9415 2.61308 17.9497 2.66005 17.9497 2.7075C17.9497 2.75496 17.9415 2.80197 17.9257 2.84583C17.9098 2.88963 17.8866 2.9295 17.8573 2.96303L8.6901 14.2198C8.60506 14.3246 8.5455 14.4531 8.5174 14.5925C8.48925 14.7318 8.49354 14.8772 8.52981 15.014L11.1482 22.0351C11.2995 22.538 11.6611 22.8722 12.0982 22.8947H12.1429C12.3635 22.8961 12.5794 22.8216 12.7625 22.6807C12.9457 22.5397 13.0875 22.339 13.1696 22.1046L19.9283 1.66597C20.0027 1.4448 20.0197 1.20368 19.977 0.971755C19.9342 0.739881 19.8338 0.527086 19.6877 0.359167Z" />
-        </svg>
-      </ActionIcon>
+      {/* Actions: full set only when type === 'utama' */}
+      <div className="flex space-x-6 md:space-x-8 text-white">
+        {type === "utama" && renderActionsForUtama()}
+
+        {/* Transfer: always shown, uses button to attach walletId and respect dragging */}
+        <ActionIcon onClick={handleTransferClick} asButton label="Transfer">
+          <svg
+            width="19"
+            height="19"
+            viewBox="0 0 20 24"
+            fill="currentColor"
+            xmlns="http://www.w3.org/2000/svg"
+            className="w-7 md:w-7 h-auto mb-[2px]"
+          >
+            <path d="M19.6877 0.359167C19.5416 0.191978 19.3564 0.0766741 19.1545 0.0271745C18.9525 -0.0223251 18.7423 -0.00392698 18.5492 0.0801298L0.690399 7.81817H0.686828C0.480918 7.90885 0.304472 8.0701 0.181598 8.27983C0.058724 8.48961 -0.0046263 8.73764 0.000263153 8.9902C0.00515261 9.24266 0.0780267 9.48729 0.208852 9.69059C0.339761 9.8939 0.522244 10.046 0.73147 10.1262L0.749753 10.1328L6.87934 13.1292C6.9989 13.1707 7.1259 13.1757 7.24767 13.1434C7.36935 13.1113 7.4816 13.0431 7.57309 12.9457L17.4108 2.45197C17.4402 2.41844 17.4749 2.39181 17.5132 2.37366C17.5515 2.35546 17.5926 2.34611 17.634 2.34611C17.6755 2.34611 17.7165 2.35546 17.7548 2.37366C17.7931 2.39181 17.828 2.41844 17.8573 2.45197C17.8866 2.48556 17.9098 2.52537 17.9257 2.56922C17.9415 2.61308 17.9497 2.66005 17.9497 2.7075C17.9497 2.75496 17.9415 2.80197 17.9257 2.84583C17.9098 2.88963 17.8866 2.9295 17.8573 2.96303L8.6901 14.2198C8.60506 14.3246 8.5455 14.4531 8.5174 14.5925C8.48925 14.7318 8.49354 14.8772 8.52981 15.014L11.1482 22.0351C11.2995 22.538 11.6611 22.8722 12.0982 22.8947H12.1429C12.3635 22.8961 12.5794 22.8216 12.7625 22.6807C12.9457 22.5397 13.0875 22.339 13.1696 22.1046L19.9283 1.66597C20.0027 1.4448 20.0197 1.20368 19.977 0.971755C19.9342 0.739881 19.8338 0.527086 19.6877 0.359167Z" />
+          </svg>
+        </ActionIcon>
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 /* ========== BalanceRow ========== */
 
@@ -274,6 +334,10 @@ export const CarouselViewport = forwardRef(function CarouselViewport(
       scrollToIndex,
       get index() {
         return activeIndex;
+      },
+      // also expose dragging ref so parent/UI can wire it to CTASection
+      get isDraggingRef() {
+        return isDraggingRef;
       },
     }),
     [activeIndex]

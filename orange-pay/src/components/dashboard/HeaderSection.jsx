@@ -38,25 +38,6 @@ export default function HeaderSection({
           </p>
         </div>
       </div>
-
-      {/* Notification icon */}
-      <div className="absolute right-4 top-1/2 -translate-y-1/2 sm:static sm:translate-y-0">
-        <button
-          type="button"
-          aria-label="Open notifications"
-          className="btn btn-ghost btn-circle scale-105 sm:scale-110"
-          onClick={onBellClick}
-        >
-          <div className="indicator">
-            <BellIcon className="w-6 h-6 sm:w-8 sm:h-8 text-base-content/70" />
-            {unreadCount > 0 && (
-              <span className="indicator-item badge badge-sm bg-base-content/70 border-none">
-                {unreadCount > 99 ? '99+' : unreadCount}
-              </span>
-            )}
-          </div>
-        </button>
-      </div>
     </div>
   )
 }
