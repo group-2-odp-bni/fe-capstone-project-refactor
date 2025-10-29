@@ -1,7 +1,8 @@
 // src/components/receipt/ReceiptCard.jsx
 import React, { useMemo, useState, useRef } from "react";
 import { ClipboardIcon, CheckIcon, ShareIcon } from "@heroicons/react/24/outline";
-import * as htmlToImage from "html-to-image";
+// import * as htmlToImage from "html-to-image";
+
 
 const formatIDR = (n) =>
   new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 })
