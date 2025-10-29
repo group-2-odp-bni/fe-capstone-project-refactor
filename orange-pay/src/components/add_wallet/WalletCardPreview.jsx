@@ -39,7 +39,7 @@ export default function WalletCardPreview({
 
           <div className="space-y-1">
             <p className="text-xl sm:text-2xl font-bold">{formatted}</p>
-            {name && <p className="text-xs sm:text-sm opacity-90">{name}</p>}
+            {/* {name && <p className="text-xs sm:text-sm opacity-90">{name}</p>} */}
           </div>
         </div>
       </div>
