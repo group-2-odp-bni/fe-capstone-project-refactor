@@ -1,6 +1,6 @@
 // src/pages/ProfilePage.jsx
 import React from "react";
-import { ProfileProvider, useProfile } from "../context/ProfileContext";
+import { ProfileProvider, useProfileContext } from "../context/ProfileContext";
 import ProfileCard from "../components/account/ProfileCard";
 // import AccountDetails from "../components/account/AccountDetails";
 // import EditAccountForm from "../components/account/EditAccountForm";

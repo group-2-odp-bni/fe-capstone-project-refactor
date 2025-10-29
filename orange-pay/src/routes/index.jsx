@@ -157,6 +157,17 @@ export default function AppRoutes() {
           <Route path="profile" element={<ProfilePage />} />
           <Route path="wallets">
             <Route path="new" element={<AddWalletPage />} />
+            <Route
+              path=":walletId/history"
+              element={<HistoryTransactionPage />}
+            />
+            {/* <Route path=":walletId/split" element={<SplitBillPage />} />{" "} */}
+            <Route path=":walletId/topup" element={<TopUpPage />} />
+            <Route
+              path=":walletId/add"
+              element={<AddBalanceFromWalletPage />}
+            />
+            <Route path=":walletId/transfer" element={<TransferPage />} />
           </Route>
           {/* ----------- Transfer Flow ----------- */}
           <Route

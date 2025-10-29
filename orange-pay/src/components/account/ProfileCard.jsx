@@ -1,9 +1,9 @@
 // src/components/ProfileCard.jsx
 import React from "react";
-import { useProfile } from "../../context/ProfileContext";
+import { useProfileContext } from "../../context/ProfileContext";
 
 function ProfileCard({ maxWidth = 380 }) {
-  const { user, logout, setView } = useProfile();
+  const { user, logout, setView } = useProfileContext();
 
   if (!user) {
     return (
@@ -89,22 +89,22 @@ function ProfileCard({ maxWidth = 380 }) {
       </div>
 
       {/* Logout */}
-        <button
+      <button
         onClick={logout}
         style={{
-        backgroundColor: "#000",
-        color: "#fff",
-        border: "none",
-        borderRadius: 12,
-        padding: "12px 48px",
-        fontSize: 16,
-        fontWeight: 500,
-        cursor: "pointer",
-        transition: "0.3s",
+          backgroundColor: "#000",
+          color: "#fff",
+          border: "none",
+          borderRadius: 12,
+          padding: "12px 48px",
+          fontSize: 16,
+          fontWeight: 500,
+          cursor: "pointer",
+          transition: "0.3s",
         }}
-        >
+      >
         Keluar
-        </button>
+      </button>
     </div>
   );
 }

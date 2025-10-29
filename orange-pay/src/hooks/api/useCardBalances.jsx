@@ -39,13 +39,13 @@ function mapWalletToCard(wallet) {
     bg,
     accent: color,
     balance: Number(wallet.balanceSnapshot ?? 0),
-    links: [
-      { label: "History", to: `/app/wallets/${wallet.id}/history` },
-      { label: "Split Bill", to: `/app/wallets/${wallet.id}/split` },
-      { label: "Top-Up", to: `/app/wallets/${wallet.id}/topup` },
-      { label: "Add Balance", to: `/app/wallets/${wallet.id}/add` },
-      { label: "Transfer", to: `/app/wallets/${wallet.id}/transfer` },
-    ],
+    links: {
+      history: `/app/wallets/${wallet.id}/history`,
+      split: `/app/wallets/${wallet.id}/split`,
+      topup: `/app/wallets/${wallet.id}/topup`,
+      addbalancefromwallet: `/app/wallets/${wallet.id}/add`,
+      transfer: `/app/wallets/${wallet.id}/transfer`,
+    },
   };
 }
 
@@ -116,29 +116,11 @@ export default function useCardBalances() {
 
   const refetch = useCallback(() => fetchWallets(), [fetchWallets]);
 
-  const addWallet = useCallback(
-    async (
-      payload = { type: "PERSONAL", name: "New Wallet", metadata: {} }
-    ) => {
-      const body = {
-        type: payload.type || "PERSONAL",
-        name: payload.name || "New Wallet",
-        metadata: JSON.stringify(payload.metadata || { colors: "#2F5755" }),
-      };
-      await api.post("/api/v1/wallets", body, {
-        headers: { "Idempotency-Key": `wallet-create-${uuidv4()}` },
-      });
-      await fetchWallets();
-    },
-    [fetchWallets]
-  );
-
   return {
     baseCards,
     items,
     loading,
     error,
     refetch,
-    addWallet,
   };
 }
