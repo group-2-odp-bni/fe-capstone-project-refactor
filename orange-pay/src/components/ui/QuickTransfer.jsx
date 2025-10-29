@@ -92,7 +92,7 @@ export default function QuickTransferUI({
 
       <div className="mb-1">
         {loading ? (
-          <div className="flex gap-4 px-3">
+          <div className="flex gap-4 px-0">
             {Array.from({ length: mobileVisible }).map((_, i) => (
               <div key={i} className="flex flex-col items-center space-y-2" style={{ width: itemWidthMobile }}>
                 <div className="w-14 h-14 md:w-16 md:h-16 bg-gray-200 animate-pulse rounded-full" />
@@ -101,11 +101,11 @@ export default function QuickTransferUI({
             ))}
           </div>
         ) : items.length === 0 ? (
-          <div className="text-sm text-gray-500 px-3">Belum ada penerima.</div>
+          <div className="text-sm text-gray-500 px-0">Belum ada penerima.</div>
         ) : (
           <>
             {/* MOBILE */}
-            <div className="block md:hidden px-1">
+            <div className="block md:hidden px-0">
               <div
                 className="flex gap-4 overflow-x-auto pb-0 pl-0 pr-3 scroll-smooth"
                 style={{
@@ -133,8 +133,8 @@ export default function QuickTransferUI({
             </div>
 
             {/* DESKTOP */}
-            <div className="hidden md:block px-1">
-              <div className="px-3">
+            <div className="hidden md:block px-0">
+              <div className="px-0">
                 <div
                   className="flex gap-4 overflow-x-auto pb-3 pl-0 pr-3 scroll-smooth"
                   style={{
