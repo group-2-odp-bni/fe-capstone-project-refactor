@@ -134,7 +134,7 @@ export default function StepEnterAmount() {
         <div className="mb-6">
           <label className="text-sm text-gray-500 mb-2 block">Amount</label>
           <div className="flex items-center border-b border-gray-200 pb-2">
-            <span className="text-black font-semibold mr-3 text-4xl">Rp</span>
+            <span className="text-black font-semibold mr-3 text-2xl">Rp</span>
 
             <input
               type="text"
@@ -168,7 +168,6 @@ export default function StepEnterAmount() {
         {/* Source / Sumber dana card */}
         <div className="mb-4">
           <div className="text-sm text-gray-500 mb-2">Sumber dana</div>
-
           <button
             type="button"
             className="w-full flex justify-between p-4 border rounded-xl bg-white shadow-sm"

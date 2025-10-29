@@ -120,7 +120,7 @@ export default function AtomicBalanceCard({ initialWalletId = null }) {
           if (card.isAddCard) {
             return (
               <div className="p-0" style={{ width: "100%", height: "100%" }}>
-                <AddWalletCard onCreate={handleCreateWallet} isCreating={creating} />
+                <AddWalletCard onClick={handleCreateWallet}/>
               </div>
             );
           }
