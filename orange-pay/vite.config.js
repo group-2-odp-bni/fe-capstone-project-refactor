@@ -20,6 +20,13 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
       },
+
+      // User service (8082)
+      '/api/v1/user': {
+        target: 'http://localhost:8082',
+        changeOrigin: true,
+        secure: false,
+      },
     },
   },
 });

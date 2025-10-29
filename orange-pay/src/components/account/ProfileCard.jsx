@@ -23,7 +23,7 @@ function ProfileCard({ maxWidth = 380 }) {
     <div
       style={{
         background: "#FE9F2E",
-        minHeight: "100vh",
+        // minHeight: "100vh",
         width: "100%",
         display: "flex",
         flexDirection: "column",
