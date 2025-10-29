@@ -142,10 +142,10 @@ export default function TransactionList({ walletId = null, onTransactionClick = 
 
                     {/* Right info */}
                     <div className="text-right">
-                      <p className={`text-l font-semibold pb-3 ${amountColor}`}>
+                      <p className={`text-l font-semibold ${amountColor}`}>
                         {sign} Rp{formatRupiah(t.amount)}
                       </p>
-                      <p className="text-sm text-gray-400 pb-3">{t.dateLabel} {t.timeLabel} </p>
+                      <p className="text-sm text-gray-400">{t.dateLabel} {t.timeLabel} </p>
                     </div>
                   </button>
                 </li>

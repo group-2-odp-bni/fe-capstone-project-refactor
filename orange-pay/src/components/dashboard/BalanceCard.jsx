@@ -90,12 +90,13 @@ export default function AtomicBalanceCard({ initialWalletId = null }) {
   };
 
   return (
-    <div className="w-full mx-auto md:px-4 mt-6 ">
+    <div className="w-full mx-auto md:px-1 mt-6 ">
       {/* header/title is fine here — small presentational bit */}
-      <h3 className="px-3 font-semibold text-lg text-gray-900 mb-3 md:px-0 text-left">
+      <h3 className="px-0 font-semibold text-lg text-gray-900 mb-3 md:px-0 text-left">
         Your Wallet
       </h3>
-
+      
+      
       {/* tabs: purely trigger logic, no heavy UI here (visuals live in BalanceCardUI) */}
       <div className="flex flex-wrap items-center justify-center gap-2 ">
         {tabs.map((c, i) => (

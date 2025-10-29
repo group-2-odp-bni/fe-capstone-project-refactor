@@ -350,7 +350,6 @@ export const CarouselViewport = forwardRef(function CarouselViewport(
       style={{
         scrollbarWidth: "none",
         touchAction: "pan-y",
-        paddingLeft: `${GAP / 2}px`,
         paddingRight: `${PEEK}px`,
       }}
       onScroll={onScroll}
@@ -368,6 +367,7 @@ export const CarouselViewport = forwardRef(function CarouselViewport(
       </div>
     </div>
   );
+  
 });
 
 /* ===== default export ===== */
