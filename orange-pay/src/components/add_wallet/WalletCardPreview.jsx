@@ -2,7 +2,7 @@
 const outerGlow = "0 6px 16px rgba(0,0,0,0.12), 0 0 24px rgba(0,0,0,0.08)";
 
 export default function WalletCardPreview({
-  variant = "personal",
+  variant = "personal" && "shared",
   name = "",
   balance = 0,
   gradient = "linear-gradient(101.06deg,#8B138D 23.71%,#591467 50.68%,#25062B 97.82%)",
@@ -37,10 +37,10 @@ export default function WalletCardPreview({
             )}
           </div>
 
-          <div className="space-y-1">
+          {/* <div className="space-y-1">
             <p className="text-xl sm:text-2xl font-bold">{formatted}</p>
-            {name && <p className="text-xs sm:text-sm opacity-90">{name}</p>}
-          </div>
+            {/* {name && <p className="text-xs sm:text-sm opacity-90">{name}</p>} }
+          </div> */}
         </div>
       </div>
     </div>

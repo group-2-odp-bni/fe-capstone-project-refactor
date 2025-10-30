@@ -1,9 +1,20 @@
 // src/components/ProfileCard.jsx
 import React from "react";
+import { useNavigate } from "react-router-dom";
 import { useProfile } from "../../context/ProfileContext";
 
-function ProfileCard({ maxWidth = 380 }) {
+function ProfileCard({
+  showBack = true,
+  backAriaLabel = "Back",
+}) {
   const { user, logout, setView } = useProfile();
+
+  const navigate = useNavigate();
+
+  const handleBack = () => {
+    if (typeof onBack === "function") return onBack();
+    navigate(-1);
+  }; 
 
   if (!user) {
     return (
@@ -31,6 +42,7 @@ function ProfileCard({ maxWidth = 380 }) {
         fontFamily: "'Poppins', sans-serif",
       }}
     >
+
       {/* Header */}
       <div style={{ marginTop: 32 }}>
         <div
@@ -41,18 +53,20 @@ function ProfileCard({ maxWidth = 380 }) {
             gap: 16,
           }}
         >
+
           <div
             style={{
-              background: "#6EC6CA",
+              background: "#FFFFFF",
               width: 96,
               height: 96,
               borderRadius: "50%",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              border: "4px solid #fff",
+              border: "4px solid #c2c2c2ff",
             }}
           >
+          
             <span style={{ fontSize: 48 }}>{user.avatarEmoji}</span>
           </div>
           <div style={{ color: "#fff" }}>
@@ -92,15 +106,17 @@ function ProfileCard({ maxWidth = 380 }) {
         <button
         onClick={logout}
         style={{
-        backgroundColor: "#000",
-        color: "#fff",
-        border: "none",
-        borderRadius: 12,
-        padding: "12px 48px",
-        fontSize: 16,
-        fontWeight: 500,
-        cursor: "pointer",
-        transition: "0.3s",
+          backgroundColor: "#A72703",
+          color: "#fff",
+          border: "none",
+          borderRadius: 12,
+          padding: "12px 48px",
+          fontSize: 16,
+          fontWeight: 500,
+          cursor: "pointer",
+          transition: "0.3s",
+          marginTop: "auto", 
+          marginBottom: 48,
         }}
         >
         Keluar

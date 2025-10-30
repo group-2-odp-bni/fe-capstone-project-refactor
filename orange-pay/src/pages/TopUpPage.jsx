@@ -1,13 +1,21 @@
 // TopUpPage.jsx (atau TopUp.jsx)
-import HeaderSection from "../components/dashboard/HeaderSection";
 import TopUpFlow from "../components/top-up/TopUpFlow";
 import DynamicShell from "../components/layout/dynamicShell";
-import PageHeader from "../components/page_header/PageHeader";
+import Header from "../components/Header";
+import { useNavigate } from "react-router-dom";
 
 export default function TopUpPage() {
+
+  const navigate = useNavigate();
+
+  const handleBack = () => {
+    if (typeof onBack === "function") return onBack();
+    navigate(-1);
+  };
+
   return (
     <DynamicShell>
-      <PageHeader>Topup</PageHeader>
+      <Header title="Top Up" onBack={handleBack} showBack centerTitle />
       <TopUpFlow />
     </DynamicShell>
   );

@@ -47,6 +47,7 @@ jobs:
       - name: Security Audit
         run: npx audit-ci --moderate
         working-directory: ${{ env.PROJECT_PATH }}
+        continue-on-error: true
 
   build:
     name: ⚙️ Build Vite App

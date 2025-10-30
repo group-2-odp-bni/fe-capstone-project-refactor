@@ -1,6 +1,5 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-
 import BrandLogo from "../components/common/BrandLogo";
 import PinKeypad from "../components/register/PinKeypad";
 import PinDots from "../components/register/PinDots";
@@ -58,7 +57,7 @@ export default function SetPinPage() {
           <div className="mt-8">
             <PinKeypad
               onNumber={handleNumberClick}
-              onDelete={handleDelete}
+              onDelete={handleDelete} 
               onEnter={handleSubmit}
               canEnter={canSubmit}
             />

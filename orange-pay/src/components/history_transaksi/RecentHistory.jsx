@@ -1,22 +1,81 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import useRecentTransfer from "../../hooks/api/useRecentTransfer";
 import MonthChips, { MONTHS } from "../history_transaksi/MonthChips";
-import MonthSummary from "../history_transaksi/MonthSummary";
 
+// =======================================================
+// ⚙️ UTILITAS
+// =======================================================
 const fmt = (n) => (Number(n) || 0).toLocaleString("id-ID");
 const getMonthShort = (d) => MONTHS[d.getMonth()];
-const isIncomeType = (type = "") => {
-  const t = String(type).toLowerCase();
-  return t.includes("terima") || t.includes("masuk");
-};
+const isIncomeType = (type = "") =>
+  String(type).toLowerCase().includes("terima") ||
+  String(type).toLowerCase().includes("masuk");
 
-export default function RecentHistory() {
-  const { users = [], loading } = useRecentTransfer();
+const SNAP_THRESHOLD_RATIO = 0.25;
+
+// =======================================================
+// ⚛️ KOMPONEN: RECENT HISTORY
+// =======================================================
+export default function RecentHistory({ walletId, onExpandChange }) {
+  const navigate = useNavigate();
+  const { users = [], loading } = useRecentTransfer({ walletId });
   const [activeMonth, setActiveMonth] = useState(getMonthShort(new Date()));
 
-  // normalisasi + label tanggal/jam (fallback kalau belum disediakan hook)
+  // =======================================================
+  // 📏 POSISI SHEET — DISAMAKAN & SEDIKIT LEBIH BAWAH
+  // =======================================================
+  const [sheetTop, setSheetTop] = useState(window.innerHeight * 0.45);
+  const baseTop = useRef(window.innerHeight * 0.45);
+
+  const startY = useRef(0);
+  const startTop = useRef(0);
+
+  // ✅ Deteksi posisi tombol (arrowButton / button-group)
+  useEffect(() => {
+    const adjustSheetPosition = () => {
+      let buttonElement = document.querySelector(".arrow-button-container");
+
+      if (!buttonElement) {
+        buttonElement = document.querySelector(".button-group");
+      }
+
+      if (buttonElement) {
+        const rect = buttonElement.getBoundingClientRect();
+        // 🔽 Tambahkan offset 18px supaya sedikit lebih turun
+        const newTop = rect.bottom + 18;
+        setSheetTop(newTop);
+        baseTop.current = newTop;
+      } else {
+        // fallback default
+        setSheetTop(window.innerHeight * 0.45);
+        baseTop.current = window.innerHeight * 0.45;
+      }
+    };
+
+    setTimeout(adjustSheetPosition, 100);
+    window.addEventListener("resize", adjustSheetPosition);
+
+    return () => window.removeEventListener("resize", adjustSheetPosition);
+  }, [walletId]);
+
+  // Lock scroll body
+  useEffect(() => {
+    document.body.style.overflow = "hidden";
+    return () => (document.body.style.overflow = "auto");
+  }, []);
+
+  // =======================================================
+  // 🧩 FILTER & NORMALISASI DATA
+  // =======================================================
+  const filteredUsers = useMemo(() => {
+    if (!walletId || !Array.isArray(users)) return users;
+    return users.filter((u) => String(u.walletId) === String(walletId));
+  }, [users, walletId]);
+
   const normalized = useMemo(() => {
-    return users
+    if (!filteredUsers || filteredUsers.length === 0) return [];
+    return filteredUsers
       .map((u, i) => {
         const d =
           u.createdAt instanceof Date
@@ -27,64 +86,140 @@ export default function RecentHistory() {
             ? new Date(u.date)
             : new Date();
 
-        const dateLabel =
-          u.dateLabel ??
-          new Intl.DateTimeFormat("id-ID", {
-            timeZone: "Asia/Jakarta",
+        return {
+          ...u,
+          id: u.id ?? `tx-${i}-${d.getTime()}`,
+          createdAt: d,
+          monthShort: getMonthShort(d),
+          dateLabel: new Intl.DateTimeFormat("id-ID", {
             day: "numeric",
             month: "short",
             year: "numeric",
-          }).format(d);
-
-        const timeLabel =
-          u.timeLabel ??
-          new Intl.DateTimeFormat("id-ID", {
-            timeZone: "Asia/Jakarta",
+          }).format(d),
+          timeLabel: new Intl.DateTimeFormat("id-ID", {
             hour: "2-digit",
             minute: "2-digit",
             hour12: false,
           })
             .format(d)
-            .replace(".", ":");
-
-        return {
-          ...u,
-          id: u.id ?? `${u.name}-${i}-${d.getTime()}`,
-          createdAt: d,
-          monthShort: getMonthShort(d),
-          dateLabel,
-          timeLabel,
+            .replace(".", ":"),
         };
       })
-      .sort((a, b) => b.createdAt - a.createdAt);
-  }, [users]);
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  }, [filteredUsers]);
 
-  // hanya item di bulan aktif
   const monthItems = useMemo(
     () => normalized.filter((x) => x.monthShort === activeMonth),
     [normalized, activeMonth]
   );
 
-  // summary bulan
-  const { masuk, keluar } = useMemo(() => {
-    let masuk = 0,
-      keluar = 0;
-    for (const it of monthItems) {
-      if (isIncomeType(it.type)) masuk += Number(it.amount) || 0;
-      else keluar += Number(it.amount) || 0;
-    }
-    return { masuk, keluar };
-  }, [monthItems]);
+  // =======================================================
+  // 🖐️ HANDLER DRAG
+  // =======================================================
+  const handleTouchStart = (e) => {
+    startY.current = e.touches[0].clientY;
+    startTop.current = sheetTop;
+  };
 
+  const handleTouchMove = (e) => {
+    const delta = e.touches[0].clientY - startY.current;
+    const BOTTOM_LIMIT_PX = window.innerHeight * 0.65;
+    const newTop = Math.min(
+      Math.max(startTop.current + delta, 80),
+      BOTTOM_LIMIT_PX
+    );
+    setSheetTop(newTop);
+  };
+
+  const handleTouchEnd = () => {
+    const isNowExpanded = sheetTop < window.innerHeight * SNAP_THRESHOLD_RATIO;
+    const newTop = isNowExpanded ? 80 : baseTop.current;
+    setSheetTop(newTop);
+    onExpandChange?.(isNowExpanded);
+  };
+
+  const handleDragLineClick = () => {
+    const isExpanded = sheetTop < window.innerHeight * 0.25;
+    const newTop = isExpanded ? baseTop.current : 80;
+    setSheetTop(newTop);
+    onExpandChange?.(!isExpanded);
+  };
+
+  // =======================================================
+  // 💸 NAVIGASI KE BUKTI TRANSFER
+  // =======================================================
+  const handleTransactionClick = (item) => {
+    navigate(`/app/wallets/${walletId}/transfer/${item.id}`, {
+      state: { transfer: item },
+    });
+  };
+
+  // =======================================================
+  // 💳 ITEM TRANSAKSI
+  // =======================================================
+  const renderTransactionItem = (item) => {
+    const isIncome = isIncomeType(item.type);
+    const sign = isIncome ? "+" : "−";
+    const amountColor = isIncome ? "text-emerald-500" : "text-black-600";
+    const leftSub = isIncome
+      ? "Transfer Masuk"
+      : String(item.type).toLowerCase() === "kirim"
+      ? "Transfer"
+      : item.type ?? "-";
+    const rightSub = `${item.dateLabel} · ${item.timeLabel}`;
+
+    return (
+      <li
+        key={item.id}
+        onClick={() => handleTransactionClick(item)}
+        className="py-2 hover:bg-gray-50/40 transition-colors rounded-lg cursor-pointer active:scale-[0.99]"
+      >
+        <div className="flex items-center justify-between">
+          <div className="min-w-0 pr-3 text-left">
+            <p className="text-sm font-semibold text-gray-900 truncate">
+              {item.name}
+            </p>
+            <p className="text-xs text-gray-500 truncate">{leftSub}</p>
+          </div>
+          <div className="text-right">
+            <p className={`text-sm ${amountColor}`}>
+              {sign} Rp{fmt(item.amount)}
+            </p>
+            <p className="text-[11px] text-gray-500">{rightSub}</p>
+          </div>
+        </div>
+      </li>
+    );
+  };
+
+  // =======================================================
+  // 🧱 RENDER UTAMA
+  // =======================================================
   return (
-    <section className="mt-8">
-      {/* picker + summary */}
-      <MonthChips activeMonth={activeMonth} onChange={setActiveMonth} />
-      <MonthSummary masuk={masuk} keluar={keluar} />
+    <section className="relative bg-transparent min-h-screen overflow-hidden">
+      <div
+        className="fixed inset-x-0 bottom-0 z-50 bg-white rounded-t-3xl border-t border-gray-200 shadow-xl flex flex-col transition-[top] duration-300 ease-in-out"
+        style={{ top: `${sheetTop}px` }}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      >
+        {/* Garis drag */}
+        <div
+          onClick={handleDragLineClick}
+          className="w-12 h-1.5 bg-gray-300 rounded-full mx-auto mt-3 cursor-pointer active:scale-95 transition"
+        ></div>
 
-      {/* Kartu list — gaya persis RecentList */}
-      <div className="mt-8 rounded-[24px] border border-gray-200 bg-white shadow-sm">
-        <div className="p-4">
+        {/* Isi konten scroll */}
+        <div className="flex-1 overflow-y-auto px-5 pb-6 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
+          <div className="mt-3 mb-2">
+            <MonthChips activeMonth={activeMonth} onChange={setActiveMonth} />
+          </div>
+
+          <h2 className="text-sm font-medium text-gray-600 mb-2">
+            Riwayat Transaksi
+          </h2>
+
           {loading ? (
             <ul className="divide-y divide-gray-100">
               {Array.from({ length: 4 }).map((_, idx) => (
@@ -107,46 +242,9 @@ export default function RecentHistory() {
               Belum ada transaksi.
             </div>
           ) : (
-            <div className="max-h-[300px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
-              <ul className="mt-2.5 divide-y divide-gray-200">
-                {monthItems.map((item) => {
-                  const isIncome = isIncomeType(item.type);
-                  const sign = isIncome ? "+" : "−";
-                  const amountColor = isIncome ? "text-emerald-500" : "text-red-600";
-                  const leftSub = isIncome
-                    ? "Transfer Masuk"
-                    : String(item.type).toLowerCase() === "kirim"
-                    ? "Transfer"
-                    : item.type ?? "-";
-                  const rightSub = `${item.dateLabel} · ${item.timeLabel}`;
-
-                  return (
-                    <li
-                      key={item.id}
-                      className="py-2 first:pt-0 last:pb-0 hover:bg-gray-50/40 transition-colors"
-                    >
-                      <div className="flex items-center justify-between">
-                        {/* Left */}
-                        <div className="min-w-0 pr-3 text-left">
-                          <p className="text-sm font-semibold text-gray-900 truncate">
-                            {item.name}
-                          </p>
-                          <p className="text-xs text-gray-500 truncate">{leftSub}</p>
-                        </div>
-
-                        {/* Right */}
-                        <div className="text-right">
-                          <p className={`text-sm font-semibold ${amountColor}`}>
-                            {sign} Rp{fmt(item.amount)}
-                          </p>
-                          <p className="text-[11px] text-gray-500">{rightSub}</p>
-                        </div>
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
+            <ul className="mt-2.5 divide-y divide-gray-200">
+              {monthItems.map(renderTransactionItem)}
+            </ul>
           )}
         </div>
       </div>
