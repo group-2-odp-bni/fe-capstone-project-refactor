@@ -6,11 +6,14 @@ import OrangeHeader from "../../components/register/OrangeHeader";
 import InputField from "../../components/register/RegisterGeneralInput";
 import { FullSubmitButton } from "../../components/button/FullSubmitButton";
 import RegisterTextContainer from "../../components/register/RegisterTextContainer";
+import OtpInputField from "../../components/input/OtpInputField";
 
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
+import ButtonLink from "../../components/button/ButtonLink";
 
 
-export default function OtpProfilePage() {
+export default function VerifyPhonePage() {
     return (
         <PhoneLayoutBackground>
             <MobileShell>
@@ -33,7 +36,7 @@ export default function OtpProfilePage() {
 function VerifyProfileContent() {
     const navigate = useNavigate();
 
-    const [otp, setOtp] = useState("");
+    const [otpCode, setOtpCode] = useState("");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
 
@@ -44,15 +47,19 @@ function VerifyProfileContent() {
 
         try {
             console.log("--- sending OTP verification ---");
-            console.log(`otp : ${otp}`);
+            console.log(`otp : ${otpCode}`);
 
-            const response = await fetch("/api/v1/users/profile/verify-phone", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    otp: otp,
-                }),
-            });
+            const response = await axios.post(
+                "/api/v1/users/profile/verify-phone",
+                { otpCode },
+                {
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+                    },
+                }
+            );
+
 
             if (!response.ok) {
                 throw new Error("Failed to send request");
@@ -74,15 +81,15 @@ function VerifyProfileContent() {
     return (
         <div>
             <form onSubmit={handleSubmit} className="space-y-5 mt-6">
-                <InputField
-                    id="otp"
-                    name="otp"
+                <OtpInputField className="mt-10 mb-10"
+                    id="otpCode"
+                    name="otpCode"
                     label="OTP :"
                     type="numeric"
                     placeholder="Masukkan OTP"
                     required
-                    value={otp}
-                    onChange={(e) => setOtp(e.target.value)}
+                    value={otpCode}
+                    onChange={(e) => setOtpCode(e.target.value)}
                 />
 
                 {error && <p className="text-red-500 text-xs">{error}</p>}
@@ -91,6 +98,7 @@ function VerifyProfileContent() {
                     {loading ? "Memverifikasi..." : "Lanjut"}
                 </FullSubmitButton>
             </form>
+
         </div>
     );
 }

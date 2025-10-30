@@ -16,7 +16,7 @@ export default defineConfig({
         secure: false,
       },
       //default receive wallet
-      "/api/v1/users/me/receive": {
+      "/api/v1/users/me": {
         target: "http://localhost:8080",
         changeOrigin: true,
         secure: false,

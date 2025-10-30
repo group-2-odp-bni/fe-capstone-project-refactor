@@ -90,7 +90,8 @@ export default function EditProfilePage() {
 
             console.log("Profile updated:", response.data);
 
-            navigate("/app/profileOtp");
+            navigate("/app/profile");
+
         } catch (err) {
             console.error("Failed to update profile:", err);
             setError("Gagal menyimpan data. Silakan coba lagi.");

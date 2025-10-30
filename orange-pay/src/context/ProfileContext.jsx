@@ -13,6 +13,8 @@ export const ProfileProvider = ({ children }) => {
     name: "",
     email: "",
     phoneNumber: "",
+    phoneVerified:false,
+    emailVerified:false,
   });
 
   const updateProfileData = (data) => {
