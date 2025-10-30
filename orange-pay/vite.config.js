@@ -21,9 +21,20 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
       },
+      //limit
+      "/api/v1/users/me/limits": {
+        target: "http://localhost:8080",
+        changeOrigin: true,
+        secure: false,
+      },
+      "/api/v1/invites": {
+        target: "http://localhost:8080",
+        changeOrigin: true,
+        secure: false,
+      },
       // User service (8082)
-      '/api/v1/user': {
-        target: 'http://localhost:8082',
+      "/api/v1/user": {
+        target: "http://localhost:8082",
         changeOrigin: true,
         secure: false,
       },

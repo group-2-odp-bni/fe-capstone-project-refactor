@@ -4,9 +4,10 @@ export default function ConfirmDialog({
   open,
   title = "Konfirmasi",
   message,
+  children,
   confirmText = "Ya",
   cancelText = "Tidak",
-  onCancel,
+  onConfirm,
   onClose,
   loading = false,
 }) {
@@ -22,10 +23,13 @@ export default function ConfirmDialog({
     <div className="modal-backdrop" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-title">{title}</div>
+
         {message && <div className="modal-body">{message}</div>}
+        {children}
+
         <div className="modal-actions">
-          <button disabled={loading} className="btn" onClick={onCancel}>
-            {confirmText}
+          <button disabled={loading} className="btn" onClick={onConfirm}>
+            {loading ? "Loading..." : confirmText}
           </button>
           <button disabled={loading} className="btn danger" onClick={onClose}>
             {cancelText}

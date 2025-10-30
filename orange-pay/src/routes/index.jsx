@@ -31,8 +31,10 @@ import AddWalletPage from "../pages/AddWalletPage";
 import AddBalanceFromWalletPage from "../pages/AddBalanceFromWalletPageNew";
 import AllHistoryPage from "../pages/AllHistory";
 import ConfirmAddBalancePage from "../pages/ConfirmAddBalancePage";
-import ReceiptPage from "../pages/ReceiptPage";
-
+// import ReceiptPage from "../pages/ReceiptPage";
+import ReceiptPage from "../pages/ReceiptAddBalanceFromWalletPage";
+import InviteClaimPage from "../pages/InviteClaimsPage";
+import AddBalancePinPage from "../pages/AddBalancePinPage";
 /* login flow context & step guard */
 import { LoginProvider } from "../context/LoginContext";
 import RequireLoginStep from "./RequireLoginStep";
@@ -166,24 +168,15 @@ export default function AppRoutes() {
             }
           />
         </Route>
-
+        <Route path="/invites/claim" element={<ProtectedRoute />}>
+          <Route index element={<InviteClaimPage />} />
+        </Route>
         {/* ---------- Protected /app routes ---------- */}
         <Route path="/app/*" element={<ProtectedRoute />}>
           <Route path="dashboard" element={<DashboardPage />} />
           <Route path="transactions" element={<HistoryTransactionPage />} />
           <Route path="topup" element={<TopUpPage />} />
           <Route path="receipt/:trxId" element={<ReceiptPage />} />
-          {/* === TESTING ROUTE (tanpa param): buka /app/members-test === */}
-          <Route
-            path="members-test"
-            element={
-              <AssignMemberPage walletIdOverride="d69f4f9d-ec91-4d43-8db0-3006185c1090" />
-            }
-          />
-          <Route
-            path="wallets/:walletId/members"
-            element={<AssignMemberPage />}
-          />
 
 
           {/* account page */}
@@ -202,12 +195,11 @@ export default function AppRoutes() {
           <Route path="wallets">
             <Route path="new" element={<AddWalletPage />} />
             <Route path=":walletId" element={<HistoryTransactionPage />} />{" "}
-            {/* <— tambahan */}
+            <Route path=":walletId/members" element={<AssignMemberPage />} />{" "}
             <Route
               path=":walletId/history"
               element={<HistoryTransactionPage />}
             />
-            {/* <Route path=":walletId/split" element={<SplitBillPage />} />{" "} */}
             <Route path=":walletId/topup" element={<TopUpPage />} />
             <Route
               path=":walletId/add"
@@ -220,6 +212,7 @@ export default function AppRoutes() {
             path="confirm-add-balance"
             element={<ConfirmAddBalancePage />}
           />
+          <Route path="add-balance-pin" element={<AddBalancePinPage />} />
           {/* ----------- Transfer Flow ----------- */}
           <Route
             path="transfer/*"
@@ -236,12 +229,6 @@ export default function AppRoutes() {
 
           {/* ----------- Reset flow placeholder ----------- */}
           <Route path="reset">{/* add reset pages later */}</Route>
-        </Route>
-
-        {/* ---------- 404 ---------- */}
-        {/* Standalone protected route for Add Balance From Wallet (accessible at /add-balance-from-wallet) */}
-        <Route path="/add-balance-from-wallet" element={<ProtectedRoute />}>
-          <Route index element={<AddBalanceFromWalletPage />} />
         </Route>
 
         <Route path="*" element={<NotFound />} />
