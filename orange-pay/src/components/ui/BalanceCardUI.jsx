@@ -260,8 +260,13 @@ export const CarouselViewport = forwardRef(function CarouselViewport(
   const PEEK = 25;
   const GAP = 10;
 
-  const isInteractiveTarget = (el) =>
-    !!(el && el.closest && el.closest("button, a, [role='button'], input, textarea, select, label"));
+  const isInteractiveTarget = (el) => {
+    if (!el || !el.closest) return false;
+     // If the target (or its parents) explicitly allow drag, don't treat it as interactive
+    if (el.closest("[data-allow-drag='true']")) return false;
+    return !!el.closest("button, a, [role='button'], input, textarea, select, label");
+    };
+    
 
   const updateActiveIndexFromScroll = () => {
     const el = viewportRef.current;
