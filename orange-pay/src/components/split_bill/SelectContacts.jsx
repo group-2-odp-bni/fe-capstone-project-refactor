@@ -142,17 +142,17 @@ export default function SelectContacts({
                 className="pointer-events-none absolute left-[38%] top-0 bottom-0 w-px border-l-2 border-dashed border-gray-500"
               />
               <div className="grid grid-cols-[38%_62%]">
-                {/* Bayar ke */}
+                {/* ✅ EDIT: Bayar ke - Avatar dengan gradient orange & initial text putih */}
                 <div className="pr-3 flex flex-col items-center">
                   <h3 className="text-sm font-semibold text-gray-900 mb-3 w-full text-center">
                     Bayar ke
                   </h3>
                   <div className="flex flex-col items-center justify-center py-2">
-                    <div className="w-16 h-16 md:w-[72px] md:h-[72px] rounded-full border-2 border-[#FFB469] bg-gradient-to-br from-[#FFD4A3] to-[#FFB469] flex items-center justify-center shadow-md mb-2">
-                      <svg className="w-8 h-8 md:w-9 md:h-9" viewBox="0 0 24 24" fill="none">
-                        <circle cx="12" cy="8" r="3.5" stroke="white" strokeWidth="1.8" />
-                        <path d="M5 19c0-3.9 3.1-7 7-7s7 3.1 7 7" stroke="white" strokeWidth="1.8" strokeLinecap="round" />
-                      </svg>
+                    {/* Avatar dengan gradient orange seperti gambar */}
+                    <div className="w-16 h-16 md:w-[72px] md:h-[72px] rounded-full bg-gradient-to-br from-[#E5A45D] to-[#D89438] flex items-center justify-center shadow-md mb-2">
+                      <span className="text-white text-2xl md:text-3xl font-bold">
+                        {currentUser?.avatarText || (currentUser?.name || "K").charAt(0).toUpperCase()}
+                      </span>
                     </div>
                     <div className="min-w-0 text-center">
                       <div className="text-xs font-semibold text-gray-900 truncate">
@@ -328,19 +328,18 @@ function ContactRowWithCheck({ contact, checked, onToggle }) {
   );
 }
 
-// Member Card - UKURAN SAMA DENGAN "KAMU", HORIZONTAL SCROLL
+// ✅ EDIT: Member Card - Avatar dengan gradient orange seperti gambar
 function MemberCard({ name = "", phone = "", onRemove }) {
   const initial = (name || phone || "?").charAt(0).toUpperCase();
 
   return (
     <div className="flex-shrink-0 flex flex-col items-center">
       <div className="relative mb-2">
-        {/* Avatar sama dengan Kamu */}
-        <div className="w-16 h-16 md:w-[72px] md:h-[72px] rounded-full border-2 border-[#FFB469] bg-gradient-to-br from-[#FFD4A3] to-[#FFB469] flex items-center justify-center shadow-md">
-          <svg className="w-8 h-8 md:w-9 md:h-9" viewBox="0 0 24 24" fill="none">
-            <circle cx="12" cy="8" r="3" stroke="white" strokeWidth="1.7" />
-            <path d="M6 19c0-3.3 2.7-6 6-6s6 2.7 6 6" stroke="white" strokeWidth="1.7" strokeLinecap="round" />
-          </svg>
+        {/* Avatar dengan gradient orange seperti gambar */}
+        <div className="w-16 h-16 md:w-[72px] md:h-[72px] rounded-full bg-gradient-to-br from-[#E5A45D] to-[#D89438] flex items-center justify-center shadow-md">
+          <span className="text-white text-2xl md:text-3xl font-bold">
+            {initial}
+          </span>
         </div>
         {/* Remove Button */}
         <button

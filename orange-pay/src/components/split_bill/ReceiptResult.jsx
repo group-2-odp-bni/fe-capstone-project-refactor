@@ -4,7 +4,10 @@ import EditRincian from "./EditRincian";
 import CameraPage from "./CameraPage";
 import SelectContacts from "./SelectContacts";
 import SplitBillConfirmation from "./SplitBillConfirmation";
-import SplitBillConfirmed from "./SplitBillConfirmed"; // TAMBAHKAN IMPORT INI
+import SplitBillConfirmed from "./SplitBillConfirmed";
+import useTransferApi from "../../hooks/api/useTransferApi";
+import useQuickTransfer from "../../hooks/api/useQuickTransfer";
+
 
 export default function ReceiptResult({
   receiptData,
@@ -12,14 +15,12 @@ export default function ReceiptResult({
   onConfirm,
 }) {
   const [showConfirmation, setShowConfirmation] = useState(false);
-  const [confirmationData, setConfirmationData] = useState(null);
   const [showEditPage, setShowEditPage] = useState(false);
   const [showCameraPage, setShowCameraPage] = useState(false);
   const [showContacts, setShowContacts] = useState(false);
   const [showImagePopup, setShowImagePopup] = useState(false);
   const [imageAspect, setImageAspect] = useState(9 / 16);
   
-  // TAMBAHKAN STATE UNTUK HALAMAN FINAL CONFIRMED
   const [showFinalConfirmed, setShowFinalConfirmed] = useState(false);
   const [finalConfirmedData, setFinalConfirmedData] = useState(null);
 
@@ -28,10 +29,16 @@ export default function ReceiptResult({
     editableData?.splitName || editableData?.merchantName || ""
   );
 
-  // 1. STATE BARU UNTUK MENYIMPAN ANGGOTA YANG DIPILIH
-  const [splitMembers, setSplitMembers] = useState([]); 
-
+  const [splitMembers, setSplitMembers] = useState([]);
   const [splitNameError, setSplitNameError] = useState(false);
+
+  const [showAlert, setShowAlert] = useState(false);
+  const [alertMessage, setAlertMessage] = useState("");
+
+  const transferApi = useTransferApi();
+  
+  // ✅ PERBAIKAN: Hook untuk ambil quick transfer contacts (4 teratas)
+  const { contacts: quickContacts } = useQuickTransfer({ limit: 4 });
 
   const receiptImage = editableData?.imageUrl || receiptData?.imageUrl || null;
 
@@ -47,6 +54,15 @@ export default function ReceiptResult({
     return () => { document.body.style.overflow = ""; };
   }, [showImagePopup]);
 
+  useEffect(() => {
+    if (showAlert) {
+      const timer = setTimeout(() => {
+        setShowAlert(false);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [showAlert]);
+
   const fmt = (n) => Number(n || 0).toLocaleString("id-ID");
 
   const items = editableData?.items || [];
@@ -60,10 +76,11 @@ export default function ReceiptResult({
   const other = Number(editableData?.other ?? 0);
   const total = subtotal + pajak + service + discount + other;
 
-  // Handler untuk pindah dari ReceiptResult ke SelectContacts
   const handleProceed = () => {
     if (!splitName.trim()) {
       setSplitNameError(true);
+      setAlertMessage("Nama split bill belum diisi");
+      setShowAlert(true);
       return;
     }
     setSplitNameError(false);
@@ -87,24 +104,21 @@ export default function ReceiptResult({
   const handleImageClick = () => setShowImagePopup(true);
   const handleClosePopup = () => setShowImagePopup(false);
 
-  // HANDLERS UNTUK SPLITBILLCONFIRMATION
   const handleBackFromConfirmation = () => {
     setShowConfirmation(false);
-    setShowContacts(true); // Kembali ke SelectContacts
+    setShowContacts(true);
   };
 
   const handleEditMembers = () => {
     setShowConfirmation(false);
-    setShowContacts(true); // Kembali ke SelectContacts
+    setShowContacts(true);
   };
 
-  // HANDLER BARU: Dari SplitBillConfirmation ke SplitBillConfirmed (halaman final)
   const handleFinalConfirm = (payload) => {
-    // Simpan data untuk ditampilkan di SplitBillConfirmed
     const finalData = {
       ...payload,
       splitName: splitName,
-      receiptImage: receiptImage, // KIRIM FOTO STRUK
+      receiptImage: receiptImage,
       subtotal: subtotal,
       total: total,
       pajak: pajak,
@@ -117,18 +131,15 @@ export default function ReceiptResult({
     
     setFinalConfirmedData(finalData);
     setShowConfirmation(false);
-    setShowFinalConfirmed(true); // Tampilkan halaman final
+    setShowFinalConfirmed(true);
   };
 
-  // HANDLER: Kembali dari SplitBillConfirmed ke SplitBillConfirmation
   const handleBackFromFinalConfirmed = () => {
     setShowFinalConfirmed(false);
     setShowConfirmation(true);
   };
 
-  // HANDLER: Dari SplitBillConfirmed kembali ke home (selesai)
   const handleBackToHomeFromFinalConfirmed = () => {
-    // Reset semua state dan kembali ke awal atau panggil onConfirm
     onConfirm?.({
       ...finalConfirmedData,
       completed: true,
@@ -151,28 +162,25 @@ export default function ReceiptResult({
     );
   }
 
-  // TAMPILKAN HALAMAN FINAL: SplitBillConfirmed (receipt style)
   if (showFinalConfirmed) {
     return (
       <SplitBillConfirmed
         data={finalConfirmedData}
-        receiptImage={receiptImage} // KIRIM FOTO STRUK DI SINI
+        receiptImage={receiptImage}
         onBack={handleBackFromFinalConfirmed}
         onBackToHome={handleBackToHomeFromFinalConfirmed}
       />
     );
   }
 
-  // Tampilkan langkah 3: SplitBillConfirmation
   if (showConfirmation) {
-    // Kita anggap "Kamu" selalu termasuk
     const currentUserForConf = { id: "me", name: "Kamu", phoneMasked: "*7196" };
 
     return (
       <SplitBillConfirmation
         splitName={splitName}
         currentUser={currentUserForConf}
-        members={splitMembers} // Data anggota yang sudah disimpan
+        members={splitMembers}
         items={items}
         subtotal={subtotal}
         pajak={pajak}
@@ -187,50 +195,52 @@ export default function ReceiptResult({
     );
   }
 
-  // Tampilkan langkah 2: SelectContacts
   if (showContacts) {
-    const currentUserForContacts = { id: "me", name: "Kamu", phoneMasked: "*7196", avatarText: "K" };
-    const allContacts = [
-      { id: "1", name: "Rully Roso", phone: "+628765443321", isOrangePayUser: true },
-      { id: "2", name: "Naufal Sandy", phone: "+6285634322183", isOrangePayUser: true },
-      { id: "3", name: "Bulan Santhi", phone: "+628765644432", isOrangePayUser: false },
-      { id: "4", name: "Della Permata", phone: "+6287765322212", isOrangePayUser: true },
-      { id: "5", name: "Anggota Lima", phone: "+6287765322213", isOrangePayUser: true },
-      { id: "6", name: "Anggota Enam", phone: "+6287765322214", isOrangePayUser: true },
-      { id: "7", name: "Anggota Tujuh", phone: "+6287765322215", isOrangePayUser: true },
-      { id: "8", name: "Anggota Delapan", phone: "+6287765322216", isOrangePayUser: true },
-      { id: "9", name: "Anggota Sembilan", phone: "+6287765322217", isOrangePayUser: true },
-      { id: "10", name: "Anggota Sepuluh", phone: "+6287765322218", isOrangePayUser: true },
-      { id: "11", name: "Anggota Sebelas", phone: "+6287765322219", isOrangePayUser: true },
-      { id: "12", name: "Anggota Duabelas", phone: "+6287765322220", isOrangePayUser: true },
-    ];
+    const currentUserForContacts = { id: "me", name: "Kamu", phoneMasked: "*7195", avatarText: "K" };
+    
+    // ✅ PERBAIKAN: Ambil semua contacts dari MAIN_CONTACTS (satu source)
+    const mainContacts = transferApi.getAllAccounts();
+    
+    const allContacts = mainContacts.map((contact) => ({
+      id: contact.accountId,
+      name: contact.name,
+      phone: contact.phone,
+      isOrangePayUser: true,
+    }));
 
+    // ✅ PERBAIKAN: Recommended IDs dari MAIN_CONTACTS (bukan quickContacts)
+    // Ambil 4 teratas dari mainContacts, bukan dari quickContacts yang beda source
+    const recommendedIds = mainContacts
+      .slice(0, 4) // Ambil 4 teratas dari MAIN_CONTACTS
+      .map(c => c.accountId)
+      .filter(Boolean);
+
+    // ✅ PERBAIKAN: Debug log (bisa dihapus nanti)
+    console.log("mainContacts:", mainContacts);
+    console.log("recommendedIds:", recommendedIds);
+    console.log("quickContacts:", quickContacts);
 
     return (
       <SelectContacts
         currentUser={currentUserForContacts}
         contacts={allContacts}
-        recommendedIds={["1", "2"]}
-        // Jika sudah pernah memilih, gunakan pilihan sebelumnya
+        recommendedIds={recommendedIds}
         initialSelectedIds={splitMembers.filter(m => m.id !== 'me').map(m => m.id)} 
         onBack={() => setShowContacts(false)}
         onConfirm={({ selectedContacts }) => {
-          // 2. Simpan daftar anggota, termasuk "Kamu"
           const currentUserAsMember = { 
             id: currentUserForContacts.id, 
             name: currentUserForContacts.name, 
             phoneMasked: currentUserForContacts.phoneMasked 
           };
           
-          // Gabungkan Kamu dengan anggota yang dipilih
           const allMembers = [
             currentUserAsMember, 
             ...selectedContacts,
           ];
 
-          setSplitMembers(allMembers); // Simpan daftar anggota
+          setSplitMembers(allMembers);
           
-          // Lanjut ke langkah konfirmasi
           setShowContacts(false);
           setShowConfirmation(true); 
         }}
@@ -238,7 +248,6 @@ export default function ReceiptResult({
     );
   }
 
-  // Tampilkan langkah 1: ReceiptResult utama
   return (
     <>
       <div className="min-h-screen bg-white flex flex-col">
@@ -388,6 +397,19 @@ export default function ReceiptResult({
         </div>
       </div>
 
+      {/* Alert/Toast Notification */}
+      {showAlert && (
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 animate-slide-down">
+          <div className="bg-red-500 text-white px-6 py-3 rounded-xl shadow-2xl flex items-center gap-3 min-w-[280px]">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="shrink-0">
+              <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
+              <path d="M12 8v4M12 16h.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+            </svg>
+            <span className="font-semibold text-sm">{alertMessage}</span>
+          </div>
+        </div>
+      )}
+
       {showImagePopup && receiptImage && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm" onClick={handleClosePopup}>
           <div className="relative max-w-4xl max-h-[90vh] mx-4" onClick={(e) => e.stopPropagation()}>
@@ -405,6 +427,23 @@ export default function ReceiptResult({
           </div>
         </div>
       )}
+
+      {/* CSS Animation untuk slide down */}
+      <style jsx>{`
+        @keyframes slide-down {
+          from {
+            opacity: 0;
+            transform: translate(-50%, -20px);
+          }
+          to {
+            opacity: 1;
+            transform: translate(-50%, 0);
+          }
+        }
+        .animate-slide-down {
+          animation: slide-down 0.3s ease-out;
+        }
+      `}</style>
     </>
   );
 }

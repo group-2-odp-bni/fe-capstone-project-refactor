@@ -1,20 +1,8 @@
 "use client";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react"; // ✅ TAMBAH useRef
+
 import SplitBillConfirmed from "./SplitBillConfirmed";
 
-/*
-  Split Bill Confirmation – Enhanced Version dengan Auto-Split & Auto-Merge
-  
-  Fitur:
-  - Member bisa memilih berapa quantity dari item yang mau diambil
-  - Item otomatis SPLIT jika masih ada sisa quantity
-  - Item otomatis MERGE ketika user unassign (tidak bikin duplikat berlebih)
-  - MULTI-ASSIGNMENT SUPPORT: Semua member bisa pilih item yang sama
-  - Badge posisi diperbaiki agar tidak menutupi avatar
-  - UI responsif mobile dengan animasi smooth
-  - BEBAS PILIH: Semua anggota bisa pilih semua item, kecuali ada yang sudah pilih maksimal
-  - BUG FIX: Unassign tidak melepas item lain yang masih assigned
-*/
 export default function SplitBillConfirmation({
   splitName = "Rincian Split Bill",
   currentUser = { id: "me", name: "Kamu", phoneMasked: "*7195" },
@@ -33,6 +21,18 @@ export default function SplitBillConfirmation({
   // helpers -----------------------------------------------------------------
   const fmt = (n) => Number(n || 0).toLocaleString("id-ID");
   const currency = (n) => `Rp ${fmt(n)}`;
+
+   // ✅ TAMBAHAN: Generate Split ID SEKALI saat component mount
+  const splitIdRef = useRef(null);
+  
+  if (!splitIdRef.current) {
+    const timestamp = Date.now().toString(36);
+    const random = Math.random().toString(36).substr(2, 8);
+    splitIdRef.current = `${timestamp}-${random}`;
+  }
+  
+  const splitId = splitIdRef.current;
+  // ✅ END TAMBAHAN
 
   // State untuk toggle halaman konfirmasi
   const [isConfirmed, setIsConfirmed] = useState(false);
@@ -547,38 +547,40 @@ export default function SplitBillConfirmation({
   };
 
   const proceedConfirm = () => {
-    const payload = {
-      mode,
-      splitName,
-      currentUser,
-      members,
-      expandedItems: expandedItems.filter(item => item.assignedTo.length > 0),
-      subtotal,
-      countedSubtotal,
-      pajak,
-      service,
-      discount,
-      other,
-      rawAdjustSum,
-      total,
-      perMember: perMemberArray.map((m) => ({
-        id: m.id,
-        name: m.member?.name,
-        itemPortion: m.itemPortion,
-        feePortion: m.feePortion,
-        total: m.total,
-      })),
-    };
-    
-    setConfirmedData(payload);
-    setShowHighFive(true);
-    
-    setTimeout(() => {
-      setShowHighFive(false);
-      setIsConfirmed(true);
-      onConfirm?.(payload);
-    }, 4500);
+  const payload = {
+    id: splitId,  // ✅ TAMBAHAN: Include ID di payload
+    mode,
+    splitName,
+    currentUser,
+    members,
+    items,  // ✅ TAMBAHAN: Include items original
+    expandedItems: expandedItems.filter(item => item.assignedTo.length > 0),
+    subtotal,
+    countedSubtotal,
+    pajak,
+    service,
+    discount,
+    other,
+    rawAdjustSum,
+    total,
+    perMember: perMemberArray.map((m) => ({
+      id: m.id,
+      name: m.member?.name,
+      itemPortion: m.itemPortion,
+      feePortion: m.feePortion,
+      total: m.total,
+    })),
   };
+  
+  setConfirmedData(payload);
+  setShowHighFive(true);
+  
+  setTimeout(() => {
+    setShowHighFive(false);
+    setIsConfirmed(true);
+    onConfirm?.(payload);
+  }, 4500);
+};
 
   // Conditional rendering - High-five animation
   if (showHighFive) {

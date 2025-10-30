@@ -15,6 +15,9 @@ import SetPinPage from "../pages/SetPinPage";
 import WelcomePage from "../pages/WelcomePage";
 import LoginPage from "../pages/LoginPage";
 import ProfilePage from "../pages/ProfilePage";
+import SplitBillPage from "../pages/SplitBillPage";
+import SplitBillConfirmedPage from "../pages/SplitBillConfirmedPage";
+import SplitBillMemberPage from "../pages/SplitBillMemberPage";
 
 import LoginPhone from "../components/login/LoginPhone";
 import OtpStage from "../components/login/OtpStage";
@@ -25,9 +28,9 @@ import ResetPinOtp from "../components/login/ResetPinOtp";
 import DashboardPage from "../pages/DashboardPage";
 import HistoryTransactionPage from "../pages/HistoryTransactionPage";
 import TopUpPage from "../pages/TopUpPage";
-import SplitBillPage from "../pages/SplitBillPage";
 import { isAuthenticated } from "../services/authService";
 import AddWalletPage from "../pages/AddWalletPage";
+
 
 /* login flow context & step guard */
 import { LoginFlowProvider } from "../context/LoginFlowContext";
@@ -183,6 +186,9 @@ export default function AppRoutes() {
           <Route path="topup" element={<TopUpPage />} />
           <Route path="profile" element={<ProfilePage />} />
           <Route path="splitbill" element={<SplitBillPage />} />
+          <Route path="splitbill/:id" element={<SplitBillConfirmedPage />} />
+          <Route path="splitbill/:id/member/:memberId" element={<SplitBillMemberPage />} /> {/* ✅ FIX */}
+
           <Route path="wallets">
             <Route path="new" element={<AddWalletPage />} />
           </Route>

@@ -1,491 +1,997 @@
 "use client";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef, useCallback } from "react";
+import html2canvas from "html2canvas";
+import AturPembayaran from "./AturPembayaran";
 
-/*
-  Split Bill Confirmed Page - Receipt Style Layout
+// ✅ GUNAKAN localStorage supaya data TIDAK HILANG saat navigasi
+const SAVED_IDS_KEY = '__splitbill_saved_ids__';
+
+const getSavedIds = () => {
+  if (typeof window === 'undefined') return new Set();
+  try {
+    const stored = localStorage.getItem(SAVED_IDS_KEY);
+    return stored ? new Set(JSON.parse(stored)) : new Set();
+  } catch (e) {
+    return new Set();
+  }
+};
+
+const addSavedId = (id) => {
+  if (typeof window === 'undefined') return;
+  try {
+    const ids = getSavedIds();
+    ids.add(id);
+    localStorage.setItem(SAVED_IDS_KEY, JSON.stringify([...ids]));
+  } catch (e) {
+    console.error('Failed to save ID:', e);
+  }
+};
+
+const hasSavedId = (id) => {
+  return getSavedIds().has(id);
+};
+
+export default function SplitBillConfirmed({
+  data,
+  onBack,
+  onBackToHome,
+  receiptImage
+}) {
+  // ✅ Generate ID STABLE (tidak berubah saat re-render)
+  const splitIdRef = useRef(null);
   
-  Layout seperti struk Indomaret dengan section:
-  - Header toko
-  - Receipt info
-  - List items
-  - Total & status belum bayar
-  - Member avatars
-  - Bayar ke section
-  - Rincian pesanan (expandable)
-*/
-export default function SplitBillConfirmed({ data, onBack, onBackToHome, receiptImage }) {
-  const fmt = (n) => Number(n || 0).toLocaleString("id-ID");
-  const currency = (n) => `Rp${fmt(n)}`;
+  if (!splitIdRef.current) {
+    if (data?.id) {
+      splitIdRef.current = data.id;
+    } else {
+      const timestamp = Date.now().toString(36);
+      const random = Math.random().toString(36).substr(2, 8);
+      splitIdRef.current = `${timestamp}-${random}`;
+    }
+  }
+  
+  const splitId = splitIdRef.current;
 
-  // Animation states
-  const [entered, setEntered] = useState(false);
-  const [showDetailPesanan, setShowDetailPesanan] = useState(false);
+  const [initialData, setInitialData] = useState(data);
+  const [isInitialized, setIsInitialized] = useState(!!data);
 
-  useEffect(() => {
-    setTimeout(() => setEntered(true), 10);
+  // ✅ Cleanup data kedaluwarsa (>7 hari)
+  const cleanupOldLocalData = useCallback(() => {
+    if (typeof window === 'undefined') return;
+    
+    try {
+      const now = Date.now();
+      const keysToRemove = [];
+      
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        
+        if (key && key.startsWith('splitbill_')) {
+          try {
+            const stored = localStorage.getItem(key);
+            if (stored) {
+              const parsed = JSON.parse(stored);
+              const age = now - (parsed.timestamp || 0);
+              const ttl = parsed.ttl || (7 * 24 * 60 * 60 * 1000);
+              
+              if (age > ttl) {
+                keysToRemove.push(key);
+              }
+            }
+          } catch (e) {
+            keysToRemove.push(key);
+          }
+        }
+      }
+      
+      keysToRemove.forEach(key => {
+        localStorage.removeItem(key);
+        console.log(`🧹 Cleaned: ${key}`);
+      });
+    } catch (e) {
+      console.error('Cleanup error:', e);
+    }
   }, []);
 
-  // Demo data jika tidak ada data
-  const demoData = {
-    splitName: "Warung Padang Sederhana",
-    total: 150000,
-    subtotal: 135000,
-    pajak: 13500,
-    service: 1500,
-    discount: 0,
-    receiptImage: "https://images.unsplash.com/photo-1554224311-beee415c201f?w=400",
-    members: [
-      { id: 1, name: "Andi" },
-      { id: 2, name: "Budi" },
-      { id: 3, name: "Citra" }
-    ],
-    currentUser: { name: "Andi" },
-    expandedItems: [
-      { 
-        name: "Rendang", 
-        pricePerUnit: 25000, 
-        originalIdx: 0,
-        assignedQuantities: { 1: 1, 2: 1 },
-        assignedTo: [1, 2]
-      },
-      { 
-        name: "Ayam Pop", 
-        pricePerUnit: 22000, 
-        originalIdx: 1,
-        assignedQuantities: { 3: 1 },
-        assignedTo: [3]
-      },
-      { 
-        name: "Es Teh", 
-        pricePerUnit: 5000, 
-        originalIdx: 2,
-        assignedQuantities: { 1: 1, 2: 1, 3: 1 },
-        assignedTo: [1, 2, 3]
-      },
-      { 
-        name: "Nasi Putih", 
-        pricePerUnit: 8000, 
-        originalIdx: 3,
-        assignedQuantities: { 1: 1, 2: 1, 3: 1 },
-        assignedTo: [1, 2, 3]
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    cleanupOldLocalData();
+  }, []);
+
+  // ✅ Load data dari localStorage
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (!splitId) return;
+    if (initialData) return;
+
+    const existingKey = `splitbill_${splitId}`;
+    const existingData = localStorage.getItem(existingKey);
+    
+    if (existingData) {
+      try {
+        const parsed = JSON.parse(existingData);
+        const now = Date.now();
+        const isExpired = parsed.ttl && (now - parsed.timestamp > parsed.ttl);
+        
+        if (!isExpired && parsed.data) {
+          console.log(`✅ Loaded ID ${splitId}`);
+          setInitialData(parsed.data);
+          setIsInitialized(true);
+          addSavedId(splitId);
+        }
+      } catch (e) {
+        console.warn('Error loading:', e);
       }
-    ],
-    perMember: [
-      { id: 1, name: "Andi", total: 50000, itemPortion: 45000, feePortion: 5000 },
-      { id: 2, name: "Budi", total: 50000, itemPortion: 45000, feePortion: 5000 },
-      { id: 3, name: "Citra", total: 50000, itemPortion: 45000, feePortion: 5000 }
-    ]
+    }
+  }, [splitId, initialData]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (!splitId) return;
+
+    if (hasSavedId(splitId)) {
+      console.log(`⏭️ ID ${splitId} sudah tersimpan`);
+      return;
+    }
+
+    const existingKey = `splitbill_${splitId}`;
+    const existingData = localStorage.getItem(existingKey);
+    
+    if (existingData) {
+      try {
+        const parsed = JSON.parse(existingData);
+        const now = Date.now();
+        const isExpired = parsed.ttl && (now - parsed.timestamp > parsed.ttl);
+        
+        if (!isExpired) {
+          console.log(`✅ Data ID ${splitId} valid`);
+          addSavedId(splitId);
+          
+          if (!initialData && parsed.data) {
+            setInitialData(parsed.data);
+            setIsInitialized(true);
+          }
+          return;
+        }
+      } catch (e) {
+        console.warn('Error parsing:', e);
+      }
+    }
+
+    if (data && !initialData) {
+      setInitialData(data);
+      setIsInitialized(true);
+    }
+
+    if (initialData && splitId) {
+      try {
+        const cacheData = {
+          data: initialData,
+          receiptImage: receiptImage,
+          timestamp: Date.now(),
+          ttl: 7 * 24 * 60 * 60 * 1000,
+        };
+
+        try {
+          localStorage.setItem(existingKey, JSON.stringify(cacheData));
+          console.log(`💾 Saved ID ${splitId}`);
+          addSavedId(splitId);
+        } catch (quotaError) {
+          if (quotaError.name === 'QuotaExceededError') {
+            console.warn('⚠️ Storage penuh');
+            
+            const allEntries = [];
+            const savedIds = getSavedIds();
+            
+            for (let i = 0; i < localStorage.length; i++) {
+              const key = localStorage.key(i);
+              if (key && key.startsWith('splitbill_') && key !== existingKey) {
+                try {
+                  const stored = localStorage.getItem(key);
+                  if (stored) {
+                    const parsed = JSON.parse(stored);
+                    const idFromKey = key.replace('splitbill_', '');
+                    const isSaved = savedIds.has(idFromKey);
+                    
+                    allEntries.push({
+                      key: key,
+                      timestamp: parsed.timestamp || 0,
+                      isSaved: isSaved
+                    });
+                  }
+                } catch (e) {
+                  allEntries.push({ key: key, timestamp: 0, isSaved: false });
+                }
+              }
+            }
+            
+            allEntries.sort((a, b) => {
+              if (a.isSaved !== b.isSaved) return a.isSaved ? 1 : -1;
+              return a.timestamp - b.timestamp;
+            });
+            
+            const toRemove = allEntries.slice(0, Math.max(1, Math.ceil(allEntries.length * 0.3)));
+            
+            toRemove.forEach(entry => {
+              localStorage.removeItem(entry.key);
+              console.log(`🧹 Removed: ${entry.key}`);
+            });
+            
+            try {
+              localStorage.setItem(existingKey, JSON.stringify(cacheData));
+              console.log(`✅ Saved after cleanup`);
+              addSavedId(splitId);
+            } catch (finalError) {
+              console.error('❌ Failed:', finalError);
+            }
+          }
+        }
+
+        try {
+          const allSplits = JSON.parse(localStorage.getItem('splitBillHistory') || '{}');
+          allSplits[splitId] = {
+            url: `/app/splitbill/${splitId}`,
+            name: initialData?.splitName,
+            createdAt: new Date().toISOString(),
+            total: initialData?.subtotal,
+          };
+          localStorage.setItem('splitBillHistory', JSON.stringify(allSplits));
+        } catch (e) {
+          console.warn('History backup failed:', e);
+        }
+
+      } catch (e) {
+        console.error('Save error:', e);
+      }
+    }
+
+    if (initialData) {
+      const targetUrl = `/app/splitbill/${splitId}?q=${encodeURIComponent(initialData?.splitName || 'split-bill')}`;
+      window.history.replaceState({ splitId, data: initialData }, document.title, targetUrl);
+    }
+  }, [splitId, initialData, receiptImage, data, cleanupOldLocalData]);
+
+  useEffect(() => {
+    return () => {
+      console.log(`🔄 Unmount ID: ${splitId}`);
+    };
+  }, [splitId]);
+
+  const fmt = (n) => {
+    const num = Number(n || 0);
+    return num.toLocaleString("id-ID", {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    });
   };
+  const currency = (n) => `Rp${fmt(n)}`;
+  const roundIDR = (n) => Math.round(Number(n || 0));
 
-  const displayData = data || demoData;
-  const receiptImg = receiptImage || displayData.receiptImage || null;
+  const displayData = initialData || data;
+  const displayReceiptImage = receiptImage;
+  const [entered, setEntered] = useState(false);
+  const [showingDetailFor, setShowingDetailFor] = useState(null);
+  const [showAturPembayaran, setShowAturPembayaran] = useState(false);
+  const [paymentStatus, setPaymentStatus] = useState({});
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [downloadMessage, setDownloadMessage] = useState("");
+  const [clickedButton, setClickedButton] = useState(null);
 
-  // Hitung jumlah item yang di-assign (unique items)
-  const assignedItemsCount = useMemo(() => {
+  const receiptRef = useRef(null);
+  const receiptPrintRef = useRef(null);
+
+  const toggleMemberDetail = (memberId) => {
+    setShowingDetailFor((curr) => (curr === memberId ? null : memberId));
+  };
+  const closePopup = () => setShowingDetailFor(null);
+
+  useEffect(() => {
+    const t = setTimeout(() => setEntered(true), 10);
+    return () => clearTimeout(t);
+  }, []);
+
+  const currentUserId = displayData?.currentUser?.id || "me";
+
+  const originalItemsSubtotal = useMemo(() => {
+    if (!displayData || !displayData.items) return displayData?.subtotal || 0;
+    return displayData.items.reduce((sum, item) => sum + (item.total || 0), 0);
+  }, [displayData]);
+
+  const calculateMemberItemSubtotal = useCallback((memberId) => {
     if (!displayData || !displayData.expandedItems) return 0;
-    const uniqueOriginalIdx = new Set(
-      displayData.expandedItems.map(item => item.originalIdx)
+    const memberItems = displayData.expandedItems.filter(
+      (item) => item.assignedTo && item.assignedTo.includes(memberId)
     );
-    return uniqueOriginalIdx.size;
+
+    let subtotal = 0;
+    memberItems.forEach((item) => {
+      const qty = item.assignedQuantities?.[memberId] || 0;
+      const totalPeopleForItem = item.assignedTo?.length || 1;
+      const pricePerPerson = item.pricePerUnit / totalPeopleForItem;
+      const totalForThisPerson = pricePerPerson * qty;
+      subtotal += totalForThisPerson;
+    });
+    return subtotal;
   }, [displayData]);
 
-  // Hitung total tagihan
-  const totalBilled = useMemo(() => {
-    if (!displayData || !displayData.perMember) return 0;
-    return displayData.perMember.reduce((sum, m) => sum + (m.total || 0), 0);
-  }, [displayData]);
+  const calculateFeeBreakdownPerItem = useCallback((memberId) => {
+    if (!memberId || !displayData || !displayData.expandedItems) {
+      return { tax: 0, discount: 0, service: 0, other: 0 };
+    }
 
-  // Hitung yang belum bayar
+    const originalItems = displayData.items || [];
+
+    if (originalItems.length === 0 || originalItemsSubtotal === 0) {
+      const memberSubtotal = calculateMemberItemSubtotal(memberId);
+      const allMembersSubtotal = (displayData.members || []).reduce(
+        (sum, member) => sum + calculateMemberItemSubtotal(member.id),
+        0
+      );
+      if (allMembersSubtotal === 0) return { tax: 0, discount: 0, service: 0, other: 0 };
+      const memberShare = memberSubtotal / allMembersSubtotal;
+      return {
+        tax: (displayData.pajak || 0) * memberShare,
+        discount: Math.abs(displayData.discount || 0) * memberShare,
+        service: (displayData.service || 0) * memberShare,
+        other: Math.abs(displayData.other || 0) * memberShare,
+      };
+    }
+
+    const memberItems = displayData.expandedItems.filter(
+      (item) => item.assignedTo && item.assignedTo.includes(memberId)
+    );
+
+    let totalTax = 0, totalDiscount = 0, totalService = 0, totalOther = 0;
+
+    memberItems.forEach((item) => {
+      const qty = item.assignedQuantities?.[memberId] || 0;
+      const totalPeopleForItem = item.assignedTo?.length || 1;
+      const pricePerPerson = item.pricePerUnit / totalPeopleForItem;
+      const memberItemTotal = pricePerPerson * qty;
+
+      let originalItem = originalItems.find(
+        (origItem) => origItem.name?.toLowerCase().trim() === item.name?.toLowerCase().trim()
+      );
+      if (!originalItem) {
+        originalItem = originalItems[item.originalIdx] || null;
+      }
+      if (!originalItem) return;
+
+      const originalItemTotal = originalItem.total || 0;
+      if (originalItemTotal === 0) return;
+
+      const itemProportionOfTotal = originalItemTotal / originalItemsSubtotal;
+      const itemTax = (displayData.pajak || 0) * itemProportionOfTotal;
+      const itemDiscount = Math.abs(displayData.discount || 0) * itemProportionOfTotal;
+      const itemService = (displayData.service || 0) * itemProportionOfTotal;
+      const itemOther = Math.abs(displayData.other || 0) * itemProportionOfTotal;
+
+      const memberProportionOfItem = memberItemTotal / originalItemTotal;
+      totalTax += itemTax * memberProportionOfItem;
+      totalDiscount += itemDiscount * memberProportionOfItem;
+      totalService += itemService * memberProportionOfItem;
+      totalOther += itemOther * memberProportionOfItem;
+    });
+
+    return { tax: totalTax, discount: totalDiscount, service: totalService, other: totalOther };
+  }, [displayData, originalItemsSubtotal, calculateMemberItemSubtotal]);
+
+  const calculateVerifiedTotal = useCallback((memberId) => {
+    const subtotal = calculateMemberItemSubtotal(memberId);
+    const fees = calculateFeeBreakdownPerItem(memberId);
+    const total = subtotal + fees.tax - fees.discount + fees.service + (displayData?.other >= 0 ? fees.other : -fees.other);
+    return total;
+  }, [displayData, calculateMemberItemSubtotal, calculateFeeBreakdownPerItem]);
+
+  const perMemberVerifiedMap = useMemo(() => {
+    const map = {};
+    (displayData?.members || []).forEach((m) => {
+      const basis = displayData?.perMember?.find((p) => p.id === m.id) || { id: m.id, name: m.name };
+      map[m.id] = {
+        ...basis,
+        total: roundIDR(calculateVerifiedTotal(m.id)),
+      };
+    });
+    return map;
+  }, [displayData, calculateVerifiedTotal]);
+
+  const perMemberVerified = useMemo(() => Object.values(perMemberVerifiedMap), [perMemberVerifiedMap]);
+
+  const grandTotalVerified = useMemo(() => {
+    return perMemberVerified.reduce((sum, m) => sum + (m.total || 0), 0);
+  }, [perMemberVerified]);
+
   const belumBayar = useMemo(() => {
-    return displayData.total - totalBilled;
-  }, [displayData.total, totalBilled]);
-
-  const handleShareSplit = () => {
-    const shareText = `
-*Split Bill: ${displayData.splitName || "Rincian Pembayaran"}*
-
-Total Tagihan: ${currency(displayData.total)}
-Dibagi ke ${displayData.members.length} anggota
-
-Rincian per anggota:
-${displayData.perMember.map((m, idx) => `${idx + 1}. ${m.name}: ${currency(m.total)}`).join('\n')}
-
-Silakan bayar sesuai nominal ya! 🙏
-    `.trim();
-
-    if (navigator.share) {
-      navigator.share({
-        title: `Split Bill: ${displayData.splitName || "Rincian"}`,
-        text: shareText,
-      }).catch((err) => console.log("Share cancelled", err));
-    } else {
-      navigator.clipboard.writeText(shareText)
-        .then(() => alert("Rincian split bill berhasil disalin!"))
-        .catch(() => alert("Gagal menyalin."));
+    return perMemberVerified
+      .filter((m) => m.id !== currentUserId && !paymentStatus[m.id])
+      .reduce((sum, m) => sum + (m.total || 0), 0);
+  }, [perMemberVerified, currentUserId, paymentStatus]);
+  // ========== DOWNLOAD RECEIPT ==========
+  const handleDownloadReceipt = async () => {
+    if (!receiptPrintRef.current || isDownloading) return;
+    
+    try {
+      setIsDownloading(true);
+      setDownloadMessage("Mempersiapkan...");
+      
+      await new Promise((resolve) => setTimeout(resolve, 600));
+      
+      const isMobile = window.innerWidth < 768;
+      const scale = isMobile ? 2.5 : 3;
+      const width = isMobile ? 360 : 420;
+      
+      const canvas = await html2canvas(receiptPrintRef.current, {
+        backgroundColor: "#ffffff",
+        scale: scale,
+        logging: false,
+        useCORS: false,
+        allowTaint: false,
+        windowWidth: width,
+        windowHeight: receiptPrintRef.current.scrollHeight,
+        imageTimeout: 0,
+        removeContainer: true,
+        ignoreElements: (el) => el.tagName === "BUTTON" || el.classList.contains("ignore-screenshot"),
+      });
+      
+      setDownloadMessage("Mengunduh...");
+      
+      canvas.toBlob(
+        (blob) => {
+          if (!blob) throw new Error("Gagal membuat blob");
+          
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement("a");
+          link.download = `split-bill-${splitId}-${Date.now()}.png`;
+          link.href = url;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          
+          setTimeout(() => {
+            URL.revokeObjectURL(url);
+            setIsDownloading(false);
+            setDownloadMessage("");
+          }, 200);
+        },
+        "image/png",
+        0.95
+      );
+    } catch (error) {
+      console.error("Download failed:", error);
+      setIsDownloading(false);
+      setDownloadMessage("");
     }
   };
 
-  // Get current date time
-  const now = new Date();
-  const dateStr = now.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
-  const timeStr = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+  // ========== SHARE SPLIT ==========
+  const handleShareSplit = async () => {
+    if (!receiptPrintRef.current || isDownloading) return;
+    
+    try {
+      setIsDownloading(true);
+      setDownloadMessage("Mempersiapkan...");
+      
+      await new Promise((resolve) => setTimeout(resolve, 600));
+      
+      const isMobile = window.innerWidth < 768;
+      const scale = isMobile ? 2.5 : 3;
+      const width = isMobile ? 360 : 420;
+      
+      const canvas = await html2canvas(receiptPrintRef.current, {
+        backgroundColor: "#ffffff",
+        scale: scale,
+        logging: false,
+        useCORS: false,
+        allowTaint: false,
+        windowWidth: width,
+        windowHeight: receiptPrintRef.current.scrollHeight,
+        imageTimeout: 0,
+        removeContainer: true,
+        ignoreElements: (el) => el.tagName === "BUTTON" || el.classList.contains("ignore-screenshot"),
+      });
+      
+      canvas.toBlob(async (blob) => {
+        if (!blob) throw new Error("Gagal membuat blob");
+        
+        const file = new File([blob], `split-bill-${splitId}.png`, { type: "image/png" });
+        const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+        const shareLinkUrl = `${baseUrl}/app/splitbill/${splitId}?q=${encodeURIComponent(displayData?.splitName || 'split-bill')}`;
+        
+        const shareText = `
+*Split Bill: ${displayData?.splitName || "Rincian Pembayaran"}*
 
+Total Tagihan: ${currency(grandTotalVerified)}
+Dibagi ke ${(displayData?.members || []).length} anggota
+
+Rincian per anggota:
+${perMemberVerified.map((m, idx) => `${idx + 1}. ${m.name}: ${currency(m.total)}`).join("\n")}
+
+🔗 ${shareLinkUrl}
+
+Silakan bayar sesuai nominal ya! 🙏
+        `.trim();
+        
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          try {
+            await navigator.share({
+              title: `Split Bill: ${displayData?.splitName}`,
+              text: shareText,
+              files: [file],
+            });
+          } catch (err) {
+            console.log("Share cancelled");
+          }
+        } else {
+          await navigator.clipboard.writeText(shareText);
+          alert("Rincian disalin & gambar diunduh!");
+          
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement("a");
+          link.download = `split-bill-${splitId}.png`;
+          link.href = url;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          setTimeout(() => URL.revokeObjectURL(url), 200);
+        }
+        
+        setIsDownloading(false);
+        setDownloadMessage("");
+      }, "image/png", 0.95);
+    } catch (error) {
+      console.error("Share failed:", error);
+      setIsDownloading(false);
+      setDownloadMessage("");
+    }
+  };
+
+  // ========== EARLY RETURN ==========
+  if (!displayData) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <p className="text-gray-500">Data tidak tersedia. Silakan buat split bill baru.</p>
+      </div>
+    );
+  }
+
+  // ========== DATA PREP ==========
+  const now = new Date();
+  const dateStr = now.toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
+  const timeStr = now.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
+
+  const popupMemberData = showingDetailFor ? perMemberVerified.find((m) => m.id === showingDetailFor) : null;
+  const popupMemberInfo = showingDetailFor ? displayData.members.find((m) => m.id === showingDetailFor) : null;
+  const popupMemberItems = showingDetailFor
+    ? displayData.expandedItems?.filter((item) => item.assignedTo?.includes(showingDetailFor)) || []
+    : [];
+
+  const popupCalculatedSubtotal = useMemo(() => {
+    if (!showingDetailFor) return 0;
+    return roundIDR(calculateMemberItemSubtotal(showingDetailFor));
+  }, [showingDetailFor, calculateMemberItemSubtotal]);
+
+  const popupCalculatedTotal = useMemo(() => {
+    if (!showingDetailFor) return 0;
+    return roundIDR(calculateVerifiedTotal(showingDetailFor));
+  }, [showingDetailFor, calculateVerifiedTotal]);
+
+  // ========== ATUR PEMBAYARAN ==========
+  if (showAturPembayaran) {
+    return (
+      <AturPembayaran
+        data={{
+          ...displayData,
+          perMember: perMemberVerified,
+          splitId: splitId,
+        }}
+        paymentStatus={paymentStatus}
+        setPaymentStatus={setPaymentStatus}
+        onBack={() => setShowAturPembayaran(false)}
+      />
+    );
+  }
+
+  // ========== MAIN RENDER ==========
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      {/* Header */}
+    <div className="min-h-screen bg-white flex flex-col relative">
       <div className="bg-white border-b border-gray-200 px-4 py-3 sticky top-0 z-10 shadow-sm">
-        <div className="max-w-3xl mx-auto flex items-center gap-2">
-          <button
-            onClick={() => onBackToHome && onBackToHome()}
-            className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-gray-100 active:scale-95 transition"
-          >
+        <div className="max-w-md mx-auto flex items-center gap-2">
+          <button onClick={onBackToHome} className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-gray-100 active:scale-95 transition">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-              <path d="M15 18l-6-6 6-6" stroke="#1F2937" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M15 18l-6-6 6-6" stroke="#1F2937" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </button>
-
           <div className="flex-1 text-center">
-            <div className="text-sm text-gray-900 font-semibold">
-              {displayData.splitName || "Split Bill"}
-            </div>
+            <div className="text-sm text-gray-900 font-semibold">{displayData.splitName || "Split Bill"}</div>
+            <div className="text-xs text-gray-500 mt-0.5">ID: {splitId.substring(0, 12)}...</div>
           </div>
-
           <div className="w-10" />
         </div>
       </div>
 
-      {/* Content - Receipt Style */}
-      <div className="flex-1 overflow-auto pb-6">
-        <div
-          className={`max-w-md mx-auto transition-all duration-500 ${
-            entered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
-          }`}
-        >
-          {/* Receipt Card */}
-          <div className="mx-4 my-6 relative">
-            {/* Card dengan zigzag yang proper */}
-            <div className="bg-white rounded-xl shadow-lg border-2 border-gray-300 relative overflow-visible">
-              
-              {/* Zigzag top border - GARIS SAJA */}
-              <svg
-                className="absolute -top-3 left-0 right-0 h-6 text-gray-300 pointer-events-none"
-                viewBox="0 0 100 10"
-                preserveAspectRatio="none"
-              >
-                <defs>
-                  <pattern id="zig-top" width="10" height="10" patternUnits="userSpaceOnUse">
-                    <polyline
-                      points="0,10 5,0 10,10"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.8"
-                      strokeLinejoin="round"
-                      strokeLinecap="round"
-                    />
-                  </pattern>
-                </defs>
-                <rect x="0" y="0" width="100%" height="100%" fill="url(#zig-top)" />
-              </svg>
-
-              <div className="px-6 py-4 pt-8">
-                {/* Store/Restaurant Name */}
-                <div className="text-center mb-4">
-                  <h2 className="text-lg font-bold text-gray-900">{displayData.splitName || "Indomaret"}</h2>
-                  <p className="text-xs text-gray-500 mt-1">
-                    {dateStr} - {timeStr}
-                  </p>
-                </div>
-
-                {/* Foto Struk - DITAMPILKAN DI SINI */}
-                {receiptImg && (
-                  <div className="mb-4">
-                    <div className="rounded-lg overflow-hidden border-2 border-gray-200 shadow-sm bg-gray-50">
-                      <img 
-                        src={receiptImg} 
-                        alt="Foto Struk" 
-                        className="w-full h-auto object-contain max-h-64"
-                        onError={(e) => {
-                          e.target.style.display = 'none';
-                          e.target.parentElement.innerHTML = '<div class="p-4 text-center text-gray-400 text-xs">Gambar tidak dapat dimuat</div>';
-                        }}
-                      />
-                    </div>
-                    <p className="text-[10px] text-gray-400 text-center mt-2 italic">
-                      Foto struk asli
-                    </p>
-                  </div>
-                )}
-
-                {/* Divider */}
-                <div className="border-t-2 border-dashed border-gray-300 my-4" />
-
-                {/* Items List */}
-                <div className="space-y-3 mb-4">
-                  {displayData.expandedItems && displayData.expandedItems.slice(0, 5).map((item, idx) => {
-                    const totalQty = Object.values(item.assignedQuantities || {})
-                      .reduce((sum, q) => sum + q, 0);
-                    
-                    return (
-                      <div key={idx} className="flex items-start justify-between text-sm">
-                        <div className="flex-1">
-                          <div className="font-semibold text-gray-900 uppercase text-xs">
-                            {item.name}
+      <div className="flex-1 overflow-auto bg-white">
+        <div className={`max-w-md mx-auto transition-all duration-500 ${entered ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}>
+          
+          <div className="mt-2 px-0">
+            <div className="mx-0 px-0">
+              <div ref={receiptRef} className="relative">
+                <div className="border-l border-r border-gray-300 relative">
+                  <div style={{ paddingTop: "18px", paddingBottom: "18px" }}>
+                    <div className="bg-white relative" style={{
+                      clipPath: `polygon(0 0, 8.33% 14px, 16.66% 0, 25% 14px, 33.33% 0, 41.66% 14px, 50% 0, 58.33% 14px, 66.66% 0, 75% 14px, 83.33% 0, 91.66% 14px, 100% 0, 100% calc(100% - 14px), 91.66% 100%, 83.33% calc(100% - 14px), 75% 100%, 66.66% calc(100% - 14px), 58.33% 100%, 50% calc(100% - 14px), 41.66% 100%, 33.33% calc(100% - 14px), 25% 100%, 16.66% calc(100% - 14px), 8.33% 100%, 0 calc(100% - 14px))`,
+                    }}>
+                      <div className="px-6 py-6">
+                        {displayReceiptImage && (
+                          <div className="mb-4">
+                            <img src={displayReceiptImage} alt="Foto Struk" className="w-full h-auto object-contain max-h-80 rounded-lg" crossOrigin="anonymous" />
                           </div>
-                          <div className="text-xs text-gray-500 mt-0.5">
-                            {totalQty}x @ {currency(item.pricePerUnit)}
-                          </div>
+                        )}
+
+                        <div className="text-center mb-4">
+                          <h2 className="text-lg font-bold text-gray-900">{displayData.splitName || "Indomaret"}</h2>
+                          <p className="text-xs text-gray-500 mt-1">{dateStr} - {timeStr}</p>
                         </div>
-                        <div className="font-bold text-gray-900 text-sm ml-2">
-                          {currency(totalQty * item.pricePerUnit)}
-                        </div>
-                      </div>
-                    );
-                  })}
-                  
-                  {displayData.expandedItems && displayData.expandedItems.length > 5 && (
-                    <div className="text-xs text-gray-500 text-center italic">
-                      +{displayData.expandedItems.length - 5} item lainnya
-                    </div>
-                  )}
-                </div>
 
-                {/* Divider */}
-                <div className="border-t-2 border-dashed border-gray-300 my-4" />
-
-                {/* Summary */}
-                <div className="space-y-2 mb-4">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Subtotal</span>
-                    <span className="font-semibold text-gray-900">{currency(displayData.subtotal)}</span>
-                  </div>
-                  {Number(displayData.pajak) > 0 && (
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Pajak</span>
-                      <span className="font-semibold text-gray-900">{currency(displayData.pajak)}</span>
-                    </div>
-                  )}
-                  {Number(displayData.service) > 0 && (
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Servis</span>
-                      <span className="font-semibold text-gray-900">{currency(displayData.service)}</span>
-                    </div>
-                  )}
-                  {Number(displayData.discount) !== 0 && (
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Diskon</span>
-                      <span className="font-semibold text-red-600">{currency(displayData.discount)}</span>
-                    </div>
-                  )}
-                </div>
-
-                {/* Total */}
-                <div className="bg-gray-50 -mx-6 px-6 py-3 flex justify-between items-center border-y-2 border-dashed border-gray-300">
-                  <span className="text-base font-bold text-gray-900">{currency(displayData.total)}</span>
-                  <span className="text-xs text-red-600 font-bold bg-red-50 px-3 py-1 rounded-full">
-                    {currency(Math.abs(belumBayar))} {belumBayar > 0 ? 'belum bayar' : 'lunas'}
-                  </span>
-                </div>
-
-                {/* Divider */}
-                <div className="my-4" />
-
-                {/* Anggota Section */}
-                <div className="mb-4">
-                  <h3 className="text-xs font-bold text-gray-900 mb-3">{displayData.members.length} anggota</h3>
-                  <p className="text-[10px] text-gray-500 mb-3 italic">
-                    Begitu pembayaran masuk lewat Orange Pay, statusnya otomatis jadi lunas.
-                  </p>
-
-                  {/* Avatars */}
-                  <div className="flex items-center gap-2 mb-4">
-                    {displayData.members.slice(0, 3).map((member, idx) => {
-                      const initial = (member.name || "?").charAt(0).toUpperCase();
-                      return (
-                        <div key={idx} className="flex flex-col items-center">
-                          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-white text-sm font-bold shadow-md">
-                            {initial}
-                          </div>
-                          <p className="text-[10px] font-semibold text-gray-700 mt-1 max-w-[60px] truncate text-center">
-                            {member.name}
+                        <div className="border-t-2 border-dashed border-gray-400 pt-4 pb-4 text-center -mx-6 px-6">
+                          <h3 className="text-lg font-bold text-gray-900">{currency(grandTotalVerified)}</h3>
+                          <p className="text-xs text-gray-600 mt-1">
+                            <span className="text-red-600 font-semibold">{currency(belumBayar)}</span> belum bayar
                           </p>
                         </div>
-                      );
-                    })}
-                    {displayData.members.length > 3 && (
-                      <div className="flex flex-col items-center">
-                        <div className="w-12 h-12 rounded-full bg-gray-300 flex items-center justify-center text-gray-600 text-xs font-bold shadow-md">
-                          +{displayData.members.length - 3}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
 
-                {/* Bayar ke Section */}
-                <div className="bg-gradient-to-br from-orange-50 to-amber-50 -mx-6 px-6 py-4 border-y border-gray-200">
-                  <h3 className="text-xs font-bold text-gray-900 mb-3">Bayar ke</h3>
-                  
-                  {displayData.perMember.map((member, idx) => {
-                    const initial = (member.name || "?").charAt(0).toUpperCase();
-                    const isCurrentUser = member.name === displayData.currentUser?.name;
-                    
-                    return (
-                      <div
-                        key={idx}
-                        className="flex items-center justify-between bg-white rounded-lg px-3 py-2.5 mb-2 shadow-sm border border-gray-200"
-                      >
-                        <div className="flex items-center gap-2.5">
-                          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-white text-xs font-bold">
-                            {initial}
-                          </div>
-                          <div>
-                            <div className="text-xs font-bold text-gray-900">
-                              {member.name || "—"}
-                              {isCurrentUser && (
-                                <span className="ml-1 text-[10px] bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full font-semibold">
-                                  kamu
-                                </span>
-                              )}
-                            </div>
-                            <div className="text-[10px] text-gray-500">
-                              +62 857***7195 • <span className="text-orange-600 font-semibold">Pembuat</span>
-                            </div>
-                          </div>
+                        <div className="border-t-2 border-dashed border-gray-400 pt-4 mt-4 -mx-6 px-6">
+                          <h3 className="text-sm font-bold text-gray-900 mb-3">Bayar ke</h3>
+                          {(displayData.members || [])
+                            .filter((member) => member.id === currentUserId)
+                            .map((member, idx) => {
+                              const initial = (member.name || "?").charAt(0).toUpperCase();
+                              const memberData = perMemberVerifiedMap[member.id];
+                              const phoneDisplay = member.phone || member.phoneMasked;
+                              return (
+                                <div key={idx}>
+                                  <div className="flex items-center justify-between py-3">
+                                    <div className="flex items-center gap-3">
+                                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#FF9A25] to-[#FF7A25] flex items-center justify-center text-white text-sm font-bold">{initial}</div>
+                                      <div>
+                                        <div className="text-sm font-bold text-gray-900">
+                                          Kamu
+                                          <span className="ml-2 text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full font-semibold">kamu</span>
+                                        </div>
+                                        <div className="text-xs text-gray-500">{phoneDisplay} • <span className="text-[#FF8900] font-semibold">Pembuat</span></div>
+                                      </div>
+                                    </div>
+                                    <div className="text-right">
+                                      <div className="text-base font-bold text-gray-900">{memberData ? currency(memberData.total) : "-"}</div>
+                                      <div className="text-xs text-[#FF8900] font-semibold">Lunas</div>
+                                    </div>
+                                  </div>
+                                  <div className="mt-2 mb-4">
+                                    <button onClick={() => toggleMemberDetail(member.id)} className="w-full flex items-center justify-between py-2 px-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition ignore-screenshot">
+                                      <span className="text-xs font-semibold text-gray-700">Rincian pesanan</span>
+                                      <svg width="16" height="16" viewBox="0 0 24 24" className="text-gray-400">
+                                        <path d="M9 5l7 7-7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+                                      </svg>
+                                    </button>
+                                  </div>
+                                </div>
+                              );
+                            })}
                         </div>
-                        <div className="text-right">
-                          <div className="text-sm font-bold text-gray-900">{currency(member.total)}</div>
-                          <div className="text-[10px] text-orange-600 font-semibold">Lunas</div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
 
-                {/* Rincian Pesanan Dropdown */}
-                <button
-                  onClick={() => setShowDetailPesanan(!showDetailPesanan)}
-                  className="w-full py-3 flex items-center justify-between text-sm font-semibold text-gray-700 hover:bg-gray-50 -mx-6 px-6 transition-colors"
-                >
-                  <span>Rincian pesanan</span>
-                  <svg 
-                    width="20" 
-                    height="20" 
-                    viewBox="0 0 24 24" 
-                    className={`text-gray-400 transition-transform ${showDetailPesanan ? 'rotate-180' : ''}`}
-                  >
-                    <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
-                  </svg>
-                </button>
-
-                {/* Detail Pesanan Expandable */}
-                {showDetailPesanan && (
-                  <div className="border-t border-gray-200 pt-4 -mx-6 px-6">
-                    <div className="space-y-3 pb-4">
-                      {displayData.perMember.map((member, idx) => {
-                        const initial = (member.name || "?").charAt(0).toUpperCase();
-                        const memberItems = displayData.expandedItems.filter(item => 
-                          item.assignedTo && item.assignedTo.includes(member.id)
-                        );
-                        
-                        return (
-                          <div key={idx} className="bg-gray-50 rounded-lg p-3">
-                            <div className="flex items-center gap-2 mb-2">
-                              <div className="w-6 h-6 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-white text-[10px] font-bold">
-                                {initial}
-                              </div>
-                              <div className="text-xs font-bold text-gray-900">{member.name}</div>
-                            </div>
-                            
-                            <div className="space-y-1.5 mb-2">
-                              {memberItems.map((item, itemIdx) => {
-                                const qty = item.assignedQuantities[member.id] || 0;
+                        {(displayData.members || []).filter((m) => m.id !== currentUserId).length > 0 && (
+                          <div className="border-t-2 border-dashed border-gray-400 pt-4 mt-4 -mx-6 px-6">
+                            <h3 className="text-sm font-bold text-gray-900 mb-3">Anggota</h3>
+                            {(displayData.members || [])
+                              .filter((member) => member.id !== currentUserId)
+                              .map((member, idx) => {
+                                const initial = (member.name || "?").charAt(0).toUpperCase();
+                                const memberData = perMemberVerifiedMap[member.id];
+                                const phoneDisplay = member.phone || member.phoneMasked;
+                                const isPaid = paymentStatus[member.id] || false;
                                 return (
-                                  <div key={itemIdx} className="flex justify-between text-[11px]">
-                                    <span className="text-gray-700">
-                                      {item.name} <span className="text-gray-500">x{qty}</span>
-                                    </span>
-                                    <span className="font-semibold text-gray-900">
-                                      {currency(qty * item.pricePerUnit)}
-                                    </span>
+                                  <div key={idx} className="mb-4 pb-4 border-gray-100 last:border-b-0 last:mb-0 last:pb-0">
+                                    <div className="flex items-center justify-between py-3">
+                                      <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#FF9A25] to-[#FF7A25] flex items-center justify-center text-white text-sm font-bold">{initial}</div>
+                                        <div>
+                                          <div className="text-sm font-bold text-gray-900">{member.name}</div>
+                                          <div className="text-xs text-gray-500">{phoneDisplay}</div>
+                                        </div>
+                                      </div>
+                                      <div className="text-right">
+                                        <div className="text-base font-bold text-gray-900">{memberData ? currency(memberData.total) : "-"}</div>
+                                        <div className={`text-xs font-semibold ${isPaid ? "text-[#FF8900]" : "text-red-600"}`}>{isPaid ? "Lunas" : "Belum bayar"}</div>
+                                      </div>
+                                    </div>
+                                    <div className="mt-2">
+                                      <button onClick={() => toggleMemberDetail(member.id)} className="w-full flex items-center justify-between py-2 px-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition ignore-screenshot">
+                                        <span className="text-xs font-semibold text-gray-700">Rincian pesanan</span>
+                                        <svg width="16" height="16" viewBox="0 0 24 24" className="text-gray-400">
+                                          <path d="M9 5l7 7-7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+                                        </svg>
+                                      </button>
+                                      {/* ✅ TAMBAHAN: Button Link Invoice Member */}
+<button 
+  onClick={() => {
+    const memberUrl = `${window.location.origin}/app/splitbill/${splitId}/member/${member.id}`; // ✅ TAMBAH /app/
+    navigator.clipboard.writeText(memberUrl);
+    alert(`Link invoice ${member.name} berhasil disalin!`);
+  }}
+  className="w-full flex items-center justify-between py-2 px-3 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition ignore-screenshot"
+>
+  <span className="text-xs font-semibold text-blue-700">📋 Copy Link Invoice</span>
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="text-blue-500">
+    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+</button>
+
+                                    </div>
                                   </div>
                                 );
                               })}
-                            </div>
 
-                            <div className="border-t border-gray-300 pt-2 space-y-1">
-                              <div className="flex justify-between text-[11px]">
-                                <span className="text-gray-600">Subtotal</span>
-                                <span className="font-semibold text-gray-900">{currency(member.itemPortion)}</span>
-                              </div>
-                              <div className="flex justify-between text-[11px]">
-                                <span className="text-gray-600">Pajak + Biaya</span>
-                                <span className="font-semibold text-gray-900">{currency(member.feePortion)}</span>
-                              </div>
-                              <div className="flex justify-between text-xs pt-1 border-t border-gray-300">
-                                <span className="font-bold text-gray-900">Total</span>
-                                <span className="font-bold text-orange-500">{currency(member.total)}</span>
-                              </div>
+                            <div className="border-t-2 border-dashed border-gray-400 pt-4 mt-4 -mx-6 px-6">
+                              <button 
+                                onClick={() => {
+                                  setClickedButton('aturPembayaran');
+                                  setTimeout(() => setShowAturPembayaran(true), 150);
+                                  setTimeout(() => setClickedButton(null), 300);
+                                }}
+                                className={`w-full py-4 md:py-3.5 rounded-xl font-bold text-sm text-white transition-all duration-200 flex items-center justify-center gap-2.5 active:scale-95 ${clickedButton === 'aturPembayaran' ? 'scale-95 brightness-90' : ''}`}
+                                style={{
+                                  background: "linear-gradient(135deg, #FF9A25 0%, #FF7A25 100%)",
+                                  minHeight: "56px",
+                                  touchAction: "manipulation",
+                                }}
+                              >
+                                <span className="relative z-10 flex items-center justify-center gap-2.5">
+                                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                    <circle cx="12" cy="12" r="10" />
+                                    <polyline points="12 6 12 12 16 14" />
+                                  </svg>
+                                  <span className="font-bold">Atur Pembayaran</span>
+                                </span>
+                              </button>
                             </div>
                           </div>
-                        );
-                      })}
+                        )}
+                      </div>
                     </div>
                   </div>
-                )}
-              </div>
 
-              {/* Zigzag bottom border - GARIS SAJA */}
-              <svg
-                className="absolute -bottom-3 left-0 right-0 h-6 text-gray-300 rotate-180 pointer-events-none"
-                viewBox="0 0 100 10"
-                preserveAspectRatio="none"
-              >
-                <defs>
-                  <pattern id="zig-bottom" width="10" height="10" patternUnits="userSpaceOnUse">
-                    <polyline
-                      points="0,10 5,0 10,10"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.8"
-                      strokeLinejoin="round"
-                      strokeLinecap="round"
-                    />
-                  </pattern>
-                </defs>
-                <rect x="0" y="0" width="100%" height="100%" fill="url(#zig-bottom)" />
-              </svg>
+                  <div className="absolute top-0 left-0 right-0" style={{ height: "30px", overflow: "visible" }}>
+                    <svg className="w-full" style={{ height: "30px" }} viewBox="1.5 1 99.5 24" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+                      <polyline points="0,3 1.25,3 11.25,20 21.25,3 31.25,20 41.25,3 51.25,20 61.25,3 71.25,20 81.25,3 91.25,20 101.25,3 105.5,3" fill="none" stroke="#d1d5db" strokeWidth="1.5" />
+                    </svg>
+                  </div>
+
+                  <div className="absolute bottom-0 left-0 right-0" style={{ height: "24.1px", overflow: "visible" }}>
+                    <svg className="w-full" style={{ height: "30px" }} viewBox="1.5 1 99.5 24" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+                      <polyline points="0,20 1.25,20 11.25,3 21.25,20 31.25,3 41.25,20 51.25,3 61.25,20 71.25,3 81.25,20 91.25,3 101.25,20 105.5,20" fill="none" stroke="#d1d5db" strokeWidth="1.5" />
+                    </svg>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* Action Buttons */}
-          <div className="px-4 space-y-3 mt-8">
-            <button
-              onClick={handleShareSplit}
-              className="w-full py-3.5 rounded-xl text-white font-bold text-sm bg-gradient-to-r from-orange-400 to-orange-600 hover:shadow-xl hover:shadow-orange-400/30 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+          <div 
+            ref={receiptPrintRef}
+            style={{
+              position: "fixed",
+              left: "-9999px",
+              top: "-9999px",
+              width: "100%",
+              maxWidth: "420px",
+              background: "#ffffff",
+              fontFamily: "'Segoe UI', 'Roboto', sans-serif",
+              color: "#1f2937",
+              lineHeight: "1.35",
+              boxSizing: "border-box",
+            }}
+          >
+            <div style={{ padding: "40px 24px", maxWidth: "100%", boxSizing: "border-box", width: "100%" }}>
+              <div style={{ textAlign: "center", marginBottom: "24px", paddingBottom: "16px", borderBottom: "2px solid #FF9A25" }}>
+                <div style={{ fontSize: "32px", fontWeight: "900", color: "#FF9A25", marginBottom: "8px", letterSpacing: "-0.8px" }}>
+                  {displayData.splitName || "Indomaret"}
+                </div>
+                <div style={{ fontSize: "12px", color: "#9ca3af", fontWeight: "500" }}>
+                  {dateStr} • {timeStr}
+                </div>
+              </div>
+
+              <div style={{ background: "linear-gradient(135deg, #FF9A25 0%, #FF7A25 100%)", color: "#ffffff", padding: "32px 20px", borderRadius: "14px", textAlign: "center", marginBottom: "24px" }}>
+                <div style={{ fontSize: "12px", opacity: "0.95", marginBottom: "8px", fontWeight: "700", textTransform: "uppercase", letterSpacing: "0.8px" }}>
+                  Total Tagihan
+                </div>
+                <div style={{ fontSize: "44px", fontWeight: "900", letterSpacing: "-1.5px", lineHeight: "1" }}>
+                  {currency(grandTotalVerified)}
+                </div>
+              </div>
+
+              <div style={{ marginBottom: "20px", paddingBottom: "16px", borderBottom: "1px solid #e5e7eb" }}>
+                {(displayData.expandedItems || []).map((item, idx) => {
+                  const assignees = item.assignedTo || [];
+                  return (
+                    <div key={idx} style={{ display: "flex", justifyContent: "space-between", marginBottom: "10px", paddingBottom: "10px", borderBottom: idx < (displayData.expandedItems || []).length - 1 ? "1px solid #f3f4f6" : "none" }}>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: "14px", fontWeight: "600", color: "#1f2937", marginBottom: "4px" }}>
+                          {item.name}
+                        </div>
+                        <div style={{ fontSize: "11px", color: "#9ca3af", fontWeight: "500" }}>
+                          {assignees.map(memberId => {
+                            const member = displayData.members?.find(m => m.id === memberId);
+                            const qty = item.assignedQuantities?.[memberId] || 0;
+                            return `${member?.name} (${qty}x)`;
+                          }).join(" + ")}
+                        </div>
+                      </div>
+                      <div style={{ fontSize: "14px", fontWeight: "700", color: "#1f2937", textAlign: "right", minWidth: "80px" }}>
+                        {currency(roundIDR(item.pricePerUnit))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div style={{ marginBottom: "20px" }}>
+                <div style={{ fontSize: "13px", fontWeight: "700", color: "#1f2937", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.6px" }}>
+                  Rincian Per Orang
+                </div>
+                {perMemberVerified.map((member, idx) => (
+                  <div key={idx} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingBottom: "10px", marginBottom: "10px", borderBottom: idx < perMemberVerified.length - 1 ? "1px solid #f3f4f6" : "none" }}>
+                    <div style={{ fontSize: "13px", fontWeight: "500", color: "#1f2937" }}>
+                      {member.name}
+                    </div>
+                    <div style={{ fontSize: "14px", fontWeight: "700", color: "#FF9A25" }}>
+                      {currency(member.total)}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div style={{ textAlign: "center", paddingTop: "12px", borderTop: "1px solid #e5e7eb" }}>
+                <div style={{ fontSize: "10px", color: "#9ca3af", fontWeight: "600", marginBottom: "4px" }}>
+                  ID: {splitId.substring(0, 16)}
+                </div>
+                <div style={{ fontSize: "9px", color: "#9ca3af", fontWeight: "600", marginTop: "6px" }}>
+                  gopay
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="px-4 pb-6 space-y-3 max-w-md mx-auto w-full mt-5">
+            <button 
+              onClick={handleShareSplit} 
+              disabled={isDownloading} 
+              className={`w-full py-3.5 rounded-xl text-white font-bold text-sm bg-gradient-to-r from-[#FF9A25] to-[#FF7A25] active:scale-[0.98] transition-all flex items-center justify-center gap-2 ${isDownloading ? "opacity-50 cursor-not-allowed" : ""}`}
             >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M16 6l-4-4-4 4M12 2v13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-              Kirim ke Semua Anggota
+              {isDownloading ? (
+                <>
+                  <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24" fill="none">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                  <span>{downloadMessage}</span>
+                </>
+              ) : (
+                <>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                    <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    <path d="M16 6l-4-4-4 4M12 2v13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                  Kirim ke Semua
+                </>
+              )}
             </button>
 
-            <button
-              onClick={() => onBack && onBack()}
-              className="w-full py-3.5 rounded-xl font-semibold text-sm bg-white border-2 border-gray-200 text-gray-700 hover:bg-gray-50 active:scale-[0.98] transition-all"
+            <button 
+              onClick={handleDownloadReceipt} 
+              disabled={isDownloading} 
+              className={`w-full py-3.5 rounded-xl font-semibold text-sm bg-white border-2 border-gray-200 text-gray-700 active:scale-[0.98] transition-all ${isDownloading ? "opacity-50 cursor-not-allowed" : ""}`}
             >
-              Ubah Pembagian
+              {isDownloading ? `${downloadMessage}...` : "📥 Download Struk"}
             </button>
 
-            <button
-              onClick={() => onBackToHome && onBackToHome()}
-              className="w-full py-3 rounded-xl font-medium text-sm bg-transparent text-gray-600 hover:text-gray-900 active:scale-[0.98] transition-all"
-            >
-              Kembali ke Beranda
+            <button onClick={onBack} className="w-full py-3.5 rounded-xl font-semibold text-sm bg-white border-2 border-gray-200 text-gray-700 active:scale-[0.98] transition-all">
+              ✏️ Ubah Pembagian
+            </button>
+
+            <button onClick={onBackToHome} className="w-full py-3 rounded-xl font-medium text-sm bg-transparent text-gray-600 active:scale-[0.98] transition-all">
+              🏠 Kembali ke Beranda
             </button>
           </div>
         </div>
       </div>
+
+      {showingDetailFor && popupMemberData && popupMemberInfo && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4" onClick={closePopup}>
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[80vh] overflow-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="p-5">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-base font-bold text-gray-900">Rincian Pesanan</h3>
+                <button onClick={closePopup} className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-gray-100">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                    <path d="M6 6l12 12M6 18L18 6" stroke="#6B7280" strokeWidth="2" strokeLinecap="round" />
+                  </svg>
+                </button>
+              </div>
+
+              <div className="flex items-center gap-3 mb-4 pb-4 border-b border-gray-200">
+                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#FF9A25] to-[#FF7A25] flex items-center justify-center text-white text-base font-bold">
+                  {(popupMemberInfo.name || "?").charAt(0).toUpperCase()}
+                </div>
+                <div>
+                  <div className="text-sm font-bold text-gray-900">
+                    {popupMemberInfo.name}
+                    {popupMemberInfo.id === currentUserId && (
+                      <span className="ml-2 text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full font-semibold">kamu</span>
+                    )}
+                  </div>
+                  <div className="text-xs text-gray-500">{popupMemberInfo.phone || popupMemberInfo.phoneMasked}</div>
+                </div>
+              </div>
+
+              <div className="space-y-2 mb-4">
+                {popupMemberItems.map((item, itemIdx) => {
+                  const qty = item.assignedQuantities?.[showingDetailFor] || 0;
+                  const totalPeopleForItem = item.assignedTo?.length || 1;
+                  const pricePerPerson = item.pricePerUnit / totalPeopleForItem;
+                  const totalForThisPerson = pricePerPerson * qty;
+                  return (
+                    <div key={itemIdx} className="flex justify-between text-sm py-2 border-b border-gray-100 last:border-b-0">
+                      <span className="text-gray-700">
+                        {item.name} <span className="text-gray-500">x{qty}</span>
+                      </span>
+                      <span className="font-semibold text-gray-900">{currency(roundIDR(totalForThisPerson))}</span>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="border-t-2 border-gray-200 pt-3 space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Subtotal</span>
+                  <span className="font-semibold text-gray-900">{currency(popupCalculatedSubtotal)}</span>
+                </div>
+                {(() => {
+                  const fees = calculateFeeBreakdownPerItem(showingDetailFor);
+                  return (
+                    <>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">Pajak</span>
+                        <span className="font-semibold text-gray-900">{currency(roundIDR(fees.tax || 0))}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">Diskon</span>
+                        <span className={`font-semibold ${(fees.discount || 0) > 0 ? "text-green-600" : "text-gray-900"}`}>
+                          {(fees.discount || 0) > 0 ? `-${currency(roundIDR(fees.discount))}` : currency(0)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">Service</span>
+                        <span className="font-semibold text-gray-900">{currency(roundIDR(fees.service || 0))}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">Lainnya</span>
+                        <span className={`font-semibold ${(displayData.other || 0) < 0 ? "text-red-600" : "text-gray-900"}`}>
+                          {(displayData.other || 0) < 0 ? `-${currency(roundIDR(fees.other))}` : currency(roundIDR(fees.other || 0))}
+                        </span>
+                      </div>
+                    </>
+                  );
+                })()}
+                <div className="flex justify-between text-base pt-2 border-t border-gray-200">
+                  <span className="font-bold text-gray-900">Total</span>
+                  <span className="font-bold text-[#FF9A25]">{currency(popupCalculatedTotal)}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

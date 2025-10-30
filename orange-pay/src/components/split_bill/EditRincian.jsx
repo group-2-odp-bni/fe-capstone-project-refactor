@@ -1,5 +1,5 @@
 "use client";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useRef } from "react";
 
 /* ===== Utils angka ===== */
 function parseNumberLoose(v) {
@@ -17,7 +17,8 @@ const fmtID = (n) => Number(n || 0).toLocaleString("id-ID");
 
 /* ===== Komponen utama ===== */
 export default function EditRincian({ receiptData, onBack, onSave }) {
-  // Items (harga sebagai TEKS agar kosong tidak jadi "0")
+  const inputRefs = useRef({});
+
   const [items, setItems] = useState(() => {
     const src = Array.isArray(receiptData?.items) ? receiptData.items : [];
     return src.map((it) => {
@@ -30,12 +31,12 @@ export default function EditRincian({ receiptData, onBack, onSave }) {
         quantity: qty, 
         priceText, 
         total,
-        qtyFocused: false // Track apakah input QTY sedang di-focus
+        qtyFocused: false,
+        qtyJustFocused: false
       };
     });
   });
 
-  // Biaya tambahan (read-only di UI ini)
   const [pajakText] = useState(() => {
     const n = parseNumberLoose(receiptData?.pajak ?? receiptData?.tax ?? 0);
     return n !== 0 ? String(n) : "";
@@ -73,7 +74,6 @@ export default function EditRincian({ receiptData, onBack, onSave }) {
       const old = next[idx];
       const name = patch.name !== undefined ? String(patch.name) : old.name;
 
-      // qty: ambil hanya digit
       let quantity = old.quantity;
       if (patch.quantity !== undefined) {
         const digits = String(patch.quantity).replace(/\D/g, "");
@@ -86,11 +86,12 @@ export default function EditRincian({ receiptData, onBack, onSave }) {
           : old.priceText;
 
       const qtyFocused = patch.qtyFocused !== undefined ? patch.qtyFocused : old.qtyFocused;
+      const qtyJustFocused = patch.qtyJustFocused !== undefined ? patch.qtyJustFocused : old.qtyJustFocused;
 
       const priceNum = parseNumberLoose(priceText);
       const total = quantity * priceNum;
 
-      next[idx] = { name, quantity, priceText, total, qtyFocused };
+      next[idx] = { name, quantity, priceText, total, qtyFocused, qtyJustFocused };
       return next;
     });
   };
@@ -98,7 +99,7 @@ export default function EditRincian({ receiptData, onBack, onSave }) {
   const addItem = () =>
     setItems((p) => [
       ...p,
-      { name: "", quantity: 1, priceText: "", total: 0, qtyFocused: false },
+      { name: "", quantity: 1, priceText: "", total: 0, qtyFocused: false, qtyJustFocused: false },
     ]);
 
   const askRemoveItem = (idx) => setDeleteIdx(idx);
@@ -109,7 +110,6 @@ export default function EditRincian({ receiptData, onBack, onSave }) {
     setDeleteIdx(null);
   };
 
-  // -------------- KONFIRMASI --------------
   const openConfirmSave = () => {
     const hasEmptyName = items.some((it) => !(it.name || "").trim());
     if (hasEmptyName) {
@@ -181,30 +181,43 @@ export default function EditRincian({ receiptData, onBack, onSave }) {
               {items.map((it, idx) => {
                 const isError = showErrors && !(it.name || "").trim();
                 
-                // Tampilkan dengan "x" jika tidak sedang focus
-                const displayQty = it.qtyFocused ? String(it.quantity) : `${it.quantity}x`;
+                const displayQty = it.qtyFocused 
+                  ? (it.qtyJustFocused ? "" : String(it.quantity))
+                  : `${it.quantity}x`;
 
                 return (
                   <div key={idx} className="space-y-2">
-                    {/* Grid: Qty | Nama (wide) | Hapus  → baris 2: (spacer) | Harga | Total */}
-                    <div className="grid grid-cols-[60px_1fr_auto] md:grid-cols-[68px_2fr_auto] gap-x-3 gap-y-2 items-start">
-                      {/* Qty - tampil 'x' hanya saat blur */}
-                      <div>
+                    {/* ✅ PERBAIKAN: Layout baru untuk iPhone SE & layar kecil */}
+                    {/* Baris 1: Qty | Nama | Hapus */}
+                    <div className="flex items-start gap-2">
+                      {/* Qty */}
+                      <div className="shrink-0 w-[50px]">
                         <div
                           className={`h-11 md:h-12 w-full grid place-items-center rounded-xl bg-white border shadow-[0_2px_9px_rgba(0,0,0,.08)] ${
                             isError ? "border-red-500" : "border-gray-200"
                           }`}
                         >
                           <input
+                            ref={(el) => (inputRefs.current[`qty-${idx}`] = el)}
                             type="text"
                             inputMode="numeric"
                             value={displayQty}
-                            onFocus={() => updateItem(idx, { qtyFocused: true })}
-                            onBlur={() => updateItem(idx, { qtyFocused: false })}
+                            onFocus={(e) => {
+                              updateItem(idx, { qtyFocused: true, qtyJustFocused: true });
+                              setTimeout(() => {
+                                try {
+                                  e.target.select();
+                                  e.target.setSelectionRange(0, e.target.value.length);
+                                } catch (err) {}
+                              }, 0);
+                            }}
+                            onBlur={() => updateItem(idx, { qtyFocused: false, qtyJustFocused: false })}
                             onChange={(e) => {
-                              // Hanya ambil digit, abaikan karakter lain
                               const digits = e.target.value.replace(/\D/g, "");
-                              updateItem(idx, { quantity: digits || "1" });
+                              updateItem(idx, { 
+                                quantity: digits || "1",
+                                qtyJustFocused: false
+                              });
                             }}
                             className={`w-full h-full bg-transparent text-center font-bold outline-none text-[13px] ${
                               isError ? "text-red-600" : "text-gray-700"
@@ -215,7 +228,7 @@ export default function EditRincian({ receiptData, onBack, onSave }) {
                       </div>
 
                       {/* Nama item */}
-                      <div>
+                      <div className="flex-1 min-w-0">
                         <input
                           type="text"
                           value={it.name}
@@ -232,12 +245,12 @@ export default function EditRincian({ receiptData, onBack, onSave }) {
                         />
                       </div>
 
-                      {/* Hapus (kanan) */}
-                      <div className="row-span-2 flex items-start justify-end">
+                      {/* Hapus */}
+                      <div className="shrink-0">
                         <button
                           type="button"
                           onClick={() => askRemoveItem(idx)}
-                          className="shrink-0 w-10 h-10 md:w-11 md:h-11 rounded-full grid place-items-center bg-white border border-[#FFB18A] text-[#FF5A1F] shadow-md hover:bg-orange-50 active:scale-95 transition"
+                          className="w-10 h-10 md:w-11 md:h-11 rounded-full grid place-items-center bg-white border border-[#FFB18A] text-[#FF5A1F] shadow-md hover:bg-orange-50 active:scale-95 transition"
                           aria-label="Hapus item"
                           title="Hapus item"
                         >
@@ -258,14 +271,14 @@ export default function EditRincian({ receiptData, onBack, onSave }) {
                           </svg>
                         </button>
                       </div>
+                    </div>
 
-                      {/* Baris kedua */}
-                      <div />{/* spacer untuk kolom qty */}
-
+                    {/* ✅ PERBAIKAN: Baris 2: Harga | Total (lebih lebar) */}
+                    <div className="flex items-center gap-2 pl-[58px]">
                       {/* Harga */}
-                      <div className="grid grid-cols-[1fr_auto] gap-x-2 gap-y-1 items-center">
+                      <div className="flex-1 min-w-0">
                         <div
-                          className={`flex h-10 md:h-11 rounded-xl bg-white border shadow-[0_2px_9px_rgba(0,0,0,.08)] items-center justify-end px-3 md:px-4 relative flex-1 ${
+                          className={`flex h-10 md:h-11 rounded-xl bg-white border shadow-[0_2px_9px_rgba(0,0,0,.08)] items-center justify-end px-3 relative ${
                             isError ? "border-red-500" : "border-gray-200"
                           }`}
                         >
@@ -289,30 +302,30 @@ export default function EditRincian({ receiptData, onBack, onSave }) {
                                 priceText: normalizeMoneyText(e.target.value),
                               })
                             }
-                            className={`w-full bg-transparent text-right font-bold outline-none text-[13px] pl-6 ${
+                            className={`w-full bg-transparent text-right font-bold outline-none text-[13px] pl-6 pr-1 ${
                               isError ? "text-red-600" : "text-gray-800"
                             }`}
                             aria-label="Harga"
                           />
                         </div>
+                      </div>
 
-                        {/* Total per item */}
-                        <div
-                          className={`h-10 md:h-11 min-w-[100px] rounded-xl bg-white border ${
-                            isError ? "border-red-500" : "border-gray-200"
-                          } text-[#FF9A25] font-extrabold grid place-items-center px-3 md:px-4 text-[13px] shadow-[0_2px_9px_rgba(0,0,0,.06)]`}
-                        >
-                          {fmtID(it.total)}
-                        </div>
-
-                        {/* Pesan error di bawahnya, melebar 2 kolom */}
-                        {isError && (
-                          <p className="col-span-2 pt-1 text-[12px] italic text-red-600 text-right font-bold">
-                            Silahkan isi nama pesanan Anda
-                          </p>
-                        )}
+                      {/* Total per item */}
+                      <div
+                        className={`h-10 md:h-11 shrink-0 min-w-[90px] rounded-xl bg-white border ${
+                          isError ? "border-red-500" : "border-gray-200"
+                        } text-[#FF9A25] font-extrabold grid place-items-center px-3 text-[13px] shadow-[0_2px_9px_rgba(0,0,0,.06)]`}
+                      >
+                        {fmtID(it.total)}
                       </div>
                     </div>
+
+                    {/* Pesan error */}
+                    {isError && (
+                      <p className="pt-1 text-[12px] italic text-red-600 text-right font-bold pl-[58px]">
+                        Silahkan isi nama pesanan Anda
+                      </p>
+                    )}
                   </div>
                 );
               })}
