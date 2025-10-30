@@ -1,13 +1,12 @@
 "use client";
 import { useEffect, useState } from "react";
 
-/*
-  Atur Pembayaran - SEPARATE FILE dengan Receipt Style & LocalStorage
-*/
 export default function AturPembayaran({ data, paymentStatus, setPaymentStatus, onBack }) {
   // ========== STATE MANAGEMENT ==========
   const [localPaymentStatus, setLocalPaymentStatus] = useState(paymentStatus);
   const [belumBayarAmount, setBelumBayarAmount] = useState(0);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false); // ✅ POPUP STATE
+  const [confirmedStatus, setConfirmedStatus] = useState(null); // ✅ TRACK CONFIRMED
 
   // ========== HELPER FUNCTIONS ==========
   const fmt = (n) => {
@@ -22,7 +21,6 @@ export default function AturPembayaran({ data, paymentStatus, setPaymentStatus, 
   // ========== LIFECYCLE: Load from localStorage & Calculate Belum Bayar ==========
   useEffect(() => {
     try {
-      // Load saved status dari localStorage
       if (data?.splitId) {
         const savedStatus = localStorage.getItem(`splitbill_status_${data.splitId}`);
         if (savedStatus) {
@@ -66,33 +64,57 @@ export default function AturPembayaran({ data, paymentStatus, setPaymentStatus, 
     setLocalPaymentStatus(newStatus);
   };
 
-  // ========== CHECK IF ALL PAID ==========
-  const areAllPaid = () => {
-    return data.members
-      .filter(m => m.id !== currentUserId)
-      .every(m => localPaymentStatus[m.id]);
+// ========== CHECK IF ALL PAID ==========
+const areAllPaid = () => {
+  return data.members
+    .filter(m => m.id !== currentUserId)
+    .every(m => localPaymentStatus[m.id] || paymentStatus[m.id]);  // ✅ CEK KEDUANYA
+};
+
+
+  // ========== SHOW CONFIRMATION DIALOG ========== 
+  const handleConfirmClick = () => {
+    if (belumBayarAmount > 0) {
+      setShowConfirmDialog(true);
+    } else {
+      handleConfirmYes();
+    }
   };
 
-  // ========== SAVE & CLOSE ==========
-  const handleConfirm = () => {
+  // ========== CONFIRM YES - CLOSE DENGAN FILTER ==========
+  const handleConfirmYes = () => {
     try {
-      // ✅ UPDATE parent state
       setPaymentStatus(localPaymentStatus);
-
-      // ✅ Save ke localStorage
       if (data?.splitId) {
         localStorage.setItem(`splitbill_status_${data.splitId}`, JSON.stringify(localPaymentStatus));
       }
+      setConfirmedStatus(localPaymentStatus);
+      setShowConfirmDialog(false);
+      
+      // Close after delay
+      setTimeout(() => {
+        onBack();
+      }, 300);
     } catch (e) {
       console.error('Save error:', e);
     }
+  };
 
-    // Close
-    onBack();
+  // ========== CONFIRM NO ==========
+  const handleConfirmNo = () => {
+    setShowConfirmDialog(false);
   };
 
   // ========== RENDER ==========
   const totalAmount = data.perMember?.reduce((sum, m) => sum + (m.total || 0), 0) || 0;
+
+// ✅ FILTER: Hanya tampilkan yang belum lunas (check paymentStatus dari props)
+const unpaidMembers = data.members
+  .filter(member => 
+    member.id !== currentUserId && 
+    !paymentStatus[member.id] &&  // ✅ TAMBAH: belum lunas dari parent (SplitBillConfirmed)
+    (!confirmedStatus || !confirmedStatus[member.id])
+  );
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
@@ -118,10 +140,10 @@ export default function AturPembayaran({ data, paymentStatus, setPaymentStatus, 
         </div>
       </div>
 
-      {/* ========== CONTENT ========== */}
-      <div className="flex-1 overflow-auto bg-white">
-        <div className="max-w-md mx-auto mt-2 px-0">
-          <div className="mx-0 px-0">
+{/* ========== CONTENT ========== */}
+<div className="flex-1 overflow-auto bg-white pb-24"> {/* ✅ TAMBAH pb-24 */}
+        <div className="max-w-md mx-auto mt-2 px-4">
+          <div className="w-full">
             <div className="relative">
               <div className="border-l border-r border-gray-300 relative">
                 <div style={{ paddingTop: '18px', paddingBottom: '18px' }}>
@@ -136,17 +158,17 @@ export default function AturPembayaran({ data, paymentStatus, setPaymentStatus, 
                       )`
                     }}
                   >
-                    <div className="px-6 py-6">
+                    <div className="px-4 md:px-6 py-6">
                       {/* ========== HEADER INFO ========== */}
                       <div className="text-center mb-6">
-                        <h2 className="text-lg font-bold text-gray-900">{data.splitName || "Indomaret"}</h2>
+                        <h2 className="text-lg font-bold text-gray-900 break-words">{data.splitName || "Indomaret"}</h2>
                         <p className="text-xs text-gray-500 mt-1">
                           {dateStr} - {timeStr}
                         </p>
                       </div>
 
                       {/* ========== TOTAL AMOUNT SECTION ========== */}
-                      <div className="border-t-2 border-dashed border-gray-300 pt-4 pb-4 text-center -mx-6 px-6">
+                      <div className="border-t-2 border-dashed border-gray-300 pt-4 pb-4 text-center -mx-4 md:-mx-6 px-4 md:px-6">
                         <h3 className="text-lg font-bold text-gray-900">{currency(totalAmount)}</h3>
                         <p className="text-xs text-gray-600 mt-1">
                           <span className="text-red-600 font-semibold">{currency(belumBayarAmount)}</span> belum bayar
@@ -154,9 +176,9 @@ export default function AturPembayaran({ data, paymentStatus, setPaymentStatus, 
                       </div>
 
                       {/* ========== PAYMENT STATUS SECTION ========== */}
-                      <div className="border-t-2 border-dashed border-gray-300 pt-4 -mx-6 px-6">
+                      <div className="border-t-2 border-dashed border-gray-300 pt-4 -mx-4 md:-mx-6 px-4 md:px-6">
                         <h3 className="text-sm font-bold text-gray-900 mb-2">
-                          Lunasin pembayaran ({data.members.filter(m => m.id !== currentUserId).length} orang)
+                          Lunasin pembayaran ({unpaidMembers.length} orang)
                         </h3>
                         <p className="text-xs text-gray-500 italic mb-4">
                           Checklist kalau pembayarannya sudah beres.
@@ -164,35 +186,42 @@ export default function AturPembayaran({ data, paymentStatus, setPaymentStatus, 
 
                         <div className="space-y-0">
                           {/* ========== SELECT ALL CHECKBOX ========== */}
-                          <div className="flex items-center justify-between py-3 border-b border-gray-100">
+                          <div 
+                            onClick={() => toggleAllPayments(!areAllPaid())}
+                            className="flex items-center justify-between py-3  rounded-lg mb-3 cursor-pointer hover:bg-gray-50 active:bg-gray-100 transition"
+                          >
                             <div className="flex-1">
                               <div className="text-sm font-bold text-gray-900">Semua Lunas</div>
                             </div>
                             <input 
                               type="checkbox" 
                               checked={areAllPaid()}
-                              onChange={(e) => toggleAllPayments(e.target.checked)}
+                              onChange={(e) => e.stopPropagation()}
                               className="w-5 h-5 rounded border-2 border-gray-300 text-[#FF9A25] focus:ring-[#FF9A25] cursor-pointer accent-[#FF9A25]"
                             />
                           </div>
 
-                          {/* ========== MEMBER LIST ========== */}
-                          {data.members
-                            .filter(member => member.id !== currentUserId)
-                            .map((member, idx) => {
-                              const initial = (member.name || "?").charAt(0).toUpperCase();
-                              const memberData = data.perMember?.find(m => m.id === member.id || m.name === member.name);
-                              const isPaid = localPaymentStatus[member.id] || false;
-                              const phoneDisplay = member.phone || member.phoneMasked;
+                          {/* ========== MEMBER LIST - FULL BOX CLICKABLE ========== */}
+                          {unpaidMembers.length > 0 ? (
+                            <div className="space-y-2">
+                              {unpaidMembers.map((member, idx) => {
+                                const initial = (member.name || "?").charAt(0).toUpperCase();
+                                const memberData = data.perMember?.find(m => m.id === member.id || m.name === member.name);
+                                const isPaid = localPaymentStatus[member.id] || false;
+                                const phoneDisplay = member.phone || member.phoneMasked;
 
-                              return (
-                                <div 
-                                  key={idx}
-                                  className="flex items-center justify-between py-3 border-b border-gray-100 last:border-b-0"
-                                >
-                                  <div className="flex items-center gap-3 flex-1">
+                                return (
+                                  <div
+                                    key={member.id || idx}
+                                    onClick={() => togglePayment(member.id)}
+                                    className={`flex items-center gap-3 px-3 py-3 border-2 rounded-lg cursor-pointer transition-all active:scale-95 ${
+                                      isPaid 
+                                        ? 'border-green-400 bg-green-50' 
+                                        : 'border-gray-200 bg-white hover:bg-gray-50 active:bg-gray-100'
+                                    }`}
+                                  >
                                     {/* ✅ AVATAR */}
-                                    <div className={`w-9 h-9 rounded-full flex items-center justify-center text-white text-xs font-bold transition-all ${
+                                    <div className={`w-9 h-9 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0 transition-all ${
                                       isPaid 
                                         ? 'bg-gradient-to-br from-green-400 to-green-600' 
                                         : 'bg-gradient-to-br from-[#FF9A25] to-[#FF7A25]'
@@ -201,34 +230,41 @@ export default function AturPembayaran({ data, paymentStatus, setPaymentStatus, 
                                     </div>
 
                                     {/* ✅ NAME & PHONE */}
-                                    <div className="flex-1">
-                                      <div className={`text-sm font-bold ${isPaid ? 'text-green-600' : 'text-gray-900'}`}>
+                                    <div className="flex-1 min-w-0">
+                                      <div className={`text-sm font-bold flex items-center gap-2 break-words ${isPaid ? 'text-green-600' : 'text-gray-900'}`}>
                                         {member.name}
-                                        {isPaid && <span className="ml-2 text-xs bg-green-100 text-green-700 px-1.5 py-0.5 rounded font-semibold">✓ Lunas</span>}
+                                        {isPaid && <span className="text-xs bg-green-100 text-green-700 px-1.5 py-0.5 rounded font-semibold whitespace-nowrap">✓</span>}
                                       </div>
-                                      <div className="text-xs text-gray-500">
+                                      <div className="text-xs text-gray-500 truncate">
                                         {phoneDisplay}
                                       </div>
                                     </div>
 
                                     {/* ✅ AMOUNT */}
-                                    <div className="text-right mr-3">
-                                      <div className="text-sm font-bold text-gray-900">
+                                    <div className="text-right flex-shrink-0">
+                                      <div className="text-sm font-bold text-gray-900 whitespace-nowrap">
                                         {memberData ? currency(memberData.total) : '-'}
                                       </div>
                                     </div>
-                                  </div>
 
-                                  {/* ✅ CHECKBOX */}
-                                  <input 
-                                    type="checkbox" 
-                                    checked={isPaid}
-                                    onChange={() => togglePayment(member.id)}
-                                    className="w-5 h-5 rounded border-2 border-gray-300 text-[#FF9A25] focus:ring-[#FF9A25] cursor-pointer accent-[#FF9A25]"
-                                  />
-                                </div>
-                              );
-                            })}
+                                    {/* ✅ CHECKBOX */}
+                                    <input 
+                                      type="checkbox" 
+                                      checked={isPaid}
+                                      onChange={() => {}}
+                                      onClick={(e) => e.stopPropagation()}
+                                      className="w-5 h-5 rounded border-2 border-gray-300 text-[#FF9A25] focus:ring-[#FF9A25] cursor-pointer accent-[#FF9A25] flex-shrink-0"
+                                    />
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          ) : (
+                            <div className="text-center py-8">
+                              <div className="text-4xl mb-2">🎉</div>
+                              <p className="text-sm font-semibold text-green-600">Semua sudah lunas!</p>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -236,61 +272,84 @@ export default function AturPembayaran({ data, paymentStatus, setPaymentStatus, 
                 </div>
 
                 {/* ========== TOP DECORATION ========== */}
-                <div className="absolute top-0 left-0 right-0" style={{ height: '18px', overflow: 'visible' }}>
-                  <svg 
-                    className="w-full"
-                    style={{ height: '18px' }}
-                    viewBox="0 0 60 14" 
-                    preserveAspectRatio="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <polyline 
-                      points="0,0 5,14 10,0 15,14 20,0 25,14 30,0 35,14 40,0 45,14 50,0 55,14 60,0" 
-                      fill="none" 
-                      stroke="#d1d5db" 
-                      strokeWidth="2.5"
-                    />
+                <div className="absolute top-0 left-0 right-0" style={{ height: "30px", overflow: "visible" }}>
+                  <svg className="w-full" style={{ height: "30px" }} viewBox="1.5 1 99.5 24" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+                    <polyline points="0,3 1.25,3 11.25,20 21.25,3 31.25,20 41.25,3 51.25,20 61.25,3 71.25,20 81.25,3 91.25,20 101.25,3 105.5,3" fill="none" stroke="#d1d5db" strokeWidth="1.5" />
                   </svg>
                 </div>
 
                 {/* ========== BOTTOM DECORATION ========== */}
-                <div className="absolute bottom-0 left-0 right-0" style={{ height: '18px', overflow: 'visible' }}>
-                  <svg 
-                    className="w-full"
-                    style={{ height: '18px' }}
-                    viewBox="0 0 60 14" 
-                    preserveAspectRatio="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <polyline 
-                      points="0,14 5,0 10,14 15,0 20,14 25,0 30,14 35,0 40,14 45,0 50,14 55,0 60,14" 
-                      fill="none" 
-                      stroke="#d1d5db" 
-                      strokeWidth="2.5"
-                    />
+                <div className="absolute bottom-0 left-0 right-0" style={{ height: "24.1px", overflow: "visible" }}>
+                  <svg className="w-full" style={{ height: "30px" }} viewBox="1.5 1 99.5 24" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+                    <polyline points="0,20 1.25,20 11.25,3 21.25,20 31.25,3 41.25,20 51.25,3 61.25,20 71.25,3 81.25,20 91.25,3 101.25,20 105.5,20" fill="none" stroke="#d1d5db" strokeWidth="1.5" />
                   </svg>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* ========== ACTION BUTTON ========== */}
-          <div className="px-4 pb-6 mt-5">
-            <button
-              onClick={handleConfirm}
-              className={`w-full py-3.5 rounded-xl text-white font-bold text-sm transition-all active:scale-[0.98] shadow-lg ${
-                belumBayarAmount > 0 
-                  ? 'bg-gradient-to-r from-[#FF9A25] to-[#FF7A25] hover:shadow-xl' 
-                  : 'bg-gradient-to-r from-green-400 to-green-600 hover:shadow-xl'
-              }`}
-            >
-              {belumBayarAmount > 0 
-                ? `Konfirmasi (${currency(belumBayarAmount)} belum bayar)` 
-                : '✓ Semua Sudah Lunas!'}
-            </button>
-          </div>
+          {/* ========== ACTION BUTTON - STICKY ========== */}
+<div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-20">
+  <div className="max-w-md mx-auto px-4 py-4">
+    <button
+      onClick={handleConfirmClick}
+      className={`w-full py-3.5 rounded-xl text-white font-bold text-sm transition-all active:scale-[0.98] shadow-lg ${
+        belumBayarAmount > 0 
+          ? 'bg-gradient-to-r from-[#FF9A25] to-[#FF7A25] hover:shadow-xl' 
+          : 'bg-gradient-to-r from-green-400 to-green-600 hover:shadow-xl'
+      }`}
+    >
+      {belumBayarAmount > 0 
+        ? `Konfirmasi` 
+        : '✓ Semua Sudah Lunas!'}
+    </button>
+  </div>
+</div>
+
         </div>
       </div>
+
+      {/* ========== CONFIRMATION DIALOG POPUP ========== */}
+      {showConfirmDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm px-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full overflow-hidden">
+            {/* DIALOG HEADER */}
+            <div className="text-center pt-8 px-6">
+              <div className="text-5xl mb-4">⚠️</div>
+              <h2 className="text-lg font-bold text-gray-900 mb-2">Konfirmasi Pembayaran ?</h2>
+              <p className="text-sm text-gray-600 italic">
+                Kalau sudah kamu konfirmasi status pembayarannya gak bisa diubah.
+              </p>
+            </div>
+
+            {/* DIALOG BODY - SHOW UNPAID AMOUNT */}
+            <div className="text-center px-6 py-6">
+              <div className="bg-orange-50 border-2 border-orange-200 rounded-lg p-4 mb-4">
+                <div className="text-xs text-gray-600 mb-1">Masih ada yang belum bayar:</div>
+                <div className="text-2xl font-bold text-orange-600">
+                  {currency(belumBayarAmount)}
+                </div>
+              </div>
+            </div>
+
+            {/* DIALOG BUTTONS */}
+            <div className="flex gap-3 px-6 pb-6">
+              <button
+                onClick={handleConfirmNo}
+                className="flex-1 py-3 px-4 bg-white border-2 border-gray-300 rounded-lg font-bold text-sm text-gray-700 hover:bg-gray-50 active:scale-95 transition"
+              >
+                Tidak
+              </button>
+              <button
+                onClick={handleConfirmYes}
+                className="flex-1 py-3 px-4 bg-gradient-to-r from-[#FF9A25] to-[#FF7A25] rounded-lg font-bold text-sm text-white hover:shadow-lg active:scale-95 transition"
+              >
+                Konfirmasi
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

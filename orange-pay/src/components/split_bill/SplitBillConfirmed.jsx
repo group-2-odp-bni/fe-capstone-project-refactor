@@ -574,21 +574,26 @@ Silakan bayar sesuai nominal ya! 🙏
     return roundIDR(calculateVerifiedTotal(showingDetailFor));
   }, [showingDetailFor, calculateVerifiedTotal]);
 
-  // ========== ATUR PEMBAYARAN ==========
-  if (showAturPembayaran) {
-    return (
-      <AturPembayaran
-        data={{
-          ...displayData,
-          perMember: perMemberVerified,
-          splitId: splitId,
-        }}
-        paymentStatus={paymentStatus}
-        setPaymentStatus={setPaymentStatus}
-        onBack={() => setShowAturPembayaran(false)}
-      />
-    );
-  }
+// ========== ATUR PEMBAYARAN ==========
+if (showAturPembayaran) {
+  // ✅ Filter: Hanya member yang belum lunas
+  const filteredMembers = displayData.members.filter(m => !paymentStatus[m.id]);
+  const filteredPerMember = perMemberVerified.filter(m => !paymentStatus[m.id]);
+
+  return (
+    <AturPembayaran
+      data={{
+        ...displayData,
+        members: filteredMembers,  // ✅ GANTI dengan filtered
+        perMember: filteredPerMember,  // ✅ GANTI dengan filtered
+        splitId: splitId,
+      }}
+      paymentStatus={paymentStatus}
+      setPaymentStatus={setPaymentStatus}
+      onBack={() => setShowAturPembayaran(false)}
+    />
+  );
+}
 
   // ========== MAIN RENDER ==========
   return (
@@ -808,25 +813,25 @@ Silakan bayar sesuai nominal ya! 🙏
   >
     {/* HEADER */}
     <div style={{ padding: "18px 18px 0 18px" }}>
-      {/* thumbnail */}
-      {displayReceiptImage ? (
-        <div style={{ textAlign: "center", marginBottom: 10 }}>
-          <img
-            src={displayReceiptImage}
-            alt="Receipt"
-            crossOrigin="anonymous"
-            style={{
-              width: 56,
-              height: 56,
-              objectFit: "cover",
-              borderRadius: 8,
-              border: "1px solid #E5E7EB",
-              background: "#FFF",
-              display: "inline-block"
-            }}
-          />
-        </div>
-      ) : null}
+   {displayReceiptImage && (
+  <div style={{ textAlign: "center", marginBottom: 14 }}>
+    <img
+      src={displayReceiptImage}
+      alt="Receipt"
+      crossOrigin="anonymous"
+      style={{
+        width: 90,        // ✅ 9 bagian
+        height: 160,       // ✅ 16 bagian (45 * 16/9 = 80)
+        objectFit: "cover",
+        objectPosition: "center",
+        borderRadius: 10,
+        border: "1.5px solid #E5E7EB",
+        background: "#FFF",
+        display: "inline-block"
+      }}
+    />
+  </div>
+)}
 
       {/* merchant */}
       <div style={{ textAlign: "center", marginBottom: 2 }}>
