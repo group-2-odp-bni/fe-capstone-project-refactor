@@ -96,7 +96,7 @@ export default function AddWalletPage() {
                 name={name}
                 balance={0}
                 gradient={gradient}
-                rightBadge={type === "personal" && name ? name : ""}
+                rightBadge={type === "personal" || type ==="shared" && name ? name : ""}
               />
             </div>
 
