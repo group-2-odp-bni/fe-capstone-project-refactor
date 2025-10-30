@@ -68,9 +68,9 @@ export default function ProfilePage() {
               Edit Data
             </FullActionButton>
 
-            <FullSubmitButton onClick={handleLogout}>
+            <FullActionButton onClick={handleLogout}>
               Keluar
-            </FullSubmitButton>
+            </FullActionButton>
 
           </div>
         </WhiteCardContainer>
