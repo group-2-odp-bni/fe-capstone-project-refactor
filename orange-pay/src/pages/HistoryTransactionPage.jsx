@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import PageHeader from "../components/page_header/PageHeader";
+// import PageHeader from "../components/page_header/PageHeader";
 import BalanceCard from "../components/history_transaksi/BalanceCard";
 import RecentHistory from "../components/history_transaksi/RecentHistory";
 import ArrowButton from "../components/common/ArrowButton";
 import DynamicShell from "../components/layout/DynamicShell";
 import { PlusIcon, UserIcon } from "@heroicons/react/24/solid";
+import Header from "../components/Header";
 
 export default function HistoryTransactionPage() {
   const { walletId } = useParams();
@@ -14,6 +15,10 @@ export default function HistoryTransactionPage() {
   const [pageTitle, setPageTitle] = useState("Wallet Detail");
   const [isMainCard, setIsMainCard] = useState(false);
 
+  const handleBack = () => {
+    navigate("/app/dashboard");
+  }
+  
   useEffect(() => {
     setIsMainCard(walletId === "wallet-001");
   }, [walletId]);
@@ -36,8 +41,8 @@ export default function HistoryTransactionPage() {
 
   return (
     <DynamicShell>
-      <div className="space-y-4 md:space-y-6">
-        <PageHeader>{pageTitle}</PageHeader>
+      <div>
+      <Header title="Wallet Detail" onBack={handleBack} showBack centerTitle />
 
         <div className="-mt-2 md:-mt-3">
           <BalanceCard walletId={walletId} />

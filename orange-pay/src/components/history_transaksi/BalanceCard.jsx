@@ -80,11 +80,11 @@ const AmountText = ({ amount, isHidden, onMeasured }) => {
   );
 };
 
-const GradientCardShell = ({ bg, outerGlow, children }) => (
+const GradientCardShell = ({ bg, children }) => (
   <div className="p-0" style={{ perspective: 1000 }}>
     <div
       className="rounded-[22px] p-[1px] relative transition-[box-shadow,transform] duration-300 will-change-transform hover:translate-y-[1px]"
-      style={{ boxShadow: outerGlow, background: bg }}
+      style={{background: bg }}
     >
       <div
         className="relative text-white rounded-[22px] p-5 md:p-6 overflow-hidden will-change-transform transition-transform duration-200"
@@ -125,8 +125,8 @@ const BalanceRow = ({ amount, isHidden, onToggleHidden, loading }) => {
   );
 };
 
-const glowShadows = (accent) =>
-  [`0 10px 28px rgba(0,0,0,0.22)`, `0 0 24px ${accent}55`, `0 0 64px ${accent}33`].join(", ");
+// const glowShadows = (accent) =>
+//   [`0 10px 28px rgba(0,0,0,0.22)`, `0 0 24px ${accent}55`, `0 0 64px ${accent}33`].join(", ");
 
 /* ====== Komponen utama (terhubung dashboard) ====== */
 export default function BalanceCard({ walletId }) {
@@ -153,9 +153,11 @@ export default function BalanceCard({ walletId }) {
 
   return (
     <div className="w-full mx-auto md:px-4 mt-4">
-      <GradientCardShell bg={selectedCard.bg} outerGlow={glowShadows(selectedCard.accent)}>
+      <GradientCardShell bg={selectedCard.bg}>
         <div className="relative" style={{ transformStyle: "preserve-3d" }}>
-          <CardTopBar title={selectedCard.title} />
+          <CardTopBar 
+          title={selectedCard.title}
+          />
           <BalanceRow
             amount={balance}
             isHidden={isHidden}
