@@ -33,7 +33,6 @@ const hasSavedId = (id) => {
 
 export default function SplitBillConfirmed({
   data,
-  onBack,
   onBackToHome,
   receiptImage
 }) {
@@ -612,10 +611,10 @@ Silakan bayar sesuai nominal ya! 🙏
       <div className="flex-1 overflow-auto bg-white">
         <div className={`max-w-md mx-auto transition-all duration-500 ${entered ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}>
           
-          <div className="mt-2 px-0">
-            <div className="mx-0 px-0">
-              <div ref={receiptRef} className="relative">
-                <div className="border-l border-r border-gray-300 relative">
+          <div className="mt-2 px-4"> {/* ✅ TAMBAH px-4 */}
+  <div className="mx-0">
+    <div ref={receiptRef} className="relative">
+      <div className="border-l border-r border-gray-300 relative">
                   <div style={{ paddingTop: "18px", paddingBottom: "18px" }}>
                     <div className="bg-white relative" style={{
                       clipPath: `polygon(0 0, 8.33% 14px, 16.66% 0, 25% 14px, 33.33% 0, 41.66% 14px, 50% 0, 58.33% 14px, 66.66% 0, 75% 14px, 83.33% 0, 91.66% 14px, 100% 0, 100% calc(100% - 14px), 91.66% 100%, 83.33% calc(100% - 14px), 75% 100%, 66.66% calc(100% - 14px), 58.33% 100%, 50% calc(100% - 14px), 41.66% 100%, 33.33% calc(100% - 14px), 25% 100%, 16.66% calc(100% - 14px), 8.33% 100%, 0 calc(100% - 14px))`,
@@ -731,20 +730,22 @@ Silakan bayar sesuai nominal ya! 🙏
                                 );
                               })}
 
-                            <div className="border-t-2 border-dashed border-gray-400 pt-4 mt-4 -mx-6 px-6">
-                              <button 
-                                onClick={() => {
-                                  setClickedButton('aturPembayaran');
-                                  setTimeout(() => setShowAturPembayaran(true), 150);
-                                  setTimeout(() => setClickedButton(null), 300);
-                                }}
-                                className={`w-full py-4 md:py-3.5 rounded-xl font-bold text-sm text-white transition-all duration-200 flex items-center justify-center gap-2.5 active:scale-95 ${clickedButton === 'aturPembayaran' ? 'scale-95 brightness-90' : ''}`}
-                                style={{
-                                  background: "linear-gradient(135deg, #FF9A25 0%, #FF7A25 100%)",
-                                  minHeight: "56px",
-                                  touchAction: "manipulation",
-                                }}
-                              >
+                            {/* BUTTON ATUR PEMBAYARAN */}
+<div className="border-t-2 border-dashed border-gray-400 pt-4 mt-4 -mx-6 px-6">
+  <button 
+    onClick={() => {
+      setClickedButton('aturPembayaran');
+      setTimeout(() => setShowAturPembayaran(true), 150);
+      setTimeout(() => setClickedButton(null), 300);
+    }}
+    className={`w-full py-4 md:py-4 rounded-3xl font-bold text-sm text-white transition-all duration-200 flex items-center justify-center gap-2.5 active:scale-95 ${clickedButton === 'aturPembayaran' ? 'scale-95 brightness-90' : ''}`}
+    style={{
+      background: "#EEAB5E", // ✅ UBAH WARNA
+      minHeight: "48px",
+      touchAction: "manipulation",
+    }}
+  >
+
                                 <span className="relative z-10 flex items-center justify-center gap-2.5">
                                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                                     <circle cx="12" cy="12" r="10" />
@@ -776,91 +777,210 @@ Silakan bayar sesuai nominal ya! 🙏
             </div>
           </div>
 
-          <div 
-            ref={receiptPrintRef}
+{/* ✅ HIDDEN RECEIPT — PRESISI & ANTI TUMPANG TINDIH */}
+<div
+  ref={receiptPrintRef}
+  style={{
+    position: "fixed",
+    left: "-9999px",
+    top: "-9999px",
+    width: "100%",
+    maxWidth: "360px",
+    background: "#F6F7F9",
+    fontFamily: "'Inter','Segoe UI','Roboto',sans-serif",
+    color: "#0F172A",
+    lineHeight: 1.35,
+    boxSizing: "border-box",
+    padding: "16px"
+  }}
+>
+  {/* KARTU */}
+  <div
+    style={{
+      width: "100%",
+      background: "#FFFFFF",
+      borderRadius: 18,
+      boxShadow: "0 8px 24px rgba(15,23,42,0.06)",
+      border: "1px solid #E5E7EB",
+      overflow: "hidden",
+      boxSizing: "border-box"
+    }}
+  >
+    {/* HEADER */}
+    <div style={{ padding: "18px 18px 0 18px" }}>
+      {/* thumbnail */}
+      {displayReceiptImage ? (
+        <div style={{ textAlign: "center", marginBottom: 10 }}>
+          <img
+            src={displayReceiptImage}
+            alt="Receipt"
+            crossOrigin="anonymous"
             style={{
-              position: "fixed",
-              left: "-9999px",
-              top: "-9999px",
-              width: "100%",
-              maxWidth: "420px",
-              background: "#ffffff",
-              fontFamily: "'Segoe UI', 'Roboto', sans-serif",
-              color: "#1f2937",
-              lineHeight: "1.35",
+              width: 56,
+              height: 56,
+              objectFit: "cover",
+              borderRadius: 8,
+              border: "1px solid #E5E7EB",
+              background: "#FFF",
+              display: "inline-block"
+            }}
+          />
+        </div>
+      ) : null}
+
+      {/* merchant */}
+      <div style={{ textAlign: "center", marginBottom: 2 }}>
+        <div style={{ fontSize: 18, fontWeight: 800, letterSpacing: -0.3 }}>
+          {displayData.splitName || "Indomaret"}
+        </div>
+      </div>
+
+      {/* tanggal • jam */}
+      <div style={{ textAlign: "center", marginBottom: 16 }}>
+        <div style={{ fontSize: 12, color: "#6B7280", fontWeight: 600 }}>
+          {dateStr} • {timeStr}
+        </div>
+      </div>
+    </div>
+
+    {/* dashed */}
+    <div style={{ padding: "0 18px" }}>
+      <div style={{ borderTop: "1px dashed #E5E7EB" }} />
+    </div>
+
+    {/* TOTAL */}
+    <div style={{ padding: "16px 18px 10px 18px", textAlign: "center" }}>
+      <div
+        style={{
+          fontSize: 12,
+          color: "#9CA3AF",
+          fontWeight: 700,
+          marginBottom: 6
+        }}
+      >
+        Total amount
+      </div>
+      <div
+        style={{
+          fontSize: 28,
+          fontWeight: 900,
+          letterSpacing: -0.6,
+          whiteSpace: "nowrap"
+        }}
+      >
+        {currency(grandTotalVerified)}
+      </div>
+    </div>
+
+    {/* dashed */}
+    <div style={{ padding: "8px 18px 0 18px" }}>
+      <div style={{ borderTop: "1px dashed #E5E7EB" }} />
+    </div>
+
+    {/* LIST ANGGOTA (grid 3 kolom: avatar | nama | amount) */}
+    <div style={{ padding: "2px 6px 6px 6px" }}>
+      {(perMemberVerified || []).map((m, idx) => {
+        const initial = (m?.name || "?").trim().charAt(0).toUpperCase();
+        return (
+          <div
+            key={m.id || idx}
+            style={{
+              display: "grid",
+              gridTemplateColumns: "28px 1fr auto",
+              columnGap: 10,
+              padding: "12px 12px",
+              borderTop: idx === 0 ? "none" : "1px solid #F1F5F9",
               boxSizing: "border-box",
+              minHeight: 48
             }}
           >
-            <div style={{ padding: "40px 24px", maxWidth: "100%", boxSizing: "border-box", width: "100%" }}>
-              <div style={{ textAlign: "center", marginBottom: "24px", paddingBottom: "16px", borderBottom: "2px solid #FF9A25" }}>
-                <div style={{ fontSize: "32px", fontWeight: "900", color: "#FF9A25", marginBottom: "8px", letterSpacing: "-0.8px" }}>
-                  {displayData.splitName || "Indomaret"}
-                </div>
-                <div style={{ fontSize: "12px", color: "#9ca3af", fontWeight: "500" }}>
-                  {dateStr} • {timeStr}
-                </div>
-              </div>
+            {/* avatar */}
+            <div
+              style={{
+                width: 28,
+                height: 28,
+                borderRadius: "9999px",
+                background: "#E5E7EB",
+                color: "#64748B",
+                fontWeight: 700,
+                fontSize: 12,
+                display: "flex",
+                justifyContent: "center",
+                userSelect: "none",
+                flexShrink: 0
+              }}
+            >
+              {initial}
+            </div>
 
-              <div style={{ background: "linear-gradient(135deg, #FF9A25 0%, #FF7A25 100%)", color: "#ffffff", padding: "32px 20px", borderRadius: "14px", textAlign: "center", marginBottom: "24px" }}>
-                <div style={{ fontSize: "12px", opacity: "0.95", marginBottom: "8px", fontWeight: "700", textTransform: "uppercase", letterSpacing: "0.8px" }}>
-                  Total Tagihan
-                </div>
-                <div style={{ fontSize: "44px", fontWeight: "900", letterSpacing: "-1.5px", lineHeight: "1" }}>
-                  {currency(grandTotalVerified)}
-                </div>
-              </div>
+            {/* nama (ellipsis, tidak menabrak amount) */}
+            <div
+              style={{
+                fontSize: 13,
+                color: "#0F172A",
+                fontWeight: 600,
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                paddingRight: 8,
+                minWidth: 0 // penting agar ellipsis aktif
+              }}
+              title={m?.name || ""}
+            >
+              {m?.name || "—"}
+            </div>
 
-              <div style={{ marginBottom: "20px", paddingBottom: "16px", borderBottom: "1px solid #e5e7eb" }}>
-                {(displayData.expandedItems || []).map((item, idx) => {
-                  const assignees = item.assignedTo || [];
-                  return (
-                    <div key={idx} style={{ display: "flex", justifyContent: "space-between", marginBottom: "10px", paddingBottom: "10px", borderBottom: idx < (displayData.expandedItems || []).length - 1 ? "1px solid #f3f4f6" : "none" }}>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: "14px", fontWeight: "600", color: "#1f2937", marginBottom: "4px" }}>
-                          {item.name}
-                        </div>
-                        <div style={{ fontSize: "11px", color: "#9ca3af", fontWeight: "500" }}>
-                          {assignees.map(memberId => {
-                            const member = displayData.members?.find(m => m.id === memberId);
-                            const qty = item.assignedQuantities?.[memberId] || 0;
-                            return `${member?.name} (${qty}x)`;
-                          }).join(" + ")}
-                        </div>
-                      </div>
-                      <div style={{ fontSize: "14px", fontWeight: "700", color: "#1f2937", textAlign: "right", minWidth: "80px" }}>
-                        {currency(roundIDR(item.pricePerUnit))}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-
-              <div style={{ marginBottom: "20px" }}>
-                <div style={{ fontSize: "13px", fontWeight: "700", color: "#1f2937", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.6px" }}>
-                  Rincian Per Orang
-                </div>
-                {perMemberVerified.map((member, idx) => (
-                  <div key={idx} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingBottom: "10px", marginBottom: "10px", borderBottom: idx < perMemberVerified.length - 1 ? "1px solid #f3f4f6" : "none" }}>
-                    <div style={{ fontSize: "13px", fontWeight: "500", color: "#1f2937" }}>
-                      {member.name}
-                    </div>
-                    <div style={{ fontSize: "14px", fontWeight: "700", color: "#FF9A25" }}>
-                      {currency(member.total)}
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <div style={{ textAlign: "center", paddingTop: "12px", borderTop: "1px solid #e5e7eb" }}>
-                <div style={{ fontSize: "10px", color: "#9ca3af", fontWeight: "600", marginBottom: "4px" }}>
-                  ID: {splitId.substring(0, 16)}
-                </div>
-                <div style={{ fontSize: "9px", color: "#9ca3af", fontWeight: "600", marginTop: "6px" }}>
-                  gopay
-                </div>
-              </div>
+            {/* amount (nowrap, lebar minimum aman) */}
+            <div
+              style={{
+                fontSize: 13.5,
+                fontWeight: 800,
+                color: "#0F172A",
+                whiteSpace: "nowrap",
+                textAlign: "right",
+                minWidth: 92 // cegah numpuk & goyang
+              }}
+            >
+              {currency(m.total || 0)}
             </div>
           </div>
+        );
+      })}
+    </div>
+
+    {/* FOOTER brand */}
+    <div
+      style={{
+        padding: "12px 14px 16px",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 8
+      }}
+    >
+      {/* FOOTER brand (pakai file kecil) */}
+<div
+  style={{
+    padding: "12px 14px 16px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8
+  }}
+>
+  <img
+    src="/public/Orangepay.svg"           // same-origin → aman untuk html2canvas
+    alt="logo-orangepay"
+    width={128}
+    height={128}
+    style={{ display: "block", objectFit: "contain" }}
+  />
+</div>
+    </div>
+  </div>
+</div>
+
+
 
           <div className="px-4 pb-6 space-y-3 max-w-md mx-auto w-full mt-5">
             <button 
@@ -895,13 +1015,6 @@ Silakan bayar sesuai nominal ya! 🙏
               {isDownloading ? `${downloadMessage}...` : "📥 Download Struk"}
             </button>
 
-            <button onClick={onBack} className="w-full py-3.5 rounded-xl font-semibold text-sm bg-white border-2 border-gray-200 text-gray-700 active:scale-[0.98] transition-all">
-              ✏️ Ubah Pembagian
-            </button>
-
-            <button onClick={onBackToHome} className="w-full py-3 rounded-xl font-medium text-sm bg-transparent text-gray-600 active:scale-[0.98] transition-all">
-              🏠 Kembali ke Beranda
-            </button>
           </div>
         </div>
       </div>
