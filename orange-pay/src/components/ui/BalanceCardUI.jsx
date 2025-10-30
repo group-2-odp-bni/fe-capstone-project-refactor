@@ -7,7 +7,7 @@ import React, {
   useImperativeHandle,
 } from "react";
 import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 /* ========== ATOMS ========== */
 
@@ -37,20 +37,8 @@ export const IconToggle = ({ on, onToggle }) => (
   </button>
 );
 
-export const HistoryButton = ({ walletId }) => (
-  <Link to={`/app/wallets/${walletId}`} className="shrink-0">
-    <button className="flex items-center justify-center gap-1 bg-[#FFAE51] backdrop-blur-sm border border-white/20 text-white text-[11px] md:text-xs px-3.5 md:px-4 py-[5px] md:py-[6px] pl-5 md:pl-5 md:w-auto md:px-12 md:pl-12 rounded-full shadow-sm hover:bg-[#CF7309] transition-all active:scale-[.98]">
-      <span>History</span>
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3 h-3">
-        <path fillRule="evenodd" d="M10.293 15.707a1 1 0 0 1 0-1.414L13.586 11H4a1 1 0 1 1 0-2h9.586l-3.293-3.293a1 1 0 1 1 1.414-1.414l5 5a1 1 0 0 1 0 1.414l-5 5a1 1 0 0 1-1.414 0z" clipRule="evenodd" />
-      </svg>
-    </button>
-  </Link>
-);
-
 /**
  * ActionIcon
- * - renders a Link when `to` is provided (and neither onClick nor asButton),
  * - renders a button when `onClick` or `asButton` is truthy.
  */
 export const ActionIcon = ({ label, children, to, onClick, asButton = false }) => {
@@ -64,11 +52,12 @@ export const ActionIcon = ({ label, children, to, onClick, asButton = false }) =
     );
   }
 
+  // keep fallback to anchor if someone passes `to` without handler
   return (
-    <Link to={to} className={commonClass}>
+    <a href={to || "#"} className={commonClass} onClick={(e) => !to && e.preventDefault()}>
       <div className="w-6 md:w-7 h-auto mb-[2px]">{children}</div>
       <span className="text-white text-[9.5px] md:text-[10px] leading-3">{label}</span>
-    </Link>
+    </a>
   );
 };
 
@@ -112,17 +101,53 @@ export const AmountText = ({ amount, isHidden, onMeasured }) => {
   );
 };
 
-/* ========== Shell / card frame ========== */
+/* ========== Shell / card frame (now clickable) ========== */
 
-export const GradientCardShell = ({ bg, outerGlow, children }) => (
-  <div className="p-0" style={{ perspective: 1000 }}>
-    <div className="rounded-[22px] p-[1px] relative transition-[box-shadow,transform] duration-500 will-change-transform hover:translate-y-[1px]" style={{ boxShadow: outerGlow, background: bg }}>
-      <div className="relative text-white rounded-[22px] p-5 md:p-6 overflow-hidden will-change-transform transition-transform duration-500" style={{ background: bg, transformStyle: "preserve-3d" }}>
-        {children}
+export const GradientCardShell = ({
+  bg,
+  outerGlow,
+  children,
+  className = "",
+  onClick,
+  onKeyDown,
+  role,
+  tabIndex,
+  ...rest
+}) => {
+  const isInteractive = Boolean(onClick);
+  const interactiveProps = isInteractive
+    ? {
+        role: role || "button",
+        tabIndex: tabIndex ?? 0,
+        onClick,
+        onKeyDown,
+        className:
+          "relative text-white rounded-[22px] p-5 md:p-6 overflow-hidden will-change-transform transition-transform duration-500 focus:outline-none focus:ring-2 focus:ring-white/50 cursor-pointer " +
+          className,
+      }
+    : {
+        className:
+          "relative text-white rounded-[22px] p-5 md:p-6 overflow-hidden will-change-transform transition-transform duration-500 " +
+          className,
+      };
+
+  return (
+    <div className="p-0" style={{ perspective: 1000 }}>
+      <div
+        className="rounded-[22px] p-[1px] relative transition-[box-shadow,transform] duration-500 will-change-transform hover:translate-y-[1px]"
+        style={{ boxShadow: outerGlow, background: bg }}
+      >
+        <div
+          {...interactiveProps}
+          style={{ background: bg, transformStyle: "preserve-3d" }}
+          {...rest}
+        >
+          {children}
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 /* ========== MOLECULES ========== */
 
@@ -135,12 +160,12 @@ export const CardTopBar = ({ title, type, isMain, onBadgeClick }) => (
   </div>
 );
 
-/* ========== CTASection (updated) ========== */
+/* ========== CTASection (history removed; actions only) ========== */
 
 /**
  * CTASection props:
  * - links: object of route strings { split, topup, addbalancefromwallet, transfer }
- * - walletId: current wallet id (string)
+ * - walletId: current wallet id (string)  // kept for compatibility, not used here
  * - type: string, card.type (defaults to "utama")
  * - isDraggingRef: optional ref to block navigation when dragging
  */
@@ -175,20 +200,9 @@ export const CTASection = ({ links = {}, walletId, type = "utama", isDraggingRef
 
   return (
     <div
-      className="relative z-10 flex justify-between items-center mt-6 md:mt-14"
+      className="relative z-10 flex justify-end items-center mt-6 md:mt-14"
       style={{ transform: "translateZ(25px)" }}
     >
-      {/* History always available */}
-      <Link to={`/app/wallets/${walletId}`} className="shrink-0">
-        <button className="flex items-center justify-center gap-1 bg-[#FFAE51] backdrop-blur-sm border border-white/20 text-white text-[11px] md:text-xs px-3.5 md:px-4 py-[5px] md:py-[6px] pl-5 md:pl-5 md:w-auto md:px-12 md:pl-12 rounded-full shadow-sm hover:bg-[#CF7309] transition-all active:scale-[.98]">
-          <span>History</span>
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3 h-3">
-            <path fillRule="evenodd" d="M10.293 15.707a1 1 0 0 1 0-1.414L13.586 11H4a1 1 0 1 1 0-2h9.586l-3.293-3.293a1 1 0 1 1 1.414-1.414l5 5a1 1 0 0 1 0 1.414l-5 5a1 1 0 0 1-1.414 0z" clipRule="evenodd" />
-          </svg>
-        </button>
-      </Link>
-
-      {/* Actions: full set only when type === 'utama' */}
       <div className="flex space-x-6 md:space-x-8 text-white">
         {type === "utama" && renderActionsForUtama()}
 
@@ -335,7 +349,7 @@ export const CarouselViewport = forwardRef(function CarouselViewport(
       get index() {
         return activeIndex;
       },
-      // also expose dragging ref so parent/UI can wire it to CTASection
+      // expose dragging ref if parent wants to check it
       get isDraggingRef() {
         return isDraggingRef;
       },
@@ -367,7 +381,6 @@ export const CarouselViewport = forwardRef(function CarouselViewport(
       </div>
     </div>
   );
-  
 });
 
 /* ===== default export ===== */
@@ -375,7 +388,6 @@ export const CarouselViewport = forwardRef(function CarouselViewport(
 export default {
   PillBadge,
   IconToggle,
-  HistoryButton,
   ActionIcon,
   AmountText,
   GradientCardShell,
