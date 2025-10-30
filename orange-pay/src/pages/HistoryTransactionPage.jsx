@@ -4,7 +4,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import BalanceCard from "../components/history_transaksi/BalanceCard";
 import RecentHistory from "../components/history_transaksi/RecentHistory";
 import ArrowButton from "../components/common/ArrowButton";
-import DynamicShell from "../components/layout/DynamicShell";
+import DynamicShell from "../components/layout/dynamicShell";
 import { PlusIcon, UserIcon } from "@heroicons/react/24/solid";
 import Header from "../components/Header";
 
