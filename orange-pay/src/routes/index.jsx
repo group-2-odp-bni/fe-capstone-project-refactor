@@ -52,6 +52,7 @@ import ProfilePage from "../pages/profile/ProfilePage";
 import EditProfilePage from "../pages/profile/EditProfilePage";
 import VerifyEmailPage from "../pages/profile/VerifyEmailPage";
 import VerifyPhonePage from "../pages/profile/VerifyPhonePage";
+import AccountLandingPage from "../pages/account/AccountLandingPage";
 
 export function PublicRoute({ children, redirectTo = "/app/dashboard" }) {
   const location = useLocation();
@@ -184,6 +185,11 @@ export default function AppRoutes() {
             element={<AssignMemberPage />}
           />
 
+
+          {/* account page */}
+          <Route path="account" element={<AccountLandingPage />} />
+
+          {/* user profile page */}
           <Route element={<ProfileLayout />}>
             <Route path="profile" element={<ProfilePage />} />
             <Route path="editProfile" element={<EditProfilePage />} />
