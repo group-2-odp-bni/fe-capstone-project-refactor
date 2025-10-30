@@ -14,7 +14,6 @@ import OtpRegisterPage from "../pages/register/SetOtpPage";
 import SetPinPage from "../pages/register/SetPinPage";
 import WelcomePage from "../pages/WelcomePage";
 import LoginPage from "../pages/login/LoginPage";
-import ProfilePage from "../pages/ProfilePage";
 
 import OtpStage from "../components/login/OtpStage";
 import PinStage from "../components/login/PinStage";
@@ -46,6 +45,12 @@ import ProtectedRoute from "./ProtectedRoute";
 import { validateAccessToken } from "../services/auth/authService";
 import OtpLoginPage from "../pages/login/OtpLoginPage";
 import PinLoginPage from "../pages/login/PinLoginPage";
+
+/* profile */
+import { ProfileProvider } from "../context/ProfileContext";
+import OtpProfilePage from "../pages/profile/OtpProfilePage";
+import ProfilePage from "../pages/profile/ProfilePage";
+import EditProfilePage from "../pages/profile/EditProfilePage";
 
 export function PublicRoute({ children, redirectTo = "/app/dashboard" }) {
   const location = useLocation();
@@ -91,6 +96,14 @@ export function PublicRoute({ children, redirectTo = "/app/dashboard" }) {
 /* ----------------- NotFound ----------------- */
 function NotFound() {
   return <div>404 Not Found</div>;
+}
+
+function ProfileLayout() {
+  return (
+    <ProfileProvider>
+      <Outlet />
+    </ProfileProvider>
+  );
 }
 
 /* ----------------- Routes ----------------- */
@@ -170,7 +183,14 @@ export default function AppRoutes() {
             element={<AssignMemberPage />}
           />
 
-          <Route path="profile" element={<ProfilePage />} />
+          <Route element={<ProfileLayout />}>
+            <Route path="profile" element={<ProfilePage />} />
+            <Route path="editProfile" element={<EditProfilePage />} />
+            <Route path="verifyProfile" element={<OtpProfilePage />} />
+          </Route>
+
+
+
           <Route path="wallets">
             <Route path="new" element={<AddWalletPage />} />
             <Route path=":walletId" element={<HistoryTransactionPage />} />{" "}
