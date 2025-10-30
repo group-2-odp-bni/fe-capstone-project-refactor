@@ -54,35 +54,6 @@ function ProfileCard({
           }}
         >
 
-        <div className="w-10 flex justify-start">
-          {showBack ? (
-            <button
-              onClick={handleBack}
-              aria-label={backAriaLabel}
-              className="p-1 rounded-full hover:bg-gray-100 active:scale-95 transition"
-            >
-              <svg
-                width="22"
-                height="18"
-                viewBox="0 0 22 18"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-                className="text-gray-900"
-              >
-                <path
-                  d="M1.3999 9H20.5999M1.3999 9L9.3999 1M1.3999 9L9.3999 17"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </button>
-          ) : (
-            <div aria-hidden="true" />
-          )}
-        </div>
-
           <div
             style={{
               background: "#FFFFFF",

@@ -160,7 +160,7 @@ export default function RecentHistory({ walletId, onExpandChange }) {
   const renderTransactionItem = (item) => {
     const isIncome = isIncomeType(item.type);
     const sign = isIncome ? "+" : "−";
-    const amountColor = isIncome ? "text-emerald-500" : "text-red-600";
+    const amountColor = isIncome ? "text-emerald-500" : "text-black-600";
     const leftSub = isIncome
       ? "Transfer Masuk"
       : String(item.type).toLowerCase() === "kirim"
@@ -182,7 +182,7 @@ export default function RecentHistory({ walletId, onExpandChange }) {
             <p className="text-xs text-gray-500 truncate">{leftSub}</p>
           </div>
           <div className="text-right">
-            <p className={`text-sm font-semibold ${amountColor}`}>
+            <p className={`text-sm ${amountColor}`}>
               {sign} Rp{fmt(item.amount)}
             </p>
             <p className="text-[11px] text-gray-500">{rightSub}</p>

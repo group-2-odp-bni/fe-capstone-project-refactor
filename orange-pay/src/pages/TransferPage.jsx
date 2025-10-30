@@ -3,9 +3,7 @@ import React from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import Header from "../components/Header";
 import { useTransfer } from "../context/TransferContext";
-
 import TransferStepGuard from "../components/transfer/TransferStepGuard";
-
 import StepSelectContacts from "../components/transfer/StepSelectContacts";
 import StepVerifyContact from "../components/transfer/StepVerifyContact";
 import StepEnterAmount from "../components/transfer/StepEnterAmount";
