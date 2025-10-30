@@ -1,17 +1,30 @@
+import { useNavigate } from "react-router-dom";
 import useRecentTransfer from "../../hooks/api/useRecentTransfer";
 
 export default function RecentList() {
   const { users = [], loading } = useRecentTransfer();
+  const navigate = useNavigate();
 
   const formatRupiah = (v) => (v ?? 0).toLocaleString("id-ID");
 
   return (
     <section className="mt-6">
-      <h3 className="px-3 font-semibold text-lg text-gray-900 mb-3 text-left">
-        Recent
-      </h3>
+      <div
+        onClick={() => navigate("/app/allhistory")}
+        className=" flex items-center justify-between cursor-pointer group"
+      >
+        <h3 className="font-semibold text-lg text-gray-900 mb-3 text-left group-hover:text-primary transition-colors">
+          Recent
+        </h3>
+        <span className="text-sm text-gray-500 group-hover:text-primary transition-colors">
+          See all →
+        </span>
+      </div>
 
-      <div className="rounded-[24px] border border-gray-200 bg-white shadow-sm">
+      <div
+        onClick={() => navigate("/app/allhistory")}
+        className="rounded-[24px] border border-gray-200 bg-white shadow-sm cursor-pointer hover:shadow-md transition-shadow"
+      >
         <div className="p-4">
           {loading ? (
             <ul className="divide-y divide-gray-100">
@@ -41,8 +54,6 @@ export default function RecentList() {
                   const isIncome = user.type?.toLowerCase() === "terima";
                   const sign = isIncome ? "+" : "−";
                   const amountColor = isIncome ? "text-emerald-500" : "text-red-600";
-
-                  // gunakan label yang sudah diformat dari hook
                   const rightSub = `${user.dateLabel} · ${user.timeLabel}`;
 
                   return (
@@ -51,17 +62,19 @@ export default function RecentList() {
                       className="py-2 first:pt-0 last:pb-0 hover:bg-gray-50/40 transition-colors"
                     >
                       <div className="flex items-center justify-between">
-                        {/* Left */}
                         <div className="min-w-0 pr-3 text-left">
                           <p className="text-sm font-semibold text-gray-900 truncate">
                             {user.name}
                           </p>
                           <p className="text-xs text-gray-500 truncate">
-                            {isIncome ? "Transfer Masuk" : user.type?.toLowerCase() === "kirim" ? "Transfer" : (user.type ?? "-")}
+                            {isIncome
+                              ? "Transfer Masuk"
+                              : user.type?.toLowerCase() === "kirim"
+                              ? "Transfer"
+                              : user.type ?? "-"}
                           </p>
                         </div>
 
-                        {/* Right */}
                         <div className="text-right">
                           <p className={`text-sm ${amountColor}`}>
                             {sign} Rp{formatRupiah(user.amount)}

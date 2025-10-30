@@ -35,4 +35,260 @@
 
 .read-the-docs {
   color: #888;
-} */
+}
+.assign-page {
+  padding: 16px;
+  max-width: 480px;
+  margin: 0 auto;
+}
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+.ghost-btn {
+  background: transparent;
+  border: none;
+  font-size: 18px;
+  padding: 6px 8px;
+  cursor: pointer;
+}
+
+.wallet-mini {
+  background: #1b4b68;
+  color: #fff;
+  border-radius: 14px;
+  padding: 14px;
+  margin-bottom: 16px;
+}
+.wallet-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.wallet-top .brand {
+  font-weight: 700;
+  letter-spacing: 0.4px;
+}
+.tags {
+  display: flex;
+  gap: 6px;
+}
+.tag {
+  background: #2a688e;
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 12px;
+}
+.wallet-balance {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.section {
+  margin-top: 14px;
+}
+.section-title {
+  font-size: 14px;
+  color: #6b7280;
+  margin-bottom: 8px;
+}
+
+.row-card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 10px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+  position: relative;
+}
+.avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  background: #fde68a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+}
+.avatar-small {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background: #e5e7eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+}
+.col {
+  flex: 1;
+  min-width: 0;
+}
+.title {
+  font-weight: 600;
+}
+.subtitle {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.list {
+  display: block;
+}
+.muted {
+  color: #9ca3af;
+  font-size: 14px;
+  text-align: center;
+  padding: 8px 0;
+}
+
+.dots {
+  background: transparent;
+  border: none;
+  font-size: 20px;
+  line-height: 1;
+  padding: 4px 8px;
+  cursor: pointer;
+}
+.menu {
+  position: absolute;
+  right: 8px;
+  top: 44px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+}
+.menu-item {
+  display: block;
+  padding: 10px 12px;
+  width: 140px;
+  text-align: left;
+  background: #fff;
+  border: none;
+  cursor: pointer;
+}
+.menu-item:hover {
+  background: #f3f4f6;
+}
+.menu-item.danger {
+  color: #dc2626;
+}
+
+.pill {
+  border: 1px solid #e5e7eb;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 12px;
+}
+.pill-waiting {
+  background: #fff7ed;
+  border-color: #fdba74;
+  color: #c2410c;
+}
+
+.contact-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  border-radius: 12px;
+  width: 100%;
+  text-align: left;
+  margin-bottom: 8px;
+}
+.contact-meta {
+  flex: 1;
+  min-width: 0;
+}
+.contact-name {
+  font-weight: 600;
+}
+.contact-phone {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.searchbox {
+  background: #f3f4f6;
+  border-radius: 12px;
+  padding: 8px 10px;
+  margin-bottom: 10px;
+}
+.searchbox input {
+  width: 100%;
+  border: none;
+  outline: none;
+  background: transparent;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.modal {
+  background: #fff;
+  border-radius: 16px;
+  max-width: 360px;
+  width: 100%;
+  padding: 14px;
+}
+.modal-title {
+  text-align: center;
+  font-weight: 700;
+  margin-top: 2px;
+}
+.modal-body {
+  margin: 10px 0 14px;
+  text-align: center;
+  color: #4b5563;
+}
+.modal-actions {
+  display: flex;
+  gap: 10px;
+}
+.btn {
+  flex: 1;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  cursor: pointer;
+}
+.btn.danger {
+  background: #ef4444;
+  color: #fff;
+  border-color: #ef4444;
+}
+
+.skeleton {
+  height: 180px;
+  border-radius: 14px;
+  background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 37%, #f3f4f6 63%);
+  background-size: 400% 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+}
+@keyframes shimmer {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
+}

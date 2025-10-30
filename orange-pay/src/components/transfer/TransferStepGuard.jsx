@@ -50,7 +50,7 @@ export default function TransferStepGuard({
 
     // If a step requirement provided -> check ordering
     if (reqStep) {
-      const ordering = ["select", "verify", "details", "amount", "confirm", "pin", "success"];
+      const ordering = ["select", "verify", "amount", "confirm", "pin", "success"];
       const currentIndex = ordering.indexOf(step);
       const requiredIndex = ordering.indexOf(reqStep);
 
