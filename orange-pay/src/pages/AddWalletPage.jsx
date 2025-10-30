@@ -25,7 +25,7 @@ export default function AddWalletPage() {
   const handleBack = () => {
     // If we're at the first step, clear flow and go back to dashboard
     if (step === 1) {
-      reset();
+      // reset();
       navigate("/app/dashboard");
       return;
     }
@@ -114,7 +114,7 @@ export default function AddWalletPage() {
                 name={name}
                 balance={0}
                 gradient={gradient}
-                rightBadge={type === "personal" && name ? name : ""}
+                rightBadge={type === "personal" || type === "shared" && name ? name : ""}
               />
             </div>
 
