@@ -70,13 +70,27 @@ export const HistoryButton = ({ walletId }) => (
  * - renders a Link when `to` is provided (and neither onClick nor asButton),
  * - renders a button when `onClick` or `asButton` is truthy.
  */
-export const ActionIcon = ({ label, children, to, onClick, asButton = false }) => {
-  const commonClass = "flex flex-col items-center hover:text-white/90 transition-all cursor-pointer active:scale-[.98]";
+export const ActionIcon = ({
+  label,
+  children,
+  to,
+  onClick,
+  asButton = false,
+}) => {
+  const commonClass =
+    "flex flex-col items-center hover:text-white/90 transition-all cursor-pointer active:scale-[.98]";
   if (asButton || onClick) {
     return (
-      <button onClick={onClick} type="button" className={commonClass} style={{ background: "transparent", border: 0 }}>
+      <button
+        onClick={onClick}
+        type="button"
+        className={commonClass}
+        style={{ background: "transparent", border: 0 }}
+      >
         <div className="w-6 md:w-7 h-auto mb-[2px]">{children}</div>
-        <span className="text-white text-[9.5px] md:text-[10px] leading-3">{label}</span>
+        <span className="text-white text-[9.5px] md:text-[10px] leading-3">
+          {label}
+        </span>
       </button>
     );
   }
@@ -84,7 +98,9 @@ export const ActionIcon = ({ label, children, to, onClick, asButton = false }) =
   return (
     <Link to={to} className={commonClass}>
       <div className="w-6 md:w-7 h-auto mb-[2px]">{children}</div>
-      <span className="text-white text-[9.5px] md:text-[10px] leading-3">{label}</span>
+      <span className="text-white text-[9.5px] md:text-[10px] leading-3">
+        {label}
+      </span>
     </Link>
   );
 };
@@ -170,9 +186,8 @@ export const CardTopBar = ({ title, type, isMain, onBadgeClick }) => {
         />
       </div>
     </div>
-  </div>
-);
-
+  );
+};
 /* ========== CTASection (updated) ========== */
 
 /**
@@ -182,7 +197,12 @@ export const CardTopBar = ({ title, type, isMain, onBadgeClick }) => {
  * - type: string, card.type (defaults to "utama")
  * - isDraggingRef: optional ref to block navigation when dragging
  */
-export const CTASection = ({ links = {}, walletId, type = "utama", isDraggingRef }) => {
+export const CTASection = ({
+  links = {},
+  walletId,
+  type = "utama",
+  isDraggingRef,
+}) => {
   const navigate = useNavigate();
 
   const appendWalletQuery = (basePath) => {
@@ -230,8 +250,17 @@ export const CTASection = ({ links = {}, walletId, type = "utama", isDraggingRef
       <Link to={`/app/wallets/${walletId}`} className="shrink-0">
         <button className="flex items-center justify-center gap-1 bg-[#FFAE51] backdrop-blur-sm border border-white/20 text-white text-[11px] md:text-xs px-3.5 md:px-4 py-[5px] md:py-[6px] pl-5 md:pl-5 md:w-auto md:px-12 md:pl-12 rounded-full shadow-sm hover:bg-[#CF7309] transition-all active:scale-[.98]">
           <span>History</span>
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3 h-3">
-            <path fillRule="evenodd" d="M10.293 15.707a1 1 0 0 1 0-1.414L13.586 11H4a1 1 0 1 1 0-2h9.586l-3.293-3.293a1 1 0 1 1 1.414-1.414l5 5a1 1 0 0 1 0 1.414l-5 5a1 1 0 0 1-1.414 0z" clipRule="evenodd" />
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+            className="w-3 h-3"
+          >
+            <path
+              fillRule="evenodd"
+              d="M10.293 15.707a1 1 0 0 1 0-1.414L13.586 11H4a1 1 0 1 1 0-2h9.586l-3.293-3.293a1 1 0 1 1 1.414-1.414l5 5a1 1 0 0 1 0 1.414l-5 5a1 1 0 0 1-1.414 0z"
+              clipRule="evenodd"
+            />
           </svg>
         </button>
       </Link>
@@ -438,7 +467,6 @@ export const CarouselViewport = forwardRef(function CarouselViewport(
       </div>
     </div>
   );
-  
 });
 
 /* ===== default export ===== */

@@ -42,21 +42,6 @@ import RequireLoginStep from "./RequireLoginStep";
 import { TransferProvider } from "../context/TransferContext";
 import TransferPage from "../pages/TransferPage";
 import AssignMemberPage from "../pages/AssignMemberPage";
-
-/* ----------------- ProtectedRoute ----------------- */
-function ProtectedRoute() {
-  const loc = useLocation();
-  return isAuthenticated() ? (
-    <Outlet />
-  ) : (
-    <Navigate to="/login" replace state={{ from: loc }} />
-  );
-}
-
-/* ----------------- PublicRoute ----------------- */
-function PublicRoute({ children, redirectTo = "/app/dashboard" }) {
-  const loc = useLocation();
-import RequireRegisterStep from "./RequireRegisterStep";
 import ProtectedRoute from "./ProtectedRoute";
 import { validateAccessToken } from "../services/auth/authService";
 import OtpLoginPage from "../pages/login/OtpLoginPage";
@@ -184,11 +169,12 @@ export default function AppRoutes() {
             path="wallets/:walletId/members"
             element={<AssignMemberPage />}
           />
-              
+
           <Route path="profile" element={<ProfilePage />} />
           <Route path="wallets">
             <Route path="new" element={<AddWalletPage />} />
-            <Route path=":walletId" element={<HistoryTransactionPage />} /> {/* <— tambahan */}
+            <Route path=":walletId" element={<HistoryTransactionPage />} />{" "}
+            {/* <— tambahan */}
             <Route
               path=":walletId/history"
               element={<HistoryTransactionPage />}
@@ -202,7 +188,10 @@ export default function AppRoutes() {
             <Route path=":walletId/transfer" element={<TransferPage />} />
           </Route>
           <Route path="allhistory" element={<AllHistoryPage />} />
-          <Route path="confirm-add-balance" element={<ConfirmAddBalancePage />} />
+          <Route
+            path="confirm-add-balance"
+            element={<ConfirmAddBalancePage />}
+          />
           {/* ----------- Transfer Flow ----------- */}
           <Route
             path="transfer/*"
@@ -216,7 +205,6 @@ export default function AppRoutes() {
               </TransferProvider>
             }
           />
-          
 
           {/* ----------- Reset flow placeholder ----------- */}
           <Route path="reset">{/* add reset pages later */}</Route>
