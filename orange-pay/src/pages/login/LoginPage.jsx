@@ -1,5 +1,6 @@
 import React, { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
 
 import MobileShell from "../../components/layout/MobileShell";
 import PhoneLayoutBackground from "../../components/PhoneLayoutBackground";
@@ -59,31 +60,28 @@ function LoginContextContent() {
     e.preventDefault();
     setError("");
     setLoading(true);
+
     const fullPhone = `+62${formData.phoneNumber}`;
 
     try {
-      const response = await fetch("/api/v1/auth/request", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          phoneNumber: `+62${formData.phoneNumber}`,
-        }),
+      const response = await axios.post("/api/v1/auth/request", {
+        phoneNumber: fullPhone,
       });
 
-      if (!response.ok) throw new Error("Failed to send request");
-
-      const data = await response.json();
-
       // Save phone number into LoginContext
-      setLoginData({ phoneNumber: `+62${formData.phoneNumber}` });
+      setLoginData({ phoneNumber: fullPhone });
 
-      console.log("Login OTP request success:", data);
+      console.log("Login OTP request success:", response.data);
 
       // Navigate to OTP verification
       navigate("/login/otp");
     } catch (err) {
       console.error(err);
-      setError(err.message || "Something went wrong.");
+      setError(
+        err.response?.data?.message ||
+        err.message ||
+        "Something went wrong."
+      );
     } finally {
       setLoading(false);
     }

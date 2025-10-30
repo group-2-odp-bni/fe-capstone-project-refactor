@@ -11,6 +11,9 @@ import { useRegistrationContext } from "../../context/RegistrationContext";
 import OrangePayLogo from "../../components/register/OrangePayLogo";
 import RegisterTextContainer from "../../components/register/RegisterTextContainer";
 import api from "../../lib/api";
+import OtpInputField from "../../components/input/OtpInputField";
+import CountdownTimer from "../../components/dashboard/CountdownTimer";
+import ButtonLink from "../../components/button/ButtonLink";
 
 export default function OtpRegisterPage() {
   return (
@@ -38,6 +41,7 @@ function SetOtpContent() {
   const [otp, setOtp] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [timer, setTimer] = useState(300); // 5 minutes in seconds
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -45,14 +49,6 @@ function SetOtpContent() {
     setLoading(true);
 
     try {
-      // const response = await fetch("/api/v1/auth/verify", {
-      //   method: "POST",
-      //   headers: { "Content-Type": "application/json" },
-      //   body: JSON.stringify({
-      //     phoneNumber: userData.phoneNumber,
-      //     otp: otp,
-      //   }),
-      // });
       const { data } = await api.post("/api/v1/auth/verify", {
         phoneNumber: userData.phoneNumber,
         otp,
@@ -65,12 +61,35 @@ function SetOtpContent() {
     } finally {
       setLoading(false);
     }
+
+  };
+
+  const handleResendOtp = async () => {
+    setError("");
+    setLoading(true);
+
+    try {
+      const response = await axios.post("/api/v1/auth/resend-otp", {
+        phoneNumber: userData.phoneNumber,
+      });
+
+      setLoginData({ stateToken: response.data.data.stateToken });
+      setOtp("");
+      setTimer(300); // Reset 5-minute timer
+    } catch (err) {
+      console.error(err);
+      setError(
+        err.response?.data?.message || err.message || "Something went wrong."
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div>
       <form onSubmit={handleSubmit} className="space-y-5 mt-6">
-        <InputField
+        <OtpInputField
           id="otp"
           name="otp"
           label="OTP :"
@@ -80,6 +99,7 @@ function SetOtpContent() {
           value={otp}
           onChange={(e) => setOtp(e.target.value)}
         />
+        <CountdownTimer initialSeconds={300} />
 
         {error && <p className="text-red-500 text-xs">{error}</p>}
 
@@ -89,15 +109,11 @@ function SetOtpContent() {
       </form>
 
       <div className="text-center mt-4 text-xs md:text-sm text-gray-600 pb-6">
-        Salah nomor?{" "}
-        <button
-          type="button"
-          className="text-[#1C6C79] font-semibold hover:underline"
-          onClick={() => navigate("/register")}
-        >
-          Ubah nomor
-        </button>
+        
+        <ButtonLink onClick={handleResendOtp} disabled={loading || timer > 0}>
+          {timer > 0 ? "" : "Resend OTP"}
+        </ButtonLink>
       </div>
-    </div>
+    </div >
   );
 }
