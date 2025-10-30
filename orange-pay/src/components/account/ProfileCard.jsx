@@ -34,7 +34,7 @@ function ProfileCard({
     <div
       style={{
         background: "#FE9F2E",
-        minHeight: "100vh",
+        // minHeight: "100vh",
         width: "100%",
         display: "flex",
         flexDirection: "column",
@@ -132,7 +132,7 @@ function ProfileCard({
       </div>
 
       {/* Logout */}
-        <button
+      <button
         onClick={logout}
         style={{
           backgroundColor: "#A72703",
@@ -147,9 +147,9 @@ function ProfileCard({
           marginTop: "auto", 
           marginBottom: 48,
         }}
-        >
+      >
         Keluar
-        </button>
+      </button>
     </div>
   );
 }

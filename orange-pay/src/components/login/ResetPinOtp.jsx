@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { useLoginFlow } from "../../context/LoginFlowContext";
+import { useLoginContext } from "../../context/LoginContext";
 import { verifyOtpApi } from "../../services/authService";
 
 const STORAGE_KEY = "app:login_flow";
@@ -23,9 +23,9 @@ export default function ResetPinOtp() {
   let phoneFromState = state?.phone ?? null;
   const { loginFlow, markOtpVerified } = (() => {
     try {
-      return useLoginFlow();
+      return useLoginContext();
     } catch (e) {
-      return { loginFlow: null, markOtpVerified: () => {} };
+      return { loginFlow: null, markOtpVerified: () => { } };
     }
   })();
 
@@ -137,18 +137,17 @@ export default function ResetPinOtp() {
         <div className="flex justify-center gap-3 mt-6">
           {otp.map((d, i) => (
             <input
-             key={i}
-             ref={(el) => (refs.current[i] = el)}
-             value={d}
-             maxLength={1}
-             inputMode="numeric"
-             pattern="\d*"
-             onChange={(e) => handleChange(e.target.value.slice(-1), i)}
-             onKeyDown={(e) => handleKeyDown(e, i)}
-             disabled={loading}
-             className={`w-12 h-12 text-center text-xl rounded-lg border ${
-               error ? "border-red-500" : "border-gray-300"
-             } focus:outline-none focus:border-[#1C6C79]`}
+              key={i}
+              ref={(el) => (refs.current[i] = el)}
+              value={d}
+              maxLength={1}
+              inputMode="numeric"
+              pattern="\d*"
+              onChange={(e) => handleChange(e.target.value.slice(-1), i)}
+              onKeyDown={(e) => handleKeyDown(e, i)}
+              disabled={loading}
+              className={`w-12 h-12 text-center text-xl rounded-lg border ${error ? "border-red-500" : "border-gray-300"
+                } focus:outline-none focus:border-[#1C6C79]`}
             />
           ))}
         </div>

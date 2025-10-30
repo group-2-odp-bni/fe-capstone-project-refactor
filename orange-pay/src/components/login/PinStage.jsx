@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useLoginFlow } from "../../context/LoginFlowContext";
+import { useLoginContext } from "../../context/LoginContext";
 import { loginWithPin } from "../../services/authService";
 
 
@@ -10,16 +10,16 @@ export default function PinStage() {
   const [err, setErr] = useState("");
   let loginFlowCtx;
   try {
-    loginFlowCtx = useLoginFlow();
+    loginFlowCtx = useLoginContext();
   } catch (e) {
     loginFlowCtx = {
       loginFlow: readFlowFromSession(),
-      clearLoginFlow: () => {},
+      clearLoginFlow: () => { },
     };
   }
   const { loginFlow, clearLoginFlow } = loginFlowCtx;
   const phone = loginFlow?.phone ?? null;
-  
+
   const input = (d) => {
     setErr("");
     setPin((p) => (p.length < 6 ? p + d : p));
@@ -32,10 +32,10 @@ export default function PinStage() {
         localStorage.setItem("isLoggedIn", "true");
         try {
           sessionStorage.setItem("token", "dummy-token");
-        } catch {}
+        } catch { }
         nav("/app/dashboard");
       } else {
-        setErr("PIN salah, coba lagi!");  
+        setErr("PIN salah, coba lagi!");
         setPin("");
       }
     }
@@ -43,7 +43,7 @@ export default function PinStage() {
 
   return (
     <div className="flex-1 flex flex-col bg-white">
-       <button
+      <button
         onClick={() => nav("/login")}
         aria-label="Back"
         className="absolute left-4 top-4 w-9 h-9 grid place-items-center rounded-full bg-white text-[#FF9A25] shadow-md font-semibold"
@@ -58,11 +58,10 @@ export default function PinStage() {
           {[0, 1, 2, 3, 4, 5].map((i) => (
             <div
               key={i}
-              className={`w-4 h-4 rounded-full ${
-                pin.length > i
-                  ? "bg-orange-500"
-                  : "bg-white outline outline-2 outline-gray-400"
-              }`}
+              className={`w-4 h-4 rounded-full ${pin.length > i
+                ? "bg-orange-500"
+                : "bg-white outline outline-2 outline-gray-400"
+                }`}
             />
           ))}
         </div>
@@ -87,13 +86,12 @@ export default function PinStage() {
             </button>
           ))}
           <button
-            onClick={() => {}}
+            onClick={() => { }}
             disabled={pin.length < 6}
             className={`w-20 h-20 flex items-center justify-center rounded-full text-2xl font-semibold active:scale-95 transition
-              ${
-                pin.length === 6
-                  ? "bg-[#305856] text-white"
-                  : "bg-gray-300 text-gray-600 cursor-not-allowed"
+              ${pin.length === 6
+                ? "bg-[#305856] text-white"
+                : "bg-gray-300 text-gray-600 cursor-not-allowed"
               }`}
             title={
               pin.length === 6 ? "Enter" : "Isi PIN 6 digit terlebih dahulu"

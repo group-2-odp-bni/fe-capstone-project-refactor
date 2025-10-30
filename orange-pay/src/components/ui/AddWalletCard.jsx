@@ -1,16 +1,11 @@
-// src/components/ui/AddWalletCard.jsx
 import React from "react";
 import { Link } from "react-router-dom";
 
-/**
- * AddWalletCard - UI-only component for the "Add New Wallet" card.
- * Props:
- *  - onCreate: async () => void    // called when clicked (if provided)
- *  - isCreating: boolean           // show creating state
- *  - to: string                    // optional href fallback (default "/app/wallets/new")
- */
-export default function AddWalletCard({ onCreate, isCreating = false, to = "/app/wallets/new" }) {
-  // if an onCreate handler is provided, render as a button; otherwise render as a Link
+export default function AddWalletCard({
+  onCreate,
+  isCreating = false,
+  to = "/app/wallets/new",
+}) {
   const inner = (
     <div
       style={{
@@ -29,7 +24,6 @@ export default function AddWalletCard({ onCreate, isCreating = false, to = "/app
       className="hover:shadow-md active:scale-[.98]"
     >
       {isCreating ? (
-        // simple loading pill
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <div
             style={{
@@ -41,7 +35,9 @@ export default function AddWalletCard({ onCreate, isCreating = false, to = "/app
               animation: "pulse 1s infinite",
             }}
           />
-          <span style={{ color: "#FFAE51", fontWeight: 700, fontSize: 16 }}>Creating...</span>
+          <span style={{ color: "#FFAE51", fontWeight: 700, fontSize: 16 }}>
+            Creating...
+          </span>
         </div>
       ) : (
         <div
@@ -69,16 +65,23 @@ export default function AddWalletCard({ onCreate, isCreating = false, to = "/app
         onClick={onCreate}
         disabled={isCreating}
         className="block w-full h-full p-0"
-        style={{ textDecoration: "none", background: "transparent", border: "none" }}
+        style={{
+          textDecoration: "none",
+          background: "transparent",
+          border: "none",
+        }}
       >
         {inner}
       </button>
     );
   }
 
-  // fallback to link
   return (
-    <Link to={to} className="block w-full h-full p-0" style={{ textDecoration: "none" }}>
+    <Link
+      to={to}
+      className="block w-full h-full p-0"
+      style={{ textDecoration: "none" }}
+    >
       {inner}
     </Link>
   );

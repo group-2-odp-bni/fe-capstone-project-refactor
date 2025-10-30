@@ -4,6 +4,8 @@ import { useNavigate } from "react-router-dom";
 import useCardBalances from "../../hooks/api/useCardBalances";
 import ScrollProgress from "../ui/ScrollProgress";
 import AddWalletCard from "../ui/AddWalletCard";
+import { useLocation, useNavigate } from "react-router-dom";
+
 import {
   GradientCardShell,
   CardTopBar,
@@ -71,7 +73,7 @@ export default function AtomicBalanceCard({ initialWalletId = null }) {
     if (activeIndex >= items.length) setActiveIndex(0);
   }, [items.length, activeIndex]);
 
-  const isCardLoading = (_id, _idx) => Boolean(loading);
+  const isCardLoading = () => Boolean(loading);
 
   // create wallet (logic only)
   const handleCreateWallet = async () => {
@@ -139,7 +141,10 @@ export default function AtomicBalanceCard({ initialWalletId = null }) {
           return (
             <div className="p-0" style={{ width: "100%" }}>
               <GradientCardShell bg={card.bg}>
-                <div className="relative" style={{ transformStyle: "preserve-3d" }}>
+                <div
+                  className="relative"
+                  style={{ transformStyle: "preserve-3d" }}
+                >
                   <CardTopBar
                     title={card.title}
                     type={card.type}

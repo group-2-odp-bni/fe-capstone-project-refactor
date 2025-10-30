@@ -1,4 +1,3 @@
-// src/components/ui/BalanceCardUI.jsx
 import React, {
   forwardRef,
   useRef,
@@ -9,8 +8,13 @@ import React, {
 import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
 import { Link, useNavigate } from "react-router-dom";
 
-/* ========== ATOMS ========== */
-
+const humanizeType = (t) => {
+  if (!t) return "";
+  const up = String(t).toUpperCase();
+  if (up === "PERSONAL") return "Personal";
+  if (up === "SHARED") return "Shared";
+  return t;
+};
 export const PillBadge = ({ label, active, style, onClick }) => (
   <button
     type="button"
@@ -28,7 +32,11 @@ export const PillBadge = ({ label, active, style, onClick }) => (
 );
 
 export const IconToggle = ({ on, onToggle }) => (
-  <button onClick={onToggle} className="active:scale-95" style={{ transform: "translateZ(35px)" }}>
+  <button
+    onClick={onToggle}
+    className="active:scale-95"
+    style={{ transform: "translateZ(35px)" }}
+  >
     {on ? (
       <EyeSlashIcon className="w-5 h-4 md:w-6 md:h-4 text-white/85" />
     ) : (
@@ -41,8 +49,17 @@ export const HistoryButton = ({ walletId }) => (
   <Link to={`/app/wallets/${walletId}`} className="shrink-0">
     <button className="flex items-center justify-center gap-1 bg-[#FFAE51] backdrop-blur-sm border border-white/20 text-white text-[11px] md:text-xs px-3.5 md:px-4 py-[5px] md:py-[6px] pl-5 md:pl-5 md:w-auto md:px-12 md:pl-12 rounded-full shadow-sm hover:bg-[#CF7309] transition-all active:scale-[.98]">
       <span>History</span>
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3 h-3">
-        <path fillRule="evenodd" d="M10.293 15.707a1 1 0 0 1 0-1.414L13.586 11H4a1 1 0 1 1 0-2h9.586l-3.293-3.293a1 1 0 1 1 1.414-1.414l5 5a1 1 0 0 1 0 1.414l-5 5a1 1 0 0 1-1.414 0z" clipRule="evenodd" />
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 20 20"
+        fill="currentColor"
+        className="w-3 h-3"
+      >
+        <path
+          fillRule="evenodd"
+          d="M10.293 15.707a1 1 0 0 1 0-1.414L13.586 11H4a1 1 0 1 1 0-2h9.586l-3.293-3.293a1 1 0 1 1 1.414-1.414l5 5a1 1 0 0 1 0 1.414l-5 5a1 1 0 0 1-1.414 0z"
+          clipRule="evenodd"
+        />
       </svg>
     </button>
   </Link>
@@ -72,8 +89,6 @@ export const ActionIcon = ({ label, children, to, onClick, asButton = false }) =
   );
 };
 
-/* ========== AmountText (measuring for eye icon) ========== */
-
 export const AmountText = ({ amount, isHidden, onMeasured }) => {
   const formatted = `Rp${Number(amount ?? 0).toLocaleString("id-ID")}`;
   const stars = "•".repeat(formatted.replace("Rp", "").length);
@@ -101,36 +116,59 @@ export const AmountText = ({ amount, isHidden, onMeasured }) => {
 
   return (
     <div className="relative h-8 md:h-9">
-      <span ref={shownRef} className="absolute left-0 top-0 text-2xl md:text-3xl font-bold font-[Poppins] drop-shadow transition-opacity duration-500" style={{ opacity: isHidden ? 0 : 1 }}>
+      <span
+        ref={shownRef}
+        className="absolute left-0 top-0 text-2xl md:text-3xl font-bold font-[Poppins] drop-shadow transition-opacity duration-500"
+        style={{ opacity: isHidden ? 0 : 1 }}
+      >
         {formatted}
       </span>
-      <span ref={hiddenRef} className="absolute left-0 top-0 text-2xl md:text-3xl font-bold font-[Poppins] drop-shadow transition-opacity duration-500" style={{ opacity: isHidden ? 1 : 0 }}>
+      <span
+        ref={hiddenRef}
+        className="absolute left-0 top-0 text-2xl md:text-3xl font-bold font-[Poppins] drop-shadow transition-opacity duration-500"
+        style={{ opacity: isHidden ? 1 : 0 }}
+      >
         Rp{stars}
       </span>
-      <span className="invisible text-2xl md:text-3xl font-bold font-[Poppins]">{formatted}</span>
+      <span className="invisible text-2xl md:text-3xl font-bold font-[Poppins]">
+        {formatted}
+      </span>
     </div>
   );
 };
-
-/* ========== Shell / card frame ========== */
-
 export const GradientCardShell = ({ bg, outerGlow, children }) => (
   <div className="p-0" style={{ perspective: 1000 }}>
-    <div className="rounded-[22px] p-[1px] relative transition-[box-shadow,transform] duration-500 will-change-transform hover:translate-y-[1px]" style={{ boxShadow: outerGlow, background: bg }}>
-      <div className="relative text-white rounded-[22px] p-5 md:p-6 overflow-hidden will-change-transform transition-transform duration-500" style={{ background: bg, transformStyle: "preserve-3d" }}>
+    <div
+      className="rounded-[22px] p-[1px] relative transition-[box-shadow,transform] duration-500 will-change-transform hover:translate-y-[1px]"
+      style={{ boxShadow: outerGlow, background: bg }}
+    >
+      <div
+        className="relative text-white rounded-[22px] p-5 md:p-6 overflow-hidden will-change-transform transition-transform duration-500"
+        style={{ background: bg, transformStyle: "preserve-3d" }}
+      >
         {children}
       </div>
     </div>
   </div>
 );
 
-/* ========== MOLECULES ========== */
-
-export const CardTopBar = ({ title, type, isMain, onBadgeClick }) => (
-  <div className="relative z-10 flex justify-between items-start mb-5 md:mb-10">
-    <div className="flex items-center space-x-3 mt-1 mb-2">
-      <img src="/orangepay_card.svg" alt="RangePay Logo" className="h-5 md:h-6 w-auto drop-shadow" />
-      <PillBadge label={title} active={isMain} style={{ transform: "translateZ(35px)" }} onClick={onBadgeClick} />
+export const CardTopBar = ({ title, type, isMain, onBadgeClick }) => {
+  const badgeLabel = isMain ? "Utama" : humanizeType(type);
+  return (
+    <div className="relative z-10 flex justify-between items-start mb-5 md:mb-10">
+      <div className="flex items-center space-x-3 mt-1 mb-2">
+        <img
+          src="/orangepay_card.svg"
+          alt="RangePay Logo"
+          className="h-5 md:h-6 w-auto drop-shadow"
+        />
+        <PillBadge
+          label={badgeLabel}
+          active={!!isMain}
+          style={{ transform: "translateZ(35px)" }}
+          onClick={onBadgeClick}
+        />
+      </div>
     </div>
   </div>
 );
@@ -160,13 +198,23 @@ export const CTASection = ({ links = {}, walletId, type = "utama", isDraggingRef
   const renderActionsForUtama = () => (
     <>
       <ActionIcon to={links.split} label="Split Bill">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="currentColor" className="w-7 md:w-7 h-auto mb-[2px]">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 512 512"
+          fill="currentColor"
+          className="w-7 md:w-7 h-auto mb-[2px]"
+        >
           <path d="M416 32H96a48 48 0 0 0-48 48v368a16 16 0 0 0 25.6 12.8L128 416l54.4 44.8a16 16 0 0 0 20.8 0L256 416l54.4 44.8a16 16 0 0 0 20.8 0L384 416l54.4 44.8A16 16 0 0 0 464 448V80a48 48 0 0 0-48-48ZM160 144h192a16 16 0 0 1 0 32H160a16 16 0 0 1 0-32Zm0 96h192a16 16 0 0 1 0 32H160a16 16 0 0 1 0-32Zm0 96h96a16 16 0 0 1 0 32h-96a16 16 0 0 1 0-32Z" />
         </svg>
       </ActionIcon>
 
       <ActionIcon to={links.topup} label="Top-Up">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" className="w-7 md:w-7 h-auto mb-[2px]">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          fill="currentColor"
+          viewBox="0 0 24 24"
+          className="w-7 md:w-7 h-auto mb-[2px]"
+        >
           <path d="M19 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2ZM12 8a1 1 0 0 1 1 1v2h2a1 1 0 0 1 0 2h-2v2a1 1 0 0 1-2 0v-2h-2a1 1 0 0 1 0-2h2V9a1 1 0 0 1 1-1Z" />
         </svg>
       </ActionIcon>
@@ -210,19 +258,31 @@ export const CTASection = ({ links = {}, walletId, type = "utama", isDraggingRef
   );
 };
 
-/* ========== BalanceRow ========== */
-
-export const BalanceRow = ({ amount, isHidden, onToggleHidden, loading, active }) => {
+export const BalanceRow = ({
+  amount,
+  isHidden,
+  onToggleHidden,
+  loading,
+  active,
+}) => {
   const [sizes, setSizes] = useState({ maxWidth: 0, currentWidth: 0 });
 
   if (loading && active) {
-    return <div className="h-8 md:h-9 w-28 md:w-32 bg-white/20 rounded animate-pulse" />;
+    return (
+      <div className="h-8 md:h-9 w-28 md:w-32 bg-white/20 rounded animate-pulse" />
+    );
   }
 
   return (
-    <div className="relative z-10 mb-2 md:mb-3" style={{ width: sizes.maxWidth ? sizes.maxWidth + 28 : undefined }}>
+    <div
+      className="relative z-10 mb-2 md:mb-3"
+      style={{ width: sizes.maxWidth ? sizes.maxWidth + 28 : undefined }}
+    >
       <AmountText amount={amount} isHidden={isHidden} onMeasured={setSizes} />
-      <div className="absolute top-1/2 -translate-y-1/2 will-change-transform" style={{ left: sizes.currentWidth + 6, transform: "translateZ(35px)" }}>
+      <div
+        className="absolute top-1/2 -translate-y-1/2 will-change-transform"
+        style={{ left: sizes.currentWidth + 6, transform: "translateZ(35px)" }}
+      >
         <IconToggle on={isHidden} onToggle={onToggleHidden} />
       </div>
     </div>
@@ -247,7 +307,11 @@ export const CarouselViewport = forwardRef(function CarouselViewport(
   const GAP = 10;
 
   const isInteractiveTarget = (el) =>
-    !!(el && el.closest && el.closest("button, a, [role='button'], input, textarea, select, label"));
+    !!(
+      el &&
+      el.closest &&
+      el.closest("button, a, [role='button'], input, textarea, select, label")
+    );
 
   const updateActiveIndexFromScroll = () => {
     const el = viewportRef.current;
@@ -358,9 +422,16 @@ export const CarouselViewport = forwardRef(function CarouselViewport(
       onPointerUp={onPointerUp}
       onPointerCancel={onPointerUp}
     >
-      <div className="flex" style={{ width: "100%", gap: `${GAP}px`, padding: 0 }}>
+      <div
+        className="flex"
+        style={{ width: "100%", gap: `${GAP}px`, padding: 0 }}
+      >
         {items.map((item) => (
-          <div key={item.id} className="snap-center shrink-0 p-0" style={{ width: `calc(100% - ${PEEK}px)` }}>
+          <div
+            key={item.id}
+            className="snap-center shrink-0 p-0"
+            style={{ width: `calc(100% - ${PEEK}px)` }}
+          >
             {renderItem(item)}
           </div>
         ))}
