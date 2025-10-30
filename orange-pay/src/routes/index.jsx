@@ -48,9 +48,10 @@ import PinLoginPage from "../pages/login/PinLoginPage";
 
 /* profile */
 import { ProfileProvider } from "../context/ProfileContext";
-import OtpProfilePage from "../pages/profile/VerifyEmailPage";
 import ProfilePage from "../pages/profile/ProfilePage";
 import EditProfilePage from "../pages/profile/EditProfilePage";
+import VerifyEmailPage from "../pages/profile/VerifyEmailPage";
+import VerifyPhonePage from "../pages/profile/VerifyPhonePage";
 
 export function PublicRoute({ children, redirectTo = "/app/dashboard" }) {
   const location = useLocation();
@@ -186,7 +187,8 @@ export default function AppRoutes() {
           <Route element={<ProfileLayout />}>
             <Route path="profile" element={<ProfilePage />} />
             <Route path="editProfile" element={<EditProfilePage />} />
-            <Route path="verifyProfile" element={<OtpProfilePage />} />
+            <Route path="verifyEmail" element={<VerifyEmailPage />} />
+            <Route path="verifyPhone" element={<VerifyPhonePage />} />
           </Route>
 
 

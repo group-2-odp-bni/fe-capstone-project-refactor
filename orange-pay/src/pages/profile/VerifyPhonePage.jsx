@@ -13,7 +13,7 @@ import axios from "axios";
 import ButtonLink from "../../components/button/ButtonLink";
 
 
-export default function OtpProfilePage() {
+export default function VerifyPhonePage() {
     return (
         <PhoneLayoutBackground>
             <MobileShell>

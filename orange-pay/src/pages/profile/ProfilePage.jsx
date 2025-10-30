@@ -64,6 +64,8 @@ export default function ProfilePage() {
             phone={profileData.phoneNumber}
             phoneVerified={profileData.phoneVerified}
             emailVerified={profileData.emailVerified}
+            emailVerifyLink="/app/verifyEmail"
+            phoneVerifyLink="/app/verifyPhone"
           />
 
           <div className="mt-6 space-y-3">

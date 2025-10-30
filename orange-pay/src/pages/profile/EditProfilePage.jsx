@@ -90,12 +90,8 @@ export default function EditProfilePage() {
 
             console.log("Profile updated:", response.data);
 
-            if (changedFields.email) {
-                navigate("/app/verifyProfile");
-            } else {
-                navigate("/app/profile");
-            }
-            
+            navigate("/app/profile");
+
         } catch (err) {
             console.error("Failed to update profile:", err);
             setError("Gagal menyimpan data. Silakan coba lagi.");
