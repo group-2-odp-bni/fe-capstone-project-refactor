@@ -576,16 +576,23 @@ Silakan bayar sesuai nominal ya! 🙏
 
 // ========== ATUR PEMBAYARAN ==========
 if (showAturPembayaran) {
-  // ✅ Filter: Hanya member yang belum lunas
-  const filteredMembers = displayData.members.filter(m => !paymentStatus[m.id]);
-  const filteredPerMember = perMemberVerified.filter(m => !paymentStatus[m.id]);
+  // ✅ FILTER REAL-TIME: Hanya member yang belum lunas berdasarkan paymentStatus terkini
+  const filteredMembers = displayData.members.filter(m => 
+    m.id !== currentUserId && // Exclude current user
+    !paymentStatus[m.id]      // Hanya yang belum bayar
+  );
+  
+  const filteredPerMember = perMemberVerified.filter(m => 
+    m.id !== currentUserId && // Exclude current user
+    !paymentStatus[m.id]      // Hanya yang belum bayar
+  );
 
   return (
     <AturPembayaran
       data={{
         ...displayData,
-        members: filteredMembers,  // ✅ GANTI dengan filtered
-        perMember: filteredPerMember,  // ✅ GANTI dengan filtered
+        members: filteredMembers,
+        perMember: filteredPerMember,
         splitId: splitId,
       }}
       paymentStatus={paymentStatus}

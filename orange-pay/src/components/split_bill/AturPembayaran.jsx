@@ -3,10 +3,9 @@ import { useEffect, useState } from "react";
 
 export default function AturPembayaran({ data, paymentStatus, setPaymentStatus, onBack }) {
   // ========== STATE MANAGEMENT ==========
-  const [localPaymentStatus, setLocalPaymentStatus] = useState(paymentStatus);
+  const [localPaymentStatus, setLocalPaymentStatus] = useState({});
   const [belumBayarAmount, setBelumBayarAmount] = useState(0);
-  const [showConfirmDialog, setShowConfirmDialog] = useState(false); // ✅ POPUP STATE
-  const [confirmedStatus, setConfirmedStatus] = useState(null); // ✅ TRACK CONFIRMED
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
   // ========== HELPER FUNCTIONS ==========
   const fmt = (n) => {
@@ -18,34 +17,26 @@ export default function AturPembayaran({ data, paymentStatus, setPaymentStatus, 
   };
   const currency = (n) => `Rp${fmt(n)}`;
 
-  // ========== LIFECYCLE: Load from localStorage & Calculate Belum Bayar ==========
-  useEffect(() => {
-    try {
-      if (data?.splitId) {
-        const savedStatus = localStorage.getItem(`splitbill_status_${data.splitId}`);
-        if (savedStatus) {
-          setLocalPaymentStatus(JSON.parse(savedStatus));
-        }
-      }
-    } catch (e) {
-      console.error('Load status error:', e);
-    }
-  }, [data?.splitId]);
-
-  // ========== CALCULATE BELUM BAYAR ==========
-  useEffect(() => {
-    const unpaidAmount = data.perMember
-      .filter(m => m.id !== data.currentUser?.id && !localPaymentStatus[m.id])
-      .reduce((sum, m) => sum + (m.total || 0), 0);
-    
-    setBelumBayarAmount(unpaidAmount);
-  }, [localPaymentStatus, data]);
-
   // ========== HELPER CONSTANTS ==========
   const currentUserId = data.currentUser?.id || "me";
   const now = new Date();
   const dateStr = now.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
   const timeStr = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+
+  // ========== LIFECYCLE: Initialize localPaymentStatus ==========
+  useEffect(() => {
+    // HANYA untuk UI checkboxes, BUKAN source of truth
+    setLocalPaymentStatus({});
+  }, [data.members]);
+
+  // ========== CALCULATE BELUM BAYAR ==========
+  useEffect(() => {
+    const unpaidAmount = data.perMember
+      .filter(m => m.id !== data.currentUser?.id && !paymentStatus[m.id])
+      .reduce((sum, m) => sum + (m.total || 0), 0);
+    
+    setBelumBayarAmount(unpaidAmount);
+  }, [paymentStatus, data]);
 
   // ========== TOGGLE SINGLE PAYMENT ==========
   const togglePayment = (memberId) => {
@@ -64,15 +55,14 @@ export default function AturPembayaran({ data, paymentStatus, setPaymentStatus, 
     setLocalPaymentStatus(newStatus);
   };
 
-// ========== CHECK IF ALL PAID ==========
-const areAllPaid = () => {
-  return data.members
-    .filter(m => m.id !== currentUserId)
-    .every(m => localPaymentStatus[m.id] || paymentStatus[m.id]);  // ✅ CEK KEDUANYA
-};
+  // ========== CHECK IF ALL PAID (HANYA dari localPaymentStatus) ==========
+  const areAllPaid = () => {
+    return data.members
+      .filter(m => m.id !== currentUserId)
+      .every(m => localPaymentStatus[m.id]);
+  };
 
-
-  // ========== SHOW CONFIRMATION DIALOG ========== 
+  // ========== SHOW CONFIRMATION DIALOG ==========
   const handleConfirmClick = () => {
     if (belumBayarAmount > 0) {
       setShowConfirmDialog(true);
@@ -81,14 +71,24 @@ const areAllPaid = () => {
     }
   };
 
-  // ========== CONFIRM YES - CLOSE DENGAN FILTER ==========
+  // ========== CONFIRM YES - MERGE & SIMPAN KE PARENT ==========
   const handleConfirmYes = () => {
     try {
-      setPaymentStatus(localPaymentStatus);
+      // MERGE: localPaymentStatus (UI checkbox) + paymentStatus (parent data)
+      const mergedStatus = {
+        ...paymentStatus,
+        ...localPaymentStatus
+      };
+      
+      setPaymentStatus(mergedStatus);
+      
       if (data?.splitId) {
-        localStorage.setItem(`splitbill_status_${data.splitId}`, JSON.stringify(localPaymentStatus));
+        localStorage.setItem(
+          `splitbill_paymentstatus_${data.splitId}`, 
+          JSON.stringify(mergedStatus)
+        );
       }
-      setConfirmedStatus(localPaymentStatus);
+      
       setShowConfirmDialog(false);
       
       // Close after delay
@@ -106,15 +106,10 @@ const areAllPaid = () => {
   };
 
   // ========== RENDER ==========
-  const totalAmount = data.perMember?.reduce((sum, m) => sum + (m.total || 0), 0) || 0;
+  const totalAmount = data.total || data.perMember?.reduce((sum, m) => sum + (m.total || 0), 0) || 0;
 
-// ✅ FILTER: Hanya tampilkan yang belum lunas (check paymentStatus dari props)
-const unpaidMembers = data.members
-  .filter(member => 
-    member.id !== currentUserId && 
-    !paymentStatus[member.id] &&  // ✅ TAMBAH: belum lunas dari parent (SplitBillConfirmed)
-    (!confirmedStatus || !confirmedStatus[member.id])
-  );
+  // ✅ FILTER: Gunakan data.members yang sudah difilter dari parent
+  const unpaidMembers = data.members || [];
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
@@ -140,8 +135,8 @@ const unpaidMembers = data.members
         </div>
       </div>
 
-{/* ========== CONTENT ========== */}
-<div className="flex-1 overflow-auto bg-white pb-24"> {/* ✅ TAMBAH pb-24 */}
+      {/* ========== CONTENT ========== */}
+      <div className="flex-1 overflow-auto bg-white pb-24">
         <div className="max-w-md mx-auto mt-2 px-4">
           <div className="w-full">
             <div className="relative">
@@ -188,7 +183,7 @@ const unpaidMembers = data.members
                           {/* ========== SELECT ALL CHECKBOX ========== */}
                           <div 
                             onClick={() => toggleAllPayments(!areAllPaid())}
-                            className="flex items-center justify-between py-3  rounded-lg mb-3 cursor-pointer hover:bg-gray-50 active:bg-gray-100 transition"
+                            className="flex items-center justify-between py-3 rounded-lg mb-3 cursor-pointer hover:bg-gray-50 active:bg-gray-100 transition"
                           >
                             <div className="flex-1">
                               <div className="text-sm font-bold text-gray-900">Semua Lunas</div>
@@ -201,7 +196,7 @@ const unpaidMembers = data.members
                             />
                           </div>
 
-                          {/* ========== MEMBER LIST - FULL BOX CLICKABLE ========== */}
+                          {/* ========== MEMBER LIST ========== */}
                           {unpaidMembers.length > 0 ? (
                             <div className="space-y-2">
                               {unpaidMembers.map((member, idx) => {
@@ -220,7 +215,7 @@ const unpaidMembers = data.members
                                         : 'border-gray-200 bg-white hover:bg-gray-50 active:bg-gray-100'
                                     }`}
                                   >
-                                    {/* ✅ AVATAR */}
+                                    {/* AVATAR */}
                                     <div className={`w-9 h-9 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0 transition-all ${
                                       isPaid 
                                         ? 'bg-gradient-to-br from-green-400 to-green-600' 
@@ -229,7 +224,7 @@ const unpaidMembers = data.members
                                       {initial}
                                     </div>
 
-                                    {/* ✅ NAME & PHONE */}
+                                    {/* NAME & PHONE */}
                                     <div className="flex-1 min-w-0">
                                       <div className={`text-sm font-bold flex items-center gap-2 break-words ${isPaid ? 'text-green-600' : 'text-gray-900'}`}>
                                         {member.name}
@@ -240,14 +235,14 @@ const unpaidMembers = data.members
                                       </div>
                                     </div>
 
-                                    {/* ✅ AMOUNT */}
+                                    {/* AMOUNT */}
                                     <div className="text-right flex-shrink-0">
                                       <div className="text-sm font-bold text-gray-900 whitespace-nowrap">
                                         {memberData ? currency(memberData.total) : '-'}
                                       </div>
                                     </div>
 
-                                    {/* ✅ CHECKBOX */}
+                                    {/* CHECKBOX */}
                                     <input 
                                       type="checkbox" 
                                       checked={isPaid}
@@ -287,25 +282,24 @@ const unpaidMembers = data.members
               </div>
             </div>
           </div>
+        </div>
+      </div>
 
-          {/* ========== ACTION BUTTON - STICKY ========== */}
-<div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-20">
-  <div className="max-w-md mx-auto px-4 py-4">
-    <button
-      onClick={handleConfirmClick}
-      className={`w-full py-3.5 rounded-xl text-white font-bold text-sm transition-all active:scale-[0.98] shadow-lg ${
-        belumBayarAmount > 0 
-          ? 'bg-gradient-to-r from-[#FF9A25] to-[#FF7A25] hover:shadow-xl' 
-          : 'bg-gradient-to-r from-green-400 to-green-600 hover:shadow-xl'
-      }`}
-    >
-      {belumBayarAmount > 0 
-        ? `Konfirmasi` 
-        : '✓ Semua Sudah Lunas!'}
-    </button>
-  </div>
-</div>
-
+      {/* ========== ACTION BUTTON - STICKY ========== */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-20">
+        <div className="max-w-md mx-auto px-4 py-4">
+          <button
+            onClick={handleConfirmClick}
+            className={`w-full py-3.5 rounded-xl text-white font-bold text-sm transition-all active:scale-[0.98] shadow-lg ${
+              belumBayarAmount > 0 
+                ? 'bg-gradient-to-r from-[#FF9A25] to-[#FF7A25] hover:shadow-xl' 
+                : 'bg-gradient-to-r from-green-400 to-green-600 hover:shadow-xl'
+            }`}
+          >
+            {belumBayarAmount > 0 
+              ? `Konfirmasi` 
+              : '✓ Semua Sudah Lunas!'}
+          </button>
         </div>
       </div>
 
@@ -322,7 +316,7 @@ const unpaidMembers = data.members
               </p>
             </div>
 
-            {/* DIALOG BODY - SHOW UNPAID AMOUNT */}
+            {/* DIALOG BODY */}
             <div className="text-center px-6 py-6">
               <div className="bg-orange-50 border-2 border-orange-200 rounded-lg p-4 mb-4">
                 <div className="text-xs text-gray-600 mb-1">Masih ada yang belum bayar:</div>
