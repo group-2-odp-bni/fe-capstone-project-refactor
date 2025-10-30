@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-
+//import Swal from "sweetalert2"; 
 export default function usePinSetupLogic() {
   const navigate = useNavigate();
   const { state } = useLocation();
@@ -55,8 +55,14 @@ export default function usePinSetupLogic() {
     // Set PIN flow is part of registration — after confirming PIN we should
     // route back to login so the user can sign in.
     if (fullName || email || phoneNumber) {
-      // Optionally persist a registration flag or similar here
-      navigate("/login", { replace: true });
+        Swal.fire({
+          icon: "success",
+          title: "SELAMAT BERGABUNG DI ORANGEPAY !!",
+          text: "Akun Anda telah berhasil dibuat!",
+          confirmButtonColor: "#FF9A25",
+        }).then(() => {
+          navigate("/login", { replace: true });
+        });
       return;
     }
 

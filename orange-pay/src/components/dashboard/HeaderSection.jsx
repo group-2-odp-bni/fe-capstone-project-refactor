@@ -17,7 +17,7 @@ export default function HeaderSection({
   
 
   return (
-    <div className="relative flex items-center justify-between sm:py-2 sm:px-8">
+    <div className="relative flex items-center justify-between sm:py-1 sm:px-1 px-1 py-1">
       {/* Left section: avatar + greeting (clickable) */}
       <div
         className="flex items-center gap-4 sm:gap-5 w-full sm:w-auto cursor-pointer transition hover:opacity-90 active:scale-[0.98]"
@@ -37,25 +37,6 @@ export default function HeaderSection({
             Welcome back
           </p>
         </div>
-      </div>
-
-      {/* Notification icon */}
-      <div className="absolute right-4 top-1/2 -translate-y-1/2 sm:static sm:translate-y-0">
-        <button
-          type="button"
-          aria-label="Open notifications"
-          className="btn btn-ghost btn-circle scale-105 sm:scale-110"
-          onClick={onBellClick}
-        >
-          <div className="indicator">
-            <BellIcon className="w-6 h-6 sm:w-8 sm:h-8 text-base-content/70" />
-            {unreadCount > 0 && (
-              <span className="indicator-item badge badge-sm bg-base-content/70 border-none">
-                {unreadCount > 99 ? '99+' : unreadCount}
-              </span>
-            )}
-          </div>
-        </button>
       </div>
     </div>
   )

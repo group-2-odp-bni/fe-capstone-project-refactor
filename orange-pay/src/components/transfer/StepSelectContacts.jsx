@@ -125,7 +125,7 @@ export default function StepSelectContacts() {
       contactName: c.name,
       accountId: c.accountId,
     });
-    setStep("details");
+    setStep("amount");
   };
 
   // 🚦 Handle manual number entry (user types and clicks)
