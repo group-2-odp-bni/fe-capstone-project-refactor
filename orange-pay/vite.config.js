@@ -16,18 +16,11 @@ export default defineConfig({
         secure: false,
       },
       //default receive wallet
-      "/api/v1/users/me/receive": {
+      "/api/v1/users/me": {
         target: "http://localhost:8080",
         changeOrigin: true,
         secure: false,
       },
-      //limit
-      "/api/v1/users/me/limits": {
-        target: "http://localhost:8080",
-        changeOrigin: true,
-        secure: false,
-      },
-
       // User service (8082)
       '/api/v1/user': {
         target: 'http://localhost:8082',
