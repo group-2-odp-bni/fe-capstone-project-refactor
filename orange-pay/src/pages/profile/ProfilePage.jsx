@@ -39,6 +39,8 @@ export default function ProfilePage() {
           name: user.name,
           email: user.email,
           phoneNumber: user.phoneNumber,
+          phoneVerified: user.phoneVerified,
+          emailVerified: user.emailVerified,
         });
       } catch (error) {
         console.error("Failed to fetch user profile:", error);
@@ -60,6 +62,8 @@ export default function ProfilePage() {
             name={profileData.name}
             email={profileData.email}
             phone={profileData.phoneNumber}
+            phoneVerified={profileData.phoneVerified}
+            emailVerified={profileData.emailVerified}
           />
 
           <div className="mt-6 space-y-3">

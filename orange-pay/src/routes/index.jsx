@@ -48,7 +48,7 @@ import PinLoginPage from "../pages/login/PinLoginPage";
 
 /* profile */
 import { ProfileProvider } from "../context/ProfileContext";
-import OtpProfilePage from "../pages/profile/OtpProfilePage";
+import OtpProfilePage from "../pages/profile/VerifyEmailPage";
 import ProfilePage from "../pages/profile/ProfilePage";
 import EditProfilePage from "../pages/profile/EditProfilePage";
 

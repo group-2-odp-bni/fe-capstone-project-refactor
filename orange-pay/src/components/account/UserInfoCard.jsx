@@ -1,4 +1,4 @@
-export default function UserInfoCard({ name, email, phone}){
+export default function UserInfoCard({ name, email, phone, phoneVerified, emailVerified}){
     return(
         <div className="max-w-md mx-auto mt-10 p-6 bg-white rounded-2xl shadow-md font-sans">
       <h2 className="text-2xl font-semibold text-center text-gray-800 mb-6">
