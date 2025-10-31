@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { createPortal } from "react-dom"; // ✅ DITAMBAH
+import MemberPayment from "./MemberPayment";
 
 // ✅ Helper Portal TANPA menghapus kode yang ada
 const Portal = ({ children }) => {
@@ -20,7 +21,10 @@ export default function SplitBillMember() {
   const [error, setError] = useState(null);
   const [receiptImage, setReceiptImage] = useState(null);
   const [openRows, setOpenRows] = useState({});
-  const [clickedButton, setClickedButton] = useState(null);
+
+  // state di parent
+const [showPay, setShowPay] = useState(false);
+const [payCtx, setPayCtx] = useState(null);
 
   // ====== HELPERS ======
   const fmt = useCallback((n) => {
@@ -359,6 +363,21 @@ export default function SplitBillMember() {
     );
   }
 
+// ====== FULLSCREEN: hanya tampilkan MemberPayment ======
+if (showPay) {
+  return (
+    <MemberPayment
+      open={true}
+      onClose={() => {
+        setShowPay(false);
+        // optional: setPayCtx(null);
+      }}
+      ctx={payCtx}
+    />
+  );
+}
+
+
   // ====== RENDER ======
   return (
     <div className="min-h-screen bg-white flex flex-col relative">
@@ -684,7 +703,18 @@ export default function SplitBillMember() {
                         {/* CTA: Atur Pembayaran (di bawah anggota) */}
                         <div className="mt-10 mb-12">
                           <button
-                            onClick={() => {}}
+                            // di onClick tombol:
+onClick={() => {
+  setPayCtx({
+    amount: memberTotal,
+    receiver: paymentReceiver,
+    splitName: data?.splitName || merchantName,
+    splitId,
+    memberId,
+    currency, // formatter dari file ini
+  });
+  setShowPay(true);
+}}
                             className="w-full px-6 py-3 rounded-full bg-[#EFA757] hover:bg-[#E5963A] text-white font-semibold
                                        flex items-center justify-center gap-2 shadow-sm active:scale-95 transition"
                           >
@@ -703,6 +733,12 @@ export default function SplitBillMember() {
                             </svg>
                             <span>Bayar Bagianmu</span>
                           </button>
+                          
+<MemberPayment
+  open={showPay}
+  onClose={() => setShowPay(false)}
+  ctx={payCtx}
+/>
                         </div>
                       </div>
                     </div>
