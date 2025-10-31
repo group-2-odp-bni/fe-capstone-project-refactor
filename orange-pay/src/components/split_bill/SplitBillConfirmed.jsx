@@ -620,9 +620,9 @@ if (showAturPembayaran) {
         </div>
       </div>
 
+{/* ✅ TAMBAH px-4 */}
       <div className="flex-1 overflow-auto bg-white">
         <div className={`max-w-md mx-auto transition-all duration-500 ${entered ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}>
-          
           <div className="mt-2 px-4"> {/* ✅ TAMBAH px-4 */}
   <div className="mx-0">
     <div ref={receiptRef} className="relative">

@@ -5,7 +5,7 @@ import SplitBillConfirmed from "./SplitBillConfirmed";
 
 export default function SplitBillConfirmation({
   splitName = "Rincian Split Bill",
-  currentUser = { id: "me", name: "Kamu", phoneMasked: "*7195" },
+  currentUser = { id: "me", name: "Kamu", phoneMasked: "*7198" },
   members = [],
   items = [],
   subtotal = 0,
