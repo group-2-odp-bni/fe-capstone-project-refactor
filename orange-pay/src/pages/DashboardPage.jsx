@@ -21,7 +21,7 @@ export default function DashboardPage() {
         console.log(response.data.data.name);
         setName(response.data.data.name);
       } catch (error) {
-        console.error("Failed to fetch user name:", error);
+        console.log("Failed to fetch user name:", error);
       }
     };
 

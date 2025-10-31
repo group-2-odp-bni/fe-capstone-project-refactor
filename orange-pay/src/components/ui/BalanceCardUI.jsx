@@ -7,10 +7,14 @@ import React, {
   useImperativeHandle,
 } from "react";
 import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
-import { Link, useNavigate } from "react-router-dom";
-
-/* ========== ATOMS ========== */
-
+import { useNavigate, Link } from "react-router-dom";
+const humanizeType = (t) => {
+  if (!t) return "";
+  const up = String(t).toUpperCase();
+  if (up === "PERSONAL") return "Personal";
+  if (up === "SHARED") return "Shared";
+  return t;
+};
 export const PillBadge = ({ label, active, style, onClick }) => (
   <button
     type="button"
@@ -65,10 +69,16 @@ export const ActionIcon = ({ label, children, to, onClick, asButton = false }) =
   }
 
   return (
-    <Link to={to} className={commonClass}>
+    <a
+      href={to || "#"}
+      className={commonClass}
+      onClick={(e) => !to && e.preventDefault()}
+    >
       <div className="w-6 md:w-7 h-auto mb-[2px]">{children}</div>
-      <span className="text-white text-[9.5px] md:text-[10px] leading-3">{label}</span>
-    </Link>
+      <span className="text-white text-[9.5px] md:text-[10px] leading-3">
+        {label}
+      </span>
+    </a>
   );
 };
 
@@ -245,6 +255,7 @@ export const CarouselViewport = forwardRef(function CarouselViewport(
 
   const PEEK = 25;
   const GAP = 10;
+  console.log("ss", items);
 
   const isInteractiveTarget = (el) =>
     !!(el && el.closest && el.closest("button, a, [role='button'], input, textarea, select, label"));
@@ -342,6 +353,7 @@ export const CarouselViewport = forwardRef(function CarouselViewport(
     }),
     [activeIndex]
   );
+  console.log("xvvs", items);
 
   return (
     <div
@@ -358,7 +370,10 @@ export const CarouselViewport = forwardRef(function CarouselViewport(
       onPointerUp={onPointerUp}
       onPointerCancel={onPointerUp}
     >
-      <div className="flex" style={{ width: "100%", gap: `${GAP}px`, padding: 0 }}>
+      <div
+        className="flex"
+        style={{ width: "100%", gap: `${GAP}px`, padding: 0 }}
+      >
         {items.map((item) => (
           <div key={item.id} className="snap-center shrink-0 p-0" style={{ width: `calc(100% - ${PEEK}px)` }}>
             {renderItem(item)}
