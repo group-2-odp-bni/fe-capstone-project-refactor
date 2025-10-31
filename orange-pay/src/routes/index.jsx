@@ -13,8 +13,7 @@ import RegisterPage from "../pages/register/RegisterPage";
 import OtpRegisterPage from "../pages/register/SetOtpPage";
 import SetPinPage from "../pages/register/SetPinPage";
 import WelcomePage from "../pages/WelcomePage";
-import LoginPage from "../pages/LoginPage";
-import ProfilePage from "../pages/ProfilePage";
+import LoginPage from "../pages/login/LoginPage";
 import SplitBillPage from "../pages/SplitBillPage";
 import SplitBillConfirmedPage from "../pages/SplitBillConfirmedPage";
 import SplitBillMemberPage from "../pages/SplitBillMemberPage";
@@ -190,16 +189,16 @@ export default function AppRoutes() {
             path="wallets/:walletId/members"
             element={<AssignMemberPage />}
           />
-              
           <Route path="profile" element={<ProfilePage />} />
           <Route path="splitbill" element={<SplitBillPage />} />
           <Route path="splitbill/:id" element={<SplitBillConfirmedPage />} />
-          <Route path="splitbill/:id/member/:memberId" element={<SplitBillMemberPage />} /> {/* ✅ FIX */}
-
-
+          <Route
+            path="splitbill/:id/member/:memberId"
+            element={<SplitBillMemberPage />}
+          />{" "}
+          {/* ✅ FIX */}
           {/* account page */}
           <Route path="account" element={<AccountLandingPage />} />
-
           {/* user profile page */}
           <Route element={<ProfileLayout />}>
             <Route path="profile" element={<ProfilePage />} />
@@ -207,9 +206,6 @@ export default function AppRoutes() {
             <Route path="verifyEmail" element={<VerifyEmailPage />} />
             <Route path="verifyPhone" element={<VerifyPhonePage />} />
           </Route>
-
-
-
           <Route path="wallets">
             <Route path="new" element={<AddWalletPage />} />
             <Route path=":walletId" element={<HistoryTransactionPage />} />{" "}
@@ -244,7 +240,6 @@ export default function AppRoutes() {
               </TransferProvider>
             }
           />
-
           {/* ----------- Reset flow placeholder ----------- */}
           <Route path="reset">{/* add reset pages later */}</Route>
         </Route>

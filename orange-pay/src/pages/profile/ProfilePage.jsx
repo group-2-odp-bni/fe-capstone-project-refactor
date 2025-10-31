@@ -11,11 +11,11 @@ import OrangeHeader from "../../components/register/OrangeHeader";
 import ProfileImage from "../../components/account/ProfileImage";
 import { clearTokens } from "../../services/auth/authService";
 import { FullActionButton } from "../../components/button/FullActionButton";
-import { useProfileContext } from "../../context/ProfileContext"; // ✅ use hook, not provider
+import { useProfileContext } from "../../context/ProfileContext";
 
 export default function ProfilePage() {
   const navigate = useNavigate();
-  const { profileData, setProfileData } = useProfileContext(); // ✅ fixed usage
+  const { profileData, setProfileData } = useProfileContext();
 
   const handleLogout = () => {
     clearTokens();
@@ -69,15 +69,11 @@ export default function ProfilePage() {
           />
 
           <div className="mt-6 space-y-3">
-            
             <FullActionButton onClick={() => navigate("/app/editProfile")}>
               Edit Data
             </FullActionButton>
 
-            <FullActionButton onClick={handleLogout}>
-              Keluar
-            </FullActionButton>
-
+            <FullActionButton onClick={handleLogout}>Keluar</FullActionButton>
           </div>
         </WhiteCardContainer>
       </MobileShell>
