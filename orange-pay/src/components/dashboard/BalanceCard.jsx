@@ -114,7 +114,6 @@ export default function AtomicBalanceCard({ initialWalletId = null }) {
             <div className="p-0" style={{ width: "100%" }}>
               <GradientCardShell bg={card.bg}>
                 <div className="relative" style={{ transformStyle: "preserve-3d" }}>
-                  {/* ===== CLICKABLE OVERLAY (matches card radius, excludes CTA area) ===== */}
                   {/* Mobile overlay */}
                   <div
                     role="button"
@@ -124,7 +123,6 @@ export default function AtomicBalanceCard({ initialWalletId = null }) {
                     data-allow-drag="true"
                     className="absolute inset-0 md:hidden z-20 rounded-[22px] focus:outline-none"
                     style={{
-                      // L-shaped polygon that *excludes* a bottom-right rectangle
                       clipPath: `polygon(
                         0% 0%,
                         100% 0%,
