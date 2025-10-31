@@ -216,7 +216,7 @@ export default function RecentHistory({ walletId, onExpandChange }) {
             <MonthChips activeMonth={activeMonth} onChange={setActiveMonth} />
           </div>
 
-          <h2 className="text-sm font-medium text-gray-600 mb-2">
+          <h2 className="text-sm font-medium text-gray-600 mt-8 mb-2">
             Riwayat Transaksi
           </h2>
 

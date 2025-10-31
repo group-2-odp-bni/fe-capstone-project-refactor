@@ -58,6 +58,7 @@ export default function BalanceCard({ walletId: walletIdProp /*, links */ }) {
             title={selectedCard.title}
             type={selectedCard.type}
             isMain={selectedCard.type === "utama"}
+            wallet={selectedCard.walletName}
           />
           <BalanceRow
             amount={balance}
