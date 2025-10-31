@@ -6,7 +6,7 @@ import React, {
   useImperativeHandle,
 } from "react";
 import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 const humanizeType = (t) => {
   if (!t) return "";
@@ -67,7 +67,6 @@ export const HistoryButton = ({ walletId }) => (
 
 /**
  * ActionIcon
- * - renders a Link when `to` is provided (and neither onClick nor asButton),
  * - renders a button when `onClick` or `asButton` is truthy.
  */
 export const ActionIcon = ({
@@ -95,13 +94,12 @@ export const ActionIcon = ({
     );
   }
 
+  // keep fallback to anchor if someone passes `to` without handler
   return (
-    <Link to={to} className={commonClass}>
+    <a href={to || "#"} className={commonClass} onClick={(e) => !to && e.preventDefault()}>
       <div className="w-6 md:w-7 h-auto mb-[2px]">{children}</div>
-      <span className="text-white text-[9.5px] md:text-[10px] leading-3">
-        {label}
-      </span>
-    </Link>
+      <span className="text-white text-[9.5px] md:text-[10px] leading-3">{label}</span>
+    </a>
   );
 };
 
@@ -152,21 +150,54 @@ export const AmountText = ({ amount, isHidden, onMeasured }) => {
     </div>
   );
 };
-export const GradientCardShell = ({ bg, outerGlow, children }) => (
-  <div className="p-0" style={{ perspective: 1000 }}>
-    <div
-      className="rounded-[22px] p-[1px] relative transition-[box-shadow,transform] duration-500 will-change-transform hover:translate-y-[1px]"
-      style={{ boxShadow: outerGlow, background: bg }}
-    >
+
+/* ========== Shell / card frame (now clickable) ========== */
+
+export const GradientCardShell = ({
+  bg,
+  outerGlow,
+  children,
+  className = "",
+  onClick,
+  onKeyDown,
+  role,
+  tabIndex,
+  ...rest
+}) => {
+  const isInteractive = Boolean(onClick);
+  const interactiveProps = isInteractive
+    ? {
+        role: role || "button",
+        tabIndex: tabIndex ?? 0,
+        onClick,
+        onKeyDown,
+        className:
+          "relative text-white rounded-[22px] p-5 md:p-6 overflow-hidden will-change-transform transition-transform duration-500 focus:outline-none focus:ring-2 focus:ring-white/50 cursor-pointer " +
+          className,
+      }
+    : {
+        className:
+          "relative text-white rounded-[22px] p-5 md:p-6 overflow-hidden will-change-transform transition-transform duration-500 " +
+          className,
+      };
+
+  return (
+    <div className="p-0" style={{ perspective: 1000 }}>
       <div
-        className="relative text-white rounded-[22px] p-5 md:p-6 overflow-hidden will-change-transform transition-transform duration-500"
-        style={{ background: bg, transformStyle: "preserve-3d" }}
+        className="rounded-[22px] p-[1px] relative transition-[box-shadow,transform] duration-500 will-change-transform hover:translate-y-[1px]"
+        style={{ boxShadow: outerGlow, background: bg }}
       >
-        {children}
+        <div
+          {...interactiveProps}
+          style={{ background: bg, transformStyle: "preserve-3d" }}
+          {...rest}
+        >
+          {children}
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 export const CardTopBar = ({ title, type, isMain, onBadgeClick }) => {
   const badgeLabel = isMain ? "Utama" : humanizeType(type);
@@ -193,7 +224,7 @@ export const CardTopBar = ({ title, type, isMain, onBadgeClick }) => {
 /**
  * CTASection props:
  * - links: object of route strings { split, topup, addbalancefromwallet, transfer }
- * - walletId: current wallet id (string)
+ * - walletId: current wallet id (string)  // kept for compatibility, not used here
  * - type: string, card.type (defaults to "utama")
  * - isDraggingRef: optional ref to block navigation when dragging
  */
@@ -243,7 +274,7 @@ export const CTASection = ({
 
   return (
     <div
-      className="relative z-10 flex justify-between items-center mt-6 md:mt-14"
+      className="relative z-10 flex justify-end items-center mt-6 md:mt-14"
       style={{ transform: "translateZ(25px)" }}
     >
       {/* History always available */}
@@ -334,6 +365,7 @@ export const CarouselViewport = forwardRef(function CarouselViewport(
 
   const PEEK = 25;
   const GAP = 10;
+console.log('ss', items);
 
   const isInteractiveTarget = (el) =>
     !!(
@@ -428,13 +460,14 @@ export const CarouselViewport = forwardRef(function CarouselViewport(
       get index() {
         return activeIndex;
       },
-      // also expose dragging ref so parent/UI can wire it to CTASection
+      // expose dragging ref if parent wants to check it
       get isDraggingRef() {
         return isDraggingRef;
       },
     }),
     [activeIndex]
   );
+      console.log('xvvs', items);
 
   return (
     <div
@@ -451,6 +484,8 @@ export const CarouselViewport = forwardRef(function CarouselViewport(
       onPointerUp={onPointerUp}
       onPointerCancel={onPointerUp}
     >
+      
+      <div className="flex" style={{ width: "100%", gap: `${GAP}px`, padding: 0 }}>
       <div
         className="flex"
         style={{ width: "100%", gap: `${GAP}px`, padding: 0 }}
@@ -474,7 +509,6 @@ export const CarouselViewport = forwardRef(function CarouselViewport(
 export default {
   PillBadge,
   IconToggle,
-  HistoryButton,
   ActionIcon,
   AmountText,
   GradientCardShell,

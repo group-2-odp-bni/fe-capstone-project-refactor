@@ -1,10 +1,10 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import PageHeader from "../components/page_header/PageHeader";
+// import PageHeader from "../components/page_header/PageHeader";
 import BalanceCard from "../components/history_transaksi/BalanceCard";
 import RecentHistory from "../components/history_transaksi/RecentHistory";
 import ArrowButton from "../components/common/ArrowButton";
-import DynamicShell from "../components/layout/DynamicShell";
+import DynamicShell from "../components/layout/dynamicShell";
 import { PlusIcon, UserIcon } from "@heroicons/react/24/solid";
 import useCardBalances from "../hooks/api/useCardBalances";
 import LoadingSpinner from "../components/common/LoadingSpinner";
@@ -100,7 +100,7 @@ export default function HistoryTransactionPage() {
             </button>
             <button
               onClick={handleViewPeople}
-              className="w-10 h-10 flex items-center justify-center rounded-xl border border-orange-400 text-orange-500 bg-white shadow-sm active:scale-95 transition"
+              className="w-10 h-10 flex items-center justify-center rounded-xl border border-orange-400 text-[#FF9A25] bg-white shadow-sm active:scale-95 transition"
             >
               <UserIcon className="w-5 h-5" />
             </button>

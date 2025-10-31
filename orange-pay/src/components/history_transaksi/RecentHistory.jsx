@@ -107,7 +107,7 @@ export default function RecentHistory({
   const renderTransactionItem = (item) => {
     const isIncome = isIncomeType(item.type);
     const sign = isIncome ? "+" : "−";
-    const amountColor = isIncome ? "text-emerald-500" : "text-red-600";
+    const amountColor = isIncome ? "text-emerald-500" : "text-black-600";
     const leftSub = isIncome
       ? "Transfer Masuk"
       : String(item.type).toLowerCase() === "kirim"
@@ -129,7 +129,7 @@ export default function RecentHistory({
             <p className="text-xs text-gray-500 truncate">{leftSub}</p>
           </div>
           <div className="text-right">
-            <p className={`text-sm font-semibold ${amountColor}`}>
+            <p className={`text-sm ${amountColor}`}>
               {sign} Rp{fmt(item.amount)}
             </p>
             <p className="text-[11px] text-gray-500">{rightSub}</p>
@@ -161,7 +161,7 @@ export default function RecentHistory({
             <MonthChips activeMonth={activeMonth} onChange={setActiveMonth} />
           </div>
 
-          <h2 className="text-sm font-medium text-gray-600 mb-2">
+          <h2 className="text-sm font-medium text-gray-600 mt-8 mb-2">
             Riwayat Transaksi
           </h2>
 

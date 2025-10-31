@@ -43,6 +43,7 @@ export default function BalanceCard({
             active={!!isMain}
             style={{ transform: "translateZ(35px)" }}
           />
+          {/* <CTASection links={links} walletId={selectedCard.id} type={selectedCard.type} /> */}
         </div>
       </div>
 

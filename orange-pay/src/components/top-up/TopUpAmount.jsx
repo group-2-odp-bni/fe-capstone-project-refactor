@@ -166,11 +166,11 @@ export default function TopUpAmount({
           />
         </div>
 
-        {pretty ? (
+        {/* {pretty ? (
           <p className="text-xs text-gray-500">≈ Rp {pretty}</p>
         ) : (
           <div className="h-5" />
-        )}
+        )} */}
 
         {error && (
           <p id="amount-error" className="text-sm text-red-600 mt-2">
@@ -184,16 +184,16 @@ export default function TopUpAmount({
         className="fixed inset-x-0 bottom-0 bg-white shadow-[0_-2px_8px_rgba(0,0,0,0.05)]"
         style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 16px)" }}
       >
-        <div className="px-4 pt-3">
-          <div className="mb-2 flex items-center justify-between">
-            <div className="text-xs text-gray-600">
+        <div className="px-9 pt-8">
+          <div className="mb-5 flex items-center justify-between">
+            <div className="text-m text-gray-600">
               {selectedCard ? (
                 <>From <span className="font-medium text-gray-900">{selectedCard.brand}</span></>
               ) : (
                 "No card selected"
               )}
             </div>
-            <div className="text-xs text-gray-500">{pretty ? `Rp ${pretty}` : ""}</div>
+            <div className="text-xl text-black-500">{pretty ? `Rp ${pretty}` : ""}</div>
           </div>
 
           <button

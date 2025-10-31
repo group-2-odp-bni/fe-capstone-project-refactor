@@ -13,12 +13,14 @@ import RegisterPage from "../pages/register/RegisterPage";
 import OtpRegisterPage from "../pages/register/SetOtpPage";
 import SetPinPage from "../pages/register/SetPinPage";
 import WelcomePage from "../pages/WelcomePage";
-import LoginPage from "../pages/login/LoginPage";
+import LoginPage from "../pages/LoginPage";
+import ProfilePage from "../pages/ProfilePage";
+import SplitBillPage from "../pages/SplitBillPage";
+import SplitBillConfirmedPage from "../pages/SplitBillConfirmedPage";
+import SplitBillMemberPage from "../pages/SplitBillMemberPage";
 
 import OtpStage from "../components/login/OtpStage";
 import PinStage from "../components/login/PinStage";
-import ResetPhone from "../components/login/ResetPhone";
-import ResetOtp from "../components/login/ResetOtp";
 import ResetSetPin from "../components/login/ResetSetPin";
 import ResetPin from "../components/login/ResetPin";
 import ResetPinOtp from "../components/login/ResetPinOtp";
@@ -177,6 +179,22 @@ export default function AppRoutes() {
           <Route path="transactions" element={<HistoryTransactionPage />} />
           <Route path="topup" element={<TopUpPage />} />
           <Route path="receipt/:trxId" element={<ReceiptPage />} />
+          {/* === TESTING ROUTE (tanpa param): buka /app/members-test === */}
+          <Route
+            path="members-test"
+            element={
+              <AssignMemberPage walletIdOverride="d69f4f9d-ec91-4d43-8db0-3006185c1090" />
+            }
+          />
+          <Route
+            path="wallets/:walletId/members"
+            element={<AssignMemberPage />}
+          />
+              
+          <Route path="profile" element={<ProfilePage />} />
+          <Route path="splitbill" element={<SplitBillPage />} />
+          <Route path="splitbill/:id" element={<SplitBillConfirmedPage />} />
+          <Route path="splitbill/:id/member/:memberId" element={<SplitBillMemberPage />} /> {/* ✅ FIX */}
 
 
           {/* account page */}
