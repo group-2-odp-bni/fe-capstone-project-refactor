@@ -56,6 +56,7 @@ import EditProfilePage from "../pages/profile/EditProfilePage";
 import VerifyEmailPage from "../pages/profile/VerifyEmailPage";
 import VerifyPhonePage from "../pages/profile/VerifyPhonePage";
 import AccountLandingPage from "../pages/account/AccountLandingPage";
+import TransactionLimitPage from "../pages/transactionLimit/TransactionLimitPage";
 
 export function PublicRoute({ children, redirectTo = "/app/dashboard" }) {
   const location = useLocation();
@@ -206,6 +207,12 @@ export default function AppRoutes() {
             <Route path="verifyEmail" element={<VerifyEmailPage />} />
             <Route path="verifyPhone" element={<VerifyPhonePage />} />
           </Route>
+
+          {/* user transaction limit page */}
+          <Route path="transactionLimit" element={<TransactionLimitPage />} />
+
+
+
           <Route path="wallets">
             <Route path="new" element={<AddWalletPage />} />
             <Route path=":walletId" element={<HistoryTransactionPage />} />{" "}
