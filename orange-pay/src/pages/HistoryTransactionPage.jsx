@@ -56,14 +56,14 @@ export default function HistoryTransactionPage() {
           <div className="button-group flex justify-center gap-3 mt-3 md:mt-4 relative">
             <button
               onClick={handleAddBalanceFromWallet} // ✅ HERE
-              className="w-10 h-10 flex items-center justify-center rounded-xl bg-orange-500 text-white shadow-md active:scale-95 transition"
+              className="w-10 h-10 flex items-center justify-center rounded-xl bg-[#FF9A25] text-white active:scale-95 transition"
             >
               <PlusIcon className="w-5 h-5" />
             </button>
 
             <button
               onClick={handleViewPeople}
-              className="w-10 h-10 flex items-center justify-center rounded-xl border border-orange-400 text-orange-500 bg-white shadow-sm active:scale-95 transition"
+              className="w-10 h-10 flex items-center justify-center rounded-xl border border-orange-400 text-[#FF9A25] bg-white shadow-sm active:scale-95 transition"
             >
               <UserIcon className="w-5 h-5" />
             </button>

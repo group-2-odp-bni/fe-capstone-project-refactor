@@ -245,6 +245,7 @@ export const CarouselViewport = forwardRef(function CarouselViewport(
 
   const PEEK = 25;
   const GAP = 10;
+console.log('ss', items);
 
   const isInteractiveTarget = (el) =>
     !!(el && el.closest && el.closest("button, a, [role='button'], input, textarea, select, label"));
@@ -342,6 +343,7 @@ export const CarouselViewport = forwardRef(function CarouselViewport(
     }),
     [activeIndex]
   );
+      console.log('xvvs', items);
 
   return (
     <div
@@ -359,6 +361,7 @@ export const CarouselViewport = forwardRef(function CarouselViewport(
       onPointerUp={onPointerUp}
       onPointerCancel={onPointerUp}
     >
+      
       <div className="flex" style={{ width: "100%", gap: `${GAP}px`, padding: 0 }}>
         {items.map((item) => (
           <div key={item.id} className="snap-center shrink-0 p-0" style={{ width: `calc(100% - ${PEEK}px)` }}>

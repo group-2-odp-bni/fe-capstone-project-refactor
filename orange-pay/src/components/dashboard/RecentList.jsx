@@ -53,7 +53,7 @@ export default function RecentList() {
                 {users.map((user) => {
                   const isIncome = user.type?.toLowerCase() === "terima";
                   const sign = isIncome ? "+" : "−";
-                  const amountColor = isIncome ? "text-emerald-500" : "text-red-600";
+                  const amountColor = isIncome ? "text-emerald-500" : "text-black-600";
                   const rightSub = `${user.dateLabel} · ${user.timeLabel}`;
 
                   return (

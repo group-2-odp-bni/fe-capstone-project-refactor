@@ -24,6 +24,15 @@ const PillBadge = ({ label, active, style }) => (
   </button>
 );
 
+const PillBadge2 = ({ label, active, style }) => (
+  <button
+    type="text"
+    className={"px-2.5 py-1 font-bold text-white shadow-sm transition-all duration-300"}
+  >
+    {label}
+  </button>
+);
+
 const IconToggle = ({ on, onToggle }) => (
   <button onClick={onToggle} className="active:scale-95" style={{ transform: "translateZ(35px)" }}>
     {on ? (
@@ -75,7 +84,7 @@ const AmountText = ({ amount, isHidden, onMeasured }) => {
       >
         Rp{stars}
       </span>
-      <span className="invisible text-2xl md:text-3xl font-bold font-[Poppins]">{formatted}</span>
+      <span className="invisible text-2xl md:text-3xl font-bold font-[Poppins]">{formatted}</span>    
     </div>
   );
 };
@@ -84,7 +93,7 @@ const GradientCardShell = ({ bg, children }) => (
   <div className="p-0" style={{ perspective: 1000 }}>
     <div
       className="rounded-[22px] p-[1px] relative transition-[box-shadow,transform] duration-300 will-change-transform hover:translate-y-[1px]"
-      style={{background: bg }}
+      style={{ background: bg }}
     >
       <div
         className="relative text-white rounded-[22px] p-5 md:p-6 overflow-hidden will-change-transform transition-transform duration-200"
@@ -96,11 +105,15 @@ const GradientCardShell = ({ bg, children }) => (
   </div>
 );
 
-const CardTopBar = ({ title }) => (
+const CardTopBar = ({ title, wallet }) => (
   <div className="relative z-10 flex justify-between items-start mb-5 md:mb-10">
     <div className="flex items-center space-x-3 mt-1 mb-2">
       <img src="/orangepay_card.svg" alt="RangePay Logo" className="h-5 md:h-6 w-auto drop-shadow" />
       <PillBadge label={title} active />
+    </div>
+    
+    <div className="absolute  right-4 z-20 text-white font-semibold text-md md:text-base leading-none">
+      <PillBadge2 label={wallet} />
     </div>
   </div>
 );
@@ -133,7 +146,7 @@ export default function BalanceCard({ walletId }) {
   const { items = [], loading, error, refetch } = useCardBalances();
   const [isHidden, setIsHidden] = useState(false);
   const [selectedCard, setSelectedCard] = useState(null);
-
+  
   // cari kartu sesuai walletId dari route
   useEffect(() => {
     if (items.length > 0) {
@@ -147,7 +160,7 @@ export default function BalanceCard({ walletId }) {
       <div className="text-center text-gray-500 py-8">
         Memuat kartu...
       </div>
-    );
+    );   
 
   const balance = Number(selectedCard.displayBalance ?? selectedCard.balance ?? selectedCard.initialBalance ?? 0);
 
@@ -155,9 +168,7 @@ export default function BalanceCard({ walletId }) {
     <div className="w-full mx-auto md:px-4 mt-4">
       <GradientCardShell bg={selectedCard.bg}>
         <div className="relative" style={{ transformStyle: "preserve-3d" }}>
-          <CardTopBar 
-          title={selectedCard.title}
-          />
+          <CardTopBar title={selectedCard.title}  wallet={selectedCard.walletName}/>
           <BalanceRow
             amount={balance}
             isHidden={isHidden}
