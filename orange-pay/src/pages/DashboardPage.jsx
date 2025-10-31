@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import QuickTransfer from "../components/dashboard/QuickTransfer";
 import RecentList from "../components/dashboard/RecentList";
-import DynamicShell from "../components/layout/DynamicShell";
+import DynamicShell from "../components/layout/dynamicShell";
 import HeaderSection from "../components/dashboard/HeaderSection";
 import BalanceCard from "../components/dashboard/BalanceCard";
 
@@ -21,7 +21,7 @@ export default function DashboardPage() {
         console.log(response.data.data.name);
         setName(response.data.data.name);
       } catch (error) {
-        console.error("Failed to fetch user name:", error);
+        console.log("Failed to fetch user name:", error);
       }
     };
 

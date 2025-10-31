@@ -6,8 +6,7 @@ import React, {
   useImperativeHandle,
 } from "react";
 import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
-import { useNavigate } from "react-router-dom";
-
+import { useNavigate, Link } from "react-router-dom";
 const humanizeType = (t) => {
   if (!t) return "";
   const up = String(t).toUpperCase();
@@ -96,9 +95,15 @@ export const ActionIcon = ({
 
   // keep fallback to anchor if someone passes `to` without handler
   return (
-    <a href={to || "#"} className={commonClass} onClick={(e) => !to && e.preventDefault()}>
+    <a
+      href={to || "#"}
+      className={commonClass}
+      onClick={(e) => !to && e.preventDefault()}
+    >
       <div className="w-6 md:w-7 h-auto mb-[2px]">{children}</div>
-      <span className="text-white text-[9.5px] md:text-[10px] leading-3">{label}</span>
+      <span className="text-white text-[9.5px] md:text-[10px] leading-3">
+        {label}
+      </span>
     </a>
   );
 };
@@ -365,7 +370,7 @@ export const CarouselViewport = forwardRef(function CarouselViewport(
 
   const PEEK = 25;
   const GAP = 10;
-console.log('ss', items);
+  console.log("ss", items);
 
   const isInteractiveTarget = (el) =>
     !!(
@@ -467,7 +472,7 @@ console.log('ss', items);
     }),
     [activeIndex]
   );
-      console.log('xvvs', items);
+  console.log("xvvs", items);
 
   return (
     <div
@@ -484,8 +489,6 @@ console.log('ss', items);
       onPointerUp={onPointerUp}
       onPointerCancel={onPointerUp}
     >
-      
-      <div className="flex" style={{ width: "100%", gap: `${GAP}px`, padding: 0 }}>
       <div
         className="flex"
         style={{ width: "100%", gap: `${GAP}px`, padding: 0 }}
