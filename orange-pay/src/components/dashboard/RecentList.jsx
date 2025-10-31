@@ -11,7 +11,7 @@ export default function RecentList() {
     <section className="mt-6">
       <div
         onClick={() => navigate("/app/allhistory")}
-        className="px-3 flex items-center justify-between cursor-pointer group"
+        className=" flex items-center justify-between cursor-pointer group"
       >
         <h3 className="font-semibold text-lg text-gray-900 mb-3 text-left group-hover:text-primary transition-colors">
           Recent

@@ -105,7 +105,7 @@ export default function TransactionList({ walletId = null, onTransactionClick = 
   }
 
   return (
-    <div className="divide-y divide-gray-200">
+    <div className="">
       {sections.map((section) => (
         <div key={section.date} className="px-3 py-3">
           {/* Section date header */}
@@ -117,7 +117,7 @@ export default function TransactionList({ walletId = null, onTransactionClick = 
             {section.items.map((t) => {
               const isIncome = String(t.type ?? "").toLowerCase() === "terima";
               const sign = isIncome ? "+" : "−";
-              const amountColor = isIncome ? "text-emerald-500" : "text-red-600";
+              const amountColor = isIncome ? "text-emerald-500" : "text-black-400";
               const subtitle =
                 isIncome
                   ? "Transfer Masuk"
@@ -129,7 +129,7 @@ export default function TransactionList({ walletId = null, onTransactionClick = 
                 <li key={t.id}>
                   <button
                     onClick={() => onTransactionClick?.(t)}
-                    className="w-full flex items-center justify-between rounded-2xl py-3 bg-white"
+                    className="w-full flex  justify-between py-2 bg-white border-b border-gray-200"
                     aria-label={`Open receipt for ${t.name}`}
                   >
                     {/* Left info */}

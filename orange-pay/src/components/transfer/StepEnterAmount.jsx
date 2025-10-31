@@ -203,7 +203,7 @@ export default function StepEnterAmount() {
       </div>
 
       {/* Confirm button fixed at bottom */}
-      <div className="px-5 pb-6">
+      <div className="bottom-0 px-5 pb-6">
         <ConfirmButton onClick={() => setStep("confirm")} disabled={!canConfirm}>
           Confirm
         </ConfirmButton>

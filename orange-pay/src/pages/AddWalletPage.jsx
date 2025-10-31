@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import DynamicShell from "../components/layout/DynamicShell";
+import DynamicShell from "../components/layout/dynamicShell";
 import BackBar from "../components/add_wallet/BackBar";
 import WalletTypeOption from "../components/add_wallet/WalletTypeOption";
 import WalletCardPreview from "../components/add_wallet/WalletCardPreview";

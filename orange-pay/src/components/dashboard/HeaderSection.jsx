@@ -17,7 +17,7 @@ export default function HeaderSection({
   
 
   return (
-    <div className="relative flex items-center justify-between sm:py-2 sm:px-8">
+    <div className="relative flex items-center justify-between sm:py-1 sm:px-1 px-1 py-1">
       {/* Left section: avatar + greeting (clickable) */}
       <div
         className="flex items-center gap-4 sm:gap-5 w-full sm:w-auto cursor-pointer transition hover:opacity-90 active:scale-[0.98]"
