@@ -139,14 +139,10 @@ export default function AtomicBalanceCard({ initialWalletId = null }) {
           return (
             <div className="p-0" style={{ width: "100%" }}>
               <GradientCardShell bg={card.bg}>
-<<<<<<< HEAD
-                <div className="relative" style={{ transformStyle: "preserve-3d" }}>
-=======
                 <div
                   className="relative"
                   style={{ transformStyle: "preserve-3d" }}
                 >
->>>>>>> f11bf27feb739fcd066ce7232382574724e7749c
                   <CardTopBar
                     title={card.title}
                     type={card.type}
