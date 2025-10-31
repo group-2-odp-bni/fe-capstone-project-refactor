@@ -1,9 +1,10 @@
 // src/components/dashboard/AtomicBalanceCard.jsx
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import useCardBalances from "../../hooks/api/useCardBalances";
 import ScrollProgress from "../ui/ScrollProgress";
 import AddWalletCard from "../ui/AddWalletCard";
+import { useLocation, useNavigate } from "react-router-dom";
+
 import {
   GradientCardShell,
   CardTopBar,
@@ -43,15 +44,21 @@ export default function AtomicBalanceCard({ initialWalletId = null }) {
     if (activeIndex >= items.length) setActiveIndex(0);
   }, [items.length, activeIndex]);
 
-  const handleCreateWallet = () => navigate("/app/wallets/new");
   const isCardLoading = () => Boolean(loading);
+
+  // create wallet (logic only)
+  const handleCreateWallet = async () => {
+    useNavigate("/app/wallets/new");
+  };
 
   const attachWalletToLinks = (links = {}, walletId) => {
     if (!links || !walletId) return links;
     const out = {};
     Object.entries(links).forEach(([k, p]) => {
       if (!p) return;
-      out[k] = p.includes("?") ? `${p}&wallet=${walletId}` : `${p}?wallet=${walletId}`;
+      out[k] = p.includes("?")
+        ? `${p}&wallet=${walletId}`
+        : `${p}?wallet=${walletId}`;
     });
     return out;
   };
@@ -78,10 +85,14 @@ export default function AtomicBalanceCard({ initialWalletId = null }) {
   };
 
   return (
-    <div className="w-full mx-auto md:px-1 mt-6">
-      <h3 className="px-0 font-semibold text-lg text-gray-900 mb-3 md:px-0 text-left">Your Wallet</h3>
+    <div className="w-full mx-auto md:px-1 mt-6 ">
+      {/* header/title is fine here — small presentational bit */}
+      <h3 className="px-0 font-semibold text-lg text-gray-900 mb-3 md:px-0 text-left">
+        Your Wallet
+      </h3>
 
-      <div className="flex flex-wrap items-center justify-center gap-2">
+      {/* tabs: purely trigger logic, no heavy UI here (visuals live in BalanceCardUI) */}
+      <div className="flex flex-wrap items-center justify-center gap-2 ">
         {tabs.map((c, i) => (
           <button key={c.id} title={c.title} onClick={() => goTo(i)} type="button" className="sr-only" />
         ))}
@@ -101,7 +112,12 @@ export default function AtomicBalanceCard({ initialWalletId = null }) {
             );
           }
 
-          const amount = Number(card.displayBalance ?? card.balance ?? card.initialBalance ?? 0);
+          // calculate amount (logic)
+          const amount = Number(
+            card.displayBalance ?? card.balance ?? card.initialBalance ?? 0
+          );
+
+          // prepare links (append wallet query so downstream knows source)
           const linksWithWallet = attachWalletToLinks(card.links, card.id);
           const historyHref =
             linksWithWallet?.history ||
@@ -155,6 +171,10 @@ export default function AtomicBalanceCard({ initialWalletId = null }) {
                     }}
                   />
 
+                <div
+                  className="relative"
+                  style={{ transformStyle: "preserve-3d" }}
+                >
                   <CardTopBar
                     title={card.title}
                     type={card.type}
@@ -181,8 +201,8 @@ export default function AtomicBalanceCard({ initialWalletId = null }) {
                     <CTASection
                       links={linksWithWallet}
                       walletId={card.id}
-                      type={card.type}
-                      isDraggingRef={viewportRef.current?.isDraggingRef}
+                      type={card.type} // <-- pass card.type
+                      isDraggingRef={extras?.isDraggingRef} // <-- pass dragging ref so transfer is blocked during drag
                     />
                   </div>
                 </div>

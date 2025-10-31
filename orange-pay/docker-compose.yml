@@ -1,9 +1,9 @@
-version: "3.8"
-
+name: fe-orange-local
 services:
-  orange-pay-app:
-    build: .
-    container_name: orange-pay-app
-    restart: unless-stopped
+  app_fe:
+    build:
+      context: .
+    image: orange/fe:vite-local
     ports:
-      - "8080:80"
+      - "127.0.0.1:3000:80"
+    restart: unless-stopped

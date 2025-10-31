@@ -1,207 +1,94 @@
-import React, { useState } from "react";
+import React, { useMemo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import PinKeypad from "../components/register/PinKeypad";
-import PinDots from "../components/register/PinDots";
+import useBalanceCards from "../hooks/api/useCardBalances";
+import Header from "../components/Header";
 
-const ConfirmAddBalancePage = () => {
+const formatRp = (n) => `Rp${(n || 0).toLocaleString("id-ID")}`;
+const InfoRow = ({ label, value }) => (
+  <div className="flex justify-between items-center text-sm py-3">
+    <span className="text-gray-500">{label}</span>
+    <span className="font-medium text-gray-900">{value}</span>
+  </div>
+);
+
+export default function ConfirmAddBalancePage() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { fromId, toId, amount } = location.state || {};
+  const { items, loading } = useBalanceCards();
+  const allWallets = useMemo(() => items.filter((w) => !w.isAddCard), [items]);
 
-  const [showPin, setShowPin] = useState(false);
-  const [step, setStep] = useState(1); // 1 = Masukkan PIN, 2 = Konfirmasi PIN
-  const [pin, setPin] = useState("");
-  const [confirmPin, setConfirmPin] = useState("");
-  const [errorMsg, setErrorMsg] = useState("");
+  const fromWallet = useMemo(
+    () => allWallets.find((w) => w.id === fromId),
+    [allWallets, fromId]
+  );
 
-  const { selected, amount } = location.state || {};
+  const toWallet = useMemo(
+    () => allWallets.find((w) => w.id === toId),
+    [allWallets, toId]
+  );
 
-  if (!selected || !amount) {
-    navigate("/app/add-balance", { replace: true });
+  if (!fromId || !toId || !amount) {
+    useEffect(() => navigate(-1), [navigate]);
     return null;
   }
+  const fee = 0;
+  const total = amount + fee;
 
-  const formatRupiah = (val) =>
-    new Intl.NumberFormat("id-ID", {
-      style: "decimal",
-      minimumFractionDigits: 0,
-    }).format(val);
-
-  const biayaTransaksi = 0;
-  const total = parseInt(amount.replace(/\./g, "")) + biayaTransaksi;
-
-  // PIN Logic
-  const handleNumber = (n) => {
-    setErrorMsg("");
-    if (step === 1 && pin.length < 6) setPin((p) => p + String(n));
-    if (step === 2 && confirmPin.length < 6)
-      setConfirmPin((p) => p + String(n));
-  };
-
-  const handleDelete = () => {
-    setErrorMsg("");
-    if (step === 1) setPin((p) => p.slice(0, -1));
-    else setConfirmPin((p) => p.slice(0, -1));
-  };
-
-  const canEnter =
-    (step === 1 && pin.length === 6) || (step === 2 && confirmPin.length === 6);
-
-  const handleEnter = () => {
-    if (step === 1 && pin.length < 6) {
-      setErrorMsg("PIN harus 6 digit");
-      return;
-    }
-
-    if (step === 1 && pin.length === 6) {
-      setStep(2);
-      setErrorMsg("");
-      return;
-    }
-
-    if (step === 2) {
-      if (confirmPin !== pin) {
-        setErrorMsg("PIN tidak cocok, coba lagi");
-        setConfirmPin("");
-      } else {
-        // Jika cocok, sukses
-        alert(`Menambahkan Rp${formatRupiah(total)} ke ${selected}`);
-        setShowPin(false);
-        setStep(1);
-        setPin("");
-        setConfirmPin("");
-        navigate("/app/dashboard");
-      }
-    }
+  const handleConfirm = () => {
+    navigate("/app/add-balance-pin", {
+      state: { fromId, toId, amount, fee, total },
+    });
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-white">
-      {/* Header */}
-      <header className="bg-white border-b border-gray-200 p-4 flex items-center justify-between relative">
-        <button
-          onClick={() => navigate(-1)}
-          aria-label="Back"
-          className="w-9 h-9 grid place-items-center rounded-full bg-white text-[#FF9A25] shadow-md font-semibold"
-        >
-          🡨
-        </button>
+    <div className="min-h-screen flex flex-col bg-gray-50">
+      <Header
+        title="Confirm Add Balance"
+        onBack={() => navigate(-1)}
+        showBack
+        centerTitle
+      />
 
-        <h1 className="absolute left-1/2 transform -translate-x-1/2 text-xl font-bold text-center text-gray-800">
-          Confirm Add Balance
-        </h1>
+      <main className="flex-1 p-5">
+        <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+          <label className="text-xs text-gray-500 mb-1 block">From:</label>
+          <span className="text-base font-semibold text-gray-900">
+            {loading ? "Memuat..." : fromWallet?.title}
+          </span>
+        </div>
 
-        <div className="w-9 h-9" />
-      </header>
+        <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 mt-4">
+          <label className="text-xs text-gray-500 mb-1 block">To:</label>
+          <span className="text-base font-semibold text-gray-900">
+            {loading ? "Memuat..." : toWallet?.title}
+          </span>
+        </div>
 
-      {/* Main */}
-      <main className="flex-1 flex items-center justify-center p-4">
-        <div className="w-full max-w-md p-6">
-          {/* FROM */}
-          <p className="text-sm text-gray-500 mb-1">From:</p>
-          <div className="border border-gray-200 rounded-xl p-4 mb-4 shadow-sm">
-            <p className="text-base font-bold text-gray-800">
-              Ahong - Kantong Utama
-            </p>
-            <p className="text-sm text-gray-600">0812 9533 5662</p>
+        <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 mt-6">
+          <h3 className="text-sm font-bold text-gray-900 mb-2">Add Balance</h3>
+          <div className="divide-y divide-gray-100">
+            <InfoRow label="Nominal" value={formatRp(amount)} />
+            <InfoRow label="Biaya Transaksi" value={formatRp(fee)} />
           </div>
-
-          {/* TO */}
-          <p className="text-sm text-gray-500 mb-1">To:</p>
-          <div className="border border-gray-200 rounded-xl p-4 mb-6 shadow-sm">
-            <p className="text-base font-bold text-gray-800">{selected}</p>
-          </div>
-
-          {/* ADD BALANCE */}
-          <div className="bg-gray-50 rounded-xl p-5 mb-6 shadow-inner">
-            <h2 className="text-lg font-bold text-gray-800 mb-4">
-              Add Balance
-            </h2>
-
-            <div className="divide-y divide-gray-300">
-              <div className="flex justify-between py-2">
-                <span className="text-gray-600">Nominal</span>
-                <span className="text-gray-800 font-medium">
-                  Rp{formatRupiah(amount.replace(/\./g, ""))}
-                </span>
-              </div>
-
-              <div className="flex justify-between py-2">
-                <span className="text-gray-600">Biaya Transaksi</span>
-                <span className="text-gray-800 font-medium">Rp0</span>
-              </div>
-
-              <div className="flex justify-between py-3 font-bold text-gray-900 text-lg">
-                <span>Total</span>
-                <span>Rp{formatRupiah(total)}</span>
-              </div>
-            </div>
-          </div>
-
-          {/* BUTTON KONFIRMASI */}
-          <button
-            onClick={() => setShowPin(true)}
-            className="w-full bg-orange-500 text-white py-3 rounded-xl font-semibold shadow-md hover:bg-orange-600 active:scale-[.99] transition"
-          >
-            Konfirmasi
-          </button>
         </div>
       </main>
 
-      {/* MODAL PIN */}
-      {showPin && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-lg">
-            <h3 className="text-center font-semibold mb-4">
-              {step === 1 ? "Masukkan PIN" : "Konfirmasi PIN"}
-            </h3>
-
-            <div className="flex flex-col items-center">
-              <PinDots length={6} value={step === 1 ? pin : confirmPin} />
-              {errorMsg && (
-                <p className="text-red-500 text-sm mt-2">{errorMsg}</p>
-              )}
-            </div>
-
-            <div className="mt-6">
-              <PinKeypad
-                onNumber={handleNumber}
-                onDelete={handleDelete}
-                onEnter={handleEnter}
-                canEnter={canEnter}
-              />
-            </div>
-
-            <div className="mt-4 flex justify-between">
-              <button
-                onClick={() => {
-                  setShowPin(false);
-                  setStep(1);
-                  setPin("");
-                  setConfirmPin("");
-                  setErrorMsg("");
-                }}
-                className="text-sm text-gray-600 underline"
-              >
-                Batal
-              </button>
-
-              <button
-                onClick={() => {
-                  setStep(1);
-                  setPin("");
-                  setConfirmPin("");
-                  setErrorMsg("");
-                }}
-                className="text-sm text-gray-600"
-              >
-                Reset
-              </button>
-            </div>
-          </div>
+      <footer className="p-5 bg-white shadow-[0_-4px_16px_rgba(0,0,0,0.05)] border-t border-gray-200">
+        <div className="flex justify-between items-center mb-4">
+          <span className="text-base text-gray-500">Total</span>
+          <span className="text-xl font-bold text-gray-900">
+            {formatRp(total)}
+          </span>
         </div>
-      )}
+        <button
+          type="button"
+          onClick={handleConfirm}
+          className="w-full bg-orange-500 text-white py-3.5 rounded-xl font-semibold shadow-lg hover:bg-orange-600 active:scale-[.99] transition text-center"
+        >
+          Confirm
+        </button>
+      </footer>
     </div>
   );
-};
-
-export default ConfirmAddBalancePage;
+}

@@ -1,82 +1,60 @@
-// src/components/balance/BalanceCard.jsx
-import { useMemo, useState } from "react";
-import { useParams, useSearchParams } from "react-router-dom";
-import useCardBalances from "../../hooks/api/useCardBalances";
-import { GradientCardShell, CardTopBar, BalanceRow } from "../ui/BalanceCardUI";
+import React, { useState } from "react";
+import { GradientCardShell, BalanceRow, PillBadge } from "../ui/BalanceCardUI";
 
-export default function BalanceCard({ walletId: walletIdProp /*, links */ }) {
-  const { items = [], loading, error, refetch } = useCardBalances();
+const humanizeType = (t) => {
+  if (!t) return "";
+  const up = String(t).toUpperCase();
+  if (up === "PERSONAL") return "Personal";
+  if (up === "SHARED") return "Shared";
+  return t;
+};
+
+export default function BalanceCard({
+  title,
+  balance,
+  bg,
+  accent,
+  type,
+  isMain,
+}) {
   const [isHidden, setIsHidden] = useState(false);
-  const params = useParams();
-  const [sp] = useSearchParams();
-  const walletIdFromRoute =
-    walletIdProp ??
-    params.walletId ??
-    sp.get("wallet") ??
-    null;
-  const selectedCard = useMemo(() => {
-    if (!items.length) return null;
-    if (walletIdFromRoute == null) return items[0] ?? null;
-    const target = String(walletIdFromRoute);
-    return items.find((c) => String(c.id) === target) || items[0] || null;
-  }, [items, walletIdFromRoute]);
+  const outerGlow = `0 10px 28px rgba(0,0,0,0.22), 0 0 24px ${
+    accent || "#000"
+  }55, 0 0 64px ${accent || "#000"}33`;
 
-  const balance = useMemo(() => {
-    if (!selectedCard) return 0;
-    return Number(
-      selectedCard.displayBalance ??
-        selectedCard.balance ??
-        selectedCard.initialBalance ??
-        0
-    );
-  }, [selectedCard]);
-
-  // Loading skeleton
-  if (!items.length && loading) {
+  if (!title) {
     return (
-      <div className="w-full mx-auto md:px-4 mt-4">
-        <div className="rounded-[22px] p-5 md:p-6 bg-gradient-to-br from-slate-300/30 to-slate-400/30">
-          <div className="h-6 w-24 bg-white/20 rounded mb-6 animate-pulse" />
-          <div className="h-8 md:h-9 w-28 md:w-32 bg-white/20 rounded animate-pulse" />
-        </div>
-      </div>
+      <div className="h-[150px] w-full bg-gray-200 rounded-2xl animate-pulse" />
     );
   }
-
-  if (!selectedCard) {
-    return <div className="text-center text-gray-500 py-8">Memuat kartu...</div>;
-  }
-
-  const bg =
-    selectedCard.bg || "linear-gradient(135deg, #1e293b 0%, #0f172a 100%)";
+  const badgeLabel = isMain ? "Utama" : humanizeType(type);
 
   return (
-    <div className="w-full mx-auto md:px-4 mt-4">
-      <GradientCardShell bg={bg}>
-        <div className="relative" style={{ transformStyle: "preserve-3d" }}>
-          <CardTopBar
-            title={selectedCard.title}
-            type={selectedCard.type}
-            isMain={selectedCard.type === "utama"}
-            wallet={selectedCard.walletName}
+    <GradientCardShell bg={bg} outerGlow={outerGlow}>
+      <div className="relative z-10 flex justify-between items-start mb-5 md:mb-10">
+        <div className="flex items-center space-x-3 mt-1 mb-2">
+          <img
+            src="/orangepay_card.svg"
+            alt="RangePay Logo"
+            className="h-5 md:h-6 w-auto drop-shadow"
           />
-          <BalanceRow
-            amount={balance}
-            isHidden={isHidden}
-            onToggleHidden={() => setIsHidden((v) => !v)}
-            loading={loading}
-            active
+          <PillBadge
+            label={badgeLabel}
+            active={!!isMain}
+            style={{ transform: "translateZ(35px)" }}
           />
           {/* <CTASection links={links} walletId={selectedCard.id} type={selectedCard.type} /> */}
         </div>
-      </GradientCardShell>
+      </div>
 
-      {error && (
-        <p className="text-center text-red-600 text-xs mt-3">
-          Gagal memuat saldo.{" "}
-          <button className="underline" onClick={refetch}>Coba lagi</button>
-        </p>
-      )}
-    </div>
+      <div className="absolute top-4 right-4 z-20 text-white font-semibold text-sm md:text-base leading-none">
+        {title}
+      </div>
+      <BalanceRow
+        amount={balance}
+        isHidden={isHidden}
+        onToggleHidden={() => setIsHidden(!isHidden)}
+      />
+    </GradientCardShell>
   );
 }
