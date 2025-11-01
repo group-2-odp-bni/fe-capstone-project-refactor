@@ -125,7 +125,7 @@ export default function StepEnterAmount() {
     <div className="flex flex-col min-h-screen bg-white">
       <div className="flex-1 px-5 pt-6 pb-5">
         {/* Recipient card */}
-        <div className="mb-5 p-4 border rounded-xl bg-white shadow-sm border-gray-200">
+        <div className="mb-5 p-4 border rounded-xl bg-white border-gray-200">
           <div className="text-black font-semibold">{data.contactName}</div>
           <div className="text-xs text-gray-400">{data.phone}</div>
         </div>
@@ -170,7 +170,7 @@ export default function StepEnterAmount() {
           <div className="text-sm text-gray-500 mb-2">Sumber dana</div>
           <button
             type="button"
-            className="w-full flex justify-between p-4 border rounded-xl bg-white shadow-sm"
+            className="w-full flex justify-between p-4 border border-gray-200 rounded-xl bg-white "
             onClick={() => setSheetOpen(true)}
           >
             <div>
@@ -196,7 +196,7 @@ export default function StepEnterAmount() {
             value={data.note || ""}
             onChange={(e) => setData({ note: e.target.value })}
             placeholder="Notes: (optional)"
-            className="w-full p-3 border rounded-lg resize-none h-20 focus:outline-none"
+            className="w-full p-3 border border-gray-200 rounded-lg resize-none h-20 focus:outline-none"
           />
           <div className="text-xs text-gray-400 mt-1 text-right">{noteLength}/25</div>
         </div>
