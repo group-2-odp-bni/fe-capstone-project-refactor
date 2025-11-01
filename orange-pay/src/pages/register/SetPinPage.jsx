@@ -58,7 +58,7 @@ function SetPinContent() {
         {
           type: "PERSONAL",
           name: "Default Main Wallet",
-          metadata: { colors: "#2F5755" },
+          metadata: JSON.stringify({ colors: "#2F5755" }),
         },
         {
           headers: {
