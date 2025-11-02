@@ -12,7 +12,16 @@ import CreateButton from "../components/add_wallet/CreateButton";
 import Header from "../components/Header";
 
 
+import api from "../lib/api";
+import { v4 as uuidv4 } from "uuid";
 
+function pickPrimaryColorFromGradient(gradientString) {
+  if (!gradientString) return "#000000";
+  const colorRegex = /#([0-9a-fA-F]{6}|[0-9a-fA-F]{3})/g;
+  const matches = gradientString.match(colorRegex);
+
+  return matches && matches.length > 0 ? matches[0] : "#000000";
+}
 export default function AddWalletPage() {
   const [step, setStep] = useState(1);
   const [type, setType] = useState("personal");
@@ -50,14 +59,18 @@ export default function AddWalletPage() {
   const handleCreate = async () => {
     if (!canContinue) return;
     try {
+      console.log("gradient", gradient);
       setSubmitting(true);
-      //   await createWalletApi({
-      //     type: type === "personal" ? "PERSONAL" : "SHARED",
-      //     name: name.trim(),
-      //     currency: "IDR",
-      //     color: gradient,
-      //     metadata: { theme: "gradient-v1" },
-      //   });
+      const payload = {
+        type: type === "personal" ? "PERSONAL" : "SHARED",
+        name: name.trim(),
+        metadata: {
+          colors: pickPrimaryColorFromGradient(gradient),
+        },
+      };
+      await api.post("/api/v1/wallets", payload, {
+        headers: { "Idempotency-Key": `wallet-create-${uuidv4()}` },
+      });
       const from = location.state?.from?.pathname || location.state?.from;
       navigate(from || "/app/dashboard", { replace: true });
     } catch (e) {

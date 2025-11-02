@@ -1,23 +1,16 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 
-// https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
+  server: {
+    proxy: {
+      // online service
+      "/api": {
+        target: "https://api-dev.orangebybni.my.id",
+        changeOrigin: true,
+        secure: false,
+      },
+    },
+  },
 });
-
-// import { defineConfig } from "vite";
-// import react from "@vitejs/plugin-react-swc";
-
-// export default defineConfig({
-//   plugins: [react()],
-//   server: {
-//     proxy: {
-//       "/api": {
-//         target: "http://localhost:8000",
-//         changeOrigin: true,
-//         rewrite: (path) => path.replace(/^\/api/, ""), // Hapus '/api' saat request ke backend
-//       },
-//     },
-//   },
-// });

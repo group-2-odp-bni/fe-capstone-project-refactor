@@ -3,71 +3,31 @@ import { useNavigate } from "react-router-dom";
 import useRecentTransfer from "../../hooks/api/useRecentTransfer";
 import MonthChips, { MONTHS } from "../history_transaksi/MonthChips";
 
-// =======================================================
-// ⚙️ UTILITAS
-// =======================================================
 const fmt = (n) => (Number(n) || 0).toLocaleString("id-ID");
 const getMonthShort = (d) => MONTHS[d.getMonth()];
 const isIncomeType = (type = "") =>
   String(type).toLowerCase().includes("terima") ||
   String(type).toLowerCase().includes("masuk");
-
 const SNAP_THRESHOLD_RATIO = 0.25;
-
-// =======================================================
-// ⚛️ KOMPONEN: RECENT HISTORY
-// =======================================================
-export default function RecentHistory({ walletId, onExpandChange }) {
+export default function RecentHistory({
+  walletId,
+  onExpandChange,
+  dynamicTop,
+}) {
   const navigate = useNavigate();
   const { users = [], loading } = useRecentTransfer({ walletId });
   const [activeMonth, setActiveMonth] = useState(getMonthShort(new Date()));
-
-  // =======================================================
-  // 📏 POSISI SHEET — DISAMAKAN & SEDIKIT LEBIH BAWAH
-  // =======================================================
-  const [sheetTop, setSheetTop] = useState(window.innerHeight * 0.45);
-  const baseTop = useRef(window.innerHeight * 0.45);
+  const [sheetTop, setSheetTop] = useState(dynamicTop);
+  const baseTop = useRef(dynamicTop);
 
   const startY = useRef(0);
   const startTop = useRef(0);
-
-  // ✅ Deteksi posisi tombol (arrowButton / button-group)
   useEffect(() => {
-    const adjustSheetPosition = () => {
-      let buttonElement = document.querySelector(".arrow-button-container");
-
-      if (!buttonElement) {
-        buttonElement = document.querySelector(".button-group");
-      }
-
-      if (buttonElement) {
-        const rect = buttonElement.getBoundingClientRect();
-        // 🔽 Tambahkan offset 18px supaya sedikit lebih turun
-        const newTop = rect.bottom + 18;
-        setSheetTop(newTop);
-        baseTop.current = newTop;
-      } else {
-        // fallback default
-        setSheetTop(window.innerHeight * 0.45);
-        baseTop.current = window.innerHeight * 0.45;
-      }
-    };
-
-    setTimeout(adjustSheetPosition, 100);
-    window.addEventListener("resize", adjustSheetPosition);
-
-    return () => window.removeEventListener("resize", adjustSheetPosition);
-  }, [walletId]);
-
-  // Lock scroll body
-  useEffect(() => {
-    document.body.style.overflow = "hidden";
-    return () => (document.body.style.overflow = "auto");
-  }, []);
-
-  // =======================================================
-  // 🧩 FILTER & NORMALISASI DATA
-  // =======================================================
+    if (dynamicTop) {
+      setSheetTop(dynamicTop);
+      baseTop.current = dynamicTop;
+    }
+  }, [dynamicTop]);
   const filteredUsers = useMemo(() => {
     if (!walletId || !Array.isArray(users)) return users;
     return users.filter((u) => String(u.walletId) === String(walletId));
@@ -85,7 +45,6 @@ export default function RecentHistory({ walletId, onExpandChange }) {
             : u.date
             ? new Date(u.date)
             : new Date();
-
         return {
           ...u,
           id: u.id ?? `tx-${i}-${d.getTime()}`,
@@ -113,14 +72,10 @@ export default function RecentHistory({ walletId, onExpandChange }) {
     [normalized, activeMonth]
   );
 
-  // =======================================================
-  // 🖐️ HANDLER DRAG
-  // =======================================================
   const handleTouchStart = (e) => {
     startY.current = e.touches[0].clientY;
     startTop.current = sheetTop;
   };
-
   const handleTouchMove = (e) => {
     const delta = e.touches[0].clientY - startY.current;
     const BOTTOM_LIMIT_PX = window.innerHeight * 0.65;
@@ -130,14 +85,12 @@ export default function RecentHistory({ walletId, onExpandChange }) {
     );
     setSheetTop(newTop);
   };
-
   const handleTouchEnd = () => {
     const isNowExpanded = sheetTop < window.innerHeight * SNAP_THRESHOLD_RATIO;
     const newTop = isNowExpanded ? 80 : baseTop.current;
     setSheetTop(newTop);
     onExpandChange?.(isNowExpanded);
   };
-
   const handleDragLineClick = () => {
     const isExpanded = sheetTop < window.innerHeight * 0.25;
     const newTop = isExpanded ? baseTop.current : 80;
@@ -145,18 +98,12 @@ export default function RecentHistory({ walletId, onExpandChange }) {
     onExpandChange?.(!isExpanded);
   };
 
-  // =======================================================
-  // 💸 NAVIGASI KE BUKTI TRANSFER
-  // =======================================================
   const handleTransactionClick = (item) => {
     navigate(`/app/wallets/${walletId}/transfer/${item.id}`, {
       state: { transfer: item },
     });
   };
 
-  // =======================================================
-  // 💳 ITEM TRANSAKSI
-  // =======================================================
   const renderTransactionItem = (item) => {
     const isIncome = isIncomeType(item.type);
     const sign = isIncome ? "+" : "−";
@@ -192,11 +139,12 @@ export default function RecentHistory({ walletId, onExpandChange }) {
     );
   };
 
-  // =======================================================
-  // 🧱 RENDER UTAMA
-  // =======================================================
+  if (!dynamicTop) {
+    return null;
+  }
+
   return (
-    <section className="relative bg-transparent min-h-screen overflow-hidden">
+    <section className="relative bg-transparent">
       <div
         className="fixed inset-x-0 bottom-0 z-50 bg-white rounded-t-3xl border-t border-gray-200 shadow-xl flex flex-col transition-[top] duration-300 ease-in-out"
         style={{ top: `${sheetTop}px` }}
@@ -204,19 +152,16 @@ export default function RecentHistory({ walletId, onExpandChange }) {
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
       >
-        {/* Garis drag */}
         <div
           onClick={handleDragLineClick}
           className="w-12 h-1.5 bg-gray-300 rounded-full mx-auto mt-3 cursor-pointer active:scale-95 transition"
         ></div>
-
-        {/* Isi konten scroll */}
         <div className="flex-1 overflow-y-auto px-5 pb-6 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
           <div className="mt-3 mb-2">
             <MonthChips activeMonth={activeMonth} onChange={setActiveMonth} />
           </div>
 
-          <h2 className="text-sm font-medium text-gray-600 mb-2">
+          <h2 className="text-sm font-medium text-gray-600 mt-8 mb-2">
             Riwayat Transaksi
           </h2>
 

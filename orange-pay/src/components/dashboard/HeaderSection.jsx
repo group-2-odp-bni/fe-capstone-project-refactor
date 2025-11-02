@@ -12,7 +12,7 @@ export default function HeaderSection({
   const navigate = useNavigate()
 
   const handleProfileClick = () => {
-    navigate("/app/profile");
+    navigate("/app/account");
   };
   
 

@@ -50,6 +50,7 @@ export default function AtomicBalanceCard({ initialWalletId = null }) {
 
   const [activeIndex, setActiveIndex] = useState(0);
   const [isHidden, setIsHidden] = useState(false);
+  const [creating, setCreating] = useState(false);
   const viewportRef = useRef(null);
 
   // set active index by initialWalletId (if provided)
@@ -70,14 +71,14 @@ export default function AtomicBalanceCard({ initialWalletId = null }) {
     if (activeIndex >= items.length) setActiveIndex(0);
   }, [items.length, activeIndex]);
 
-  const isCardLoading = () => Boolean(loading);
+  const isCardLoading = (_id, _idx) => Boolean(loading);
 
   // create wallet (logic only)
   const handleCreateWallet = async () => {
-    navigate("/app/wallets/new");
+      useNavigate("/app/wallets/new");
   };
 
-  // helper: optional append wallet id as query param (kept for compatibility)
+  // helper: optional append wallet id as query param (UI can also handle)
   const attachWalletToLinks = (links = {}, walletId) => {
     if (!links || !walletId) return links;
     const out = {};
@@ -88,32 +89,15 @@ export default function AtomicBalanceCard({ initialWalletId = null }) {
     return out;
   };
 
-  // clicking the whole card -> open history
-  const makeCardHandlers = (to) => {
-    const draggingRef = viewportRef.current?.isDraggingRef;
-    const onClick = () => {
-      if (draggingRef?.current) return;
-      if (!to) return;
-      navigate(to);
-    };
-    const onKeyDown = (e) => {
-      if (draggingRef?.current) return;
-      if (e.key === "Enter" || e.key === " ") {
-        e.preventDefault();
-        onClick();
-      }
-    };
-    return { onClick, onKeyDown };
-  };
-
   return (
     <div className="w-full mx-auto md:px-1 mt-6 ">
-      {/* header/title */}
+      {/* header/title is fine here — small presentational bit */}
       <h3 className="px-0 font-semibold text-lg text-gray-900 mb-3 md:px-0 text-left">
         Your Wallet
       </h3>
-
-      {/* tabs (screen-reader only) */}
+      
+      
+      {/* tabs: purely trigger logic, no heavy UI here (visuals live in BalanceCardUI) */}
       <div className="flex flex-wrap items-center justify-center gap-2 ">
         {tabs.map((c, i) => (
           <button
@@ -121,49 +105,44 @@ export default function AtomicBalanceCard({ initialWalletId = null }) {
             title={c.title}
             onClick={() => goTo(i)}
             type="button"
-            className="sr-only"
+            className="sr-only" /* visually hide here - UI can render visible tabs if desired */
           />
         ))}
       </div>
 
-      {/* CarouselViewport */}
+      {/* CarouselViewport provides items -> renderItem(item, idx, { isDraggingRef }) */}
       <CarouselViewport
         ref={viewportRef}
         items={items}
         activeIndex={activeIndex}
         setActiveIndex={setActiveIndex}
-        renderItem={(card, idx) => {
-          // Add wallet UI card
+        renderItem={(card, idx, extras = {}) => {
+          // Add wallet UI card (delegated)
           if (card.isAddCard) {
             return (
               <div className="p-0" style={{ width: "100%", height: "100%" }}>
-                <AddWalletCard onClick={handleCreateWallet} />
+                <AddWalletCard onClick={handleCreateWallet}/>
               </div>
             );
           }
 
-          // logic
+          // calculate amount (logic)
           const amount = Number(card.displayBalance ?? card.balance ?? card.initialBalance ?? 0);
+
+          // prepare links (append wallet query so downstream knows source)
           const linksWithWallet = attachWalletToLinks(card.links, card.id);
 
-          // choose history route (prefer explicit link; fallback to /app/wallets/:id)
-          const historyHref =
-            linksWithWallet?.history ||
-            linksWithWallet?.transactions ||
-            `/app/wallets/${encodeURIComponent(card.id)}`;
+          // pass isDraggingRef through so UI will avoid navigation during drag
+          const { isDraggingRef } = extras;
 
-          const { onClick, onKeyDown } = makeCardHandlers(historyHref);
-
-          // Render card — whole card is interactive
+          // Render minimal composition; all UI markup is in BalanceCardUI primitives
           return (
             <div className="p-0" style={{ width: "100%" }}>
-              <GradientCardShell
-                bg={card.bg}
-                onClick={onClick}
-                onKeyDown={onKeyDown}
-                // accessibility focus ring handled in GradientCardShell
-              >
-                <div className="relative" style={{ transformStyle: "preserve-3d" }}>
+              <GradientCardShell bg={card.bg}>
+                <div
+                  className="relative"
+                  style={{ transformStyle: "preserve-3d" }}
+                >
                   <CardTopBar
                     title={card.title}
                     type={card.type}
@@ -184,12 +163,12 @@ export default function AtomicBalanceCard({ initialWalletId = null }) {
                       active={idx === activeIndex}
                     />
 
-                    {/* CTASection (no History button anymore) */}
+                    {/* CTASection is purely UI — pass only links and drag ref */}
                     <CTASection
                       links={linksWithWallet}
                       walletId={card.id}
-                      type={card.type}
-                      isDraggingRef={viewportRef.current?.isDraggingRef}
+                      type={card.type}             // <-- pass card.type
+                      isDraggingRef={extras?.isDraggingRef} // <-- pass dragging ref so transfer is blocked during drag
                     />
                   </div>
                 </div>
