@@ -129,7 +129,7 @@ export default function StepSuccess() {
       {/* top area with big green circle */}
       <div className="w-full flex flex-col items-center pt-6 pb-4">
         {/* back arrow is in header outside this component, so we only render the graphic */}
-          <div className="w-30 h-30 rounded-full bg-white flex items-center justify-center shadow-inner">
+          <div className="w-30 h-30 rounded-full bg-white flex items-center justify-center">
             {/* check icon */}
                 <svg width="159" height="159" viewBox="0 0 159 159" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M79.5 159C123.407 159 159 123.407 159 79.5C159 35.5934 123.407 0 79.5 0C35.5934 0 0 35.5934 0 79.5C0 123.407 35.5934 159 79.5 159Z" fill="#34C759"/>
@@ -142,7 +142,7 @@ export default function StepSuccess() {
 
       {/* floating card */}
       <div className="w-full max-w-md px-5 mt-3">
-        <div className="bg-white rounded-3xl shadow-2xl p-6">
+        <div className="bg-white rounded-3xl border border-gray-200 p-6">
           <div className="w-full flex items-center justify-center">
             <img src="/Orangepay.svg" alt="OrangePay" className="pb-8 pt-2" />
           </div>
@@ -158,10 +158,44 @@ export default function StepSuccess() {
           {/* Recipient box */}
           <div className="mb-5">
             <div className="border border-gray-200 rounded-xl p-3">
-              <div className="font-left font-bold text-gray-800">{receipt.receiver}</div>
-              <div className="text-xs text-gray-500 mt-1">{receipt.phone}</div>
+
+              <div className="flex justify-between">
+                <div>
+                  <div className="font-left font-bold text-gray-800">
+                    {receipt.receiver}
+                  </div>
+                  <div className="text-xs text-gray-500 mt-1">
+                    {receipt.phone}
+                  </div>
+                </div>
+
+                {/* ✅ Small Add button */}
+                <button
+                  onClick={async () => {
+                    // try {
+                    //   await api.addRecipient({
+                    //     name: receipt.receiver,
+                    //     phone: receipt.phone,
+                    //   });
+                    //   alert("Recipient saved!");
+                    // } catch (e) {
+                    //   alert("Failed to save recipient");
+                    // }
+                  }}
+                  className="flex items-center justify-center active:scale-95 transition"
+                >
+                  <svg width="30" height="30" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M15 4.21875C23.625 4.21875 25.7812 6.375 25.7812 15C25.7812 23.625 23.625 25.7812 15 25.7812C6.375 25.7812 4.21875 23.625 4.21875 15C4.21875 6.375 6.375 4.21875 15 4.21875Z" stroke="black" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M18.5938 15H11.4062" stroke="black" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M15 11.4062V18.5938" stroke="black" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </button>
+              </div>
+
             </div>
           </div>
+
+
           {/* metadata: Ref ID on right icon */}
           <div className="mt-4 space-y-2 text-sm text-gray-600">
             <div className="flex justify-between pb-1">

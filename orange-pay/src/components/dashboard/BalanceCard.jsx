@@ -1,10 +1,9 @@
 // src/components/dashboard/AtomicBalanceCard.jsx
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import useCardBalances from "../../hooks/api/useCardBalances";
 import ScrollProgress from "../ui/ScrollProgress";
 import AddWalletCard from "../ui/AddWalletCard";
-import { useLocation, useNavigate } from "react-router-dom";
-
 import {
   GradientCardShell,
   CardTopBar,
@@ -72,11 +71,11 @@ export default function AtomicBalanceCard({ initialWalletId = null }) {
     if (activeIndex >= items.length) setActiveIndex(0);
   }, [items.length, activeIndex]);
 
-  const isCardLoading = () => Boolean(loading);
+  const isCardLoading = (_id, _idx) => Boolean(loading);
 
   // create wallet (logic only)
   const handleCreateWallet = async () => {
-    useNavigate("/app/wallets/new");
+      useNavigate("/app/wallets/new");
   };
 
   // helper: optional append wallet id as query param (UI can also handle)
@@ -85,9 +84,7 @@ export default function AtomicBalanceCard({ initialWalletId = null }) {
     const out = {};
     Object.entries(links).forEach(([k, p]) => {
       if (!p) return;
-      out[k] = p.includes("?")
-        ? `${p}&wallet=${walletId}`
-        : `${p}?wallet=${walletId}`;
+      out[k] = p.includes("?") ? `${p}&wallet=${walletId}` : `${p}?wallet=${walletId}`;
     });
     return out;
   };
@@ -98,7 +95,8 @@ export default function AtomicBalanceCard({ initialWalletId = null }) {
       <h3 className="px-0 font-semibold text-lg text-gray-900 mb-3 md:px-0 text-left">
         Your Wallet
       </h3>
-
+      
+      
       {/* tabs: purely trigger logic, no heavy UI here (visuals live in BalanceCardUI) */}
       <div className="flex flex-wrap items-center justify-center gap-2 ">
         {tabs.map((c, i) => (
@@ -123,15 +121,13 @@ export default function AtomicBalanceCard({ initialWalletId = null }) {
           if (card.isAddCard) {
             return (
               <div className="p-0" style={{ width: "100%", height: "100%" }}>
-                <AddWalletCard onClick={handleCreateWallet} />
+                <AddWalletCard onClick={handleCreateWallet}/>
               </div>
             );
           }
 
           // calculate amount (logic)
-          const amount = Number(
-            card.displayBalance ?? card.balance ?? card.initialBalance ?? 0
-          );
+          const amount = Number(card.displayBalance ?? card.balance ?? card.initialBalance ?? 0);
 
           // prepare links (append wallet query so downstream knows source)
           const linksWithWallet = attachWalletToLinks(card.links, card.id);
@@ -171,7 +167,7 @@ export default function AtomicBalanceCard({ initialWalletId = null }) {
                     <CTASection
                       links={linksWithWallet}
                       walletId={card.id}
-                      type={card.type} // <-- pass card.type
+                      type={card.type}             // <-- pass card.type
                       isDraggingRef={extras?.isDraggingRef} // <-- pass dragging ref so transfer is blocked during drag
                     />
                   </div>

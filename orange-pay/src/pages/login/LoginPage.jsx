@@ -64,7 +64,7 @@ function LoginContextContent() {
     const fullPhone = `+62${formData.phoneNumber}`;
 
     try {
-      const response = await axios.post("/api/v1/auth/request", {
+      const response = await axios.post("/api/v1/auth/login ", {
         phoneNumber: fullPhone,
       });
 
