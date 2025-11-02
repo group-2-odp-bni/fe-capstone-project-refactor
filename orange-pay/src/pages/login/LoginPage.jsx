@@ -1,7 +1,7 @@
 import React, { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-
+import Swal from "sweetalert2";
 import MobileShell from "../../components/layout/MobileShell";
 import PhoneLayoutBackground from "../../components/PhoneLayoutBackground";
 import OrangePayLogo from "../../components/register/OrangePayLogo";
@@ -36,52 +36,96 @@ function LoginContextContent() {
 
   /** Handle phone number input changes */
   const handleChange = (e) => {
-    const value = e.target.value;
+    const v = e.target.value.replace(/\D/g, ""); // hanya angka
 
-    // Allow only numeric input
-    if (!/^[0-9]*$/.test(value)) {
-      setError("Nomor hanya boleh berisi angka");
-      return;
+    if (v && !v.startsWith("8")) {
+      setError("Nomor harus dimulai dengan 8");
+    } else if (v.length > 0 && v.length < 9) {
+      setError("Nomor minimal 9 digit setelah +62");
+    } else {
+      setError("");
     }
 
-    setError("");
-    setFormData((prev) => ({ ...prev, phoneNumber: value }));
+    // Update state utama
+    setFormData((prev) => ({ ...prev, phoneNumber: v }));
   };
-  function isDevMode() {
-    if (typeof window === "undefined") return false;
-    const params = new URLSearchParams(window.location.search);
-    return (
-      window.location.hostname === "localhost" || params.get("dev") === "1"
-    );
-  }
 
   /** Handle form submit */
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError("");
+
+    const { phoneNumber } = formData;
+    if (!phoneNumber) {
+      Swal.fire({
+        icon: "warning",
+        title: "Nomor belum diisi",
+        text: "Silakan masukkan nomor telepon terlebih dahulu.",
+      });
+      return;
+    }
+
+    if (!phoneNumber.startsWith("8")) {
+      Swal.fire({
+        icon: "warning",
+        title: "Nomor tidak valid",
+        text: "Nomor harus dimulai dengan angka 8.",
+      });
+      return;
+    }
+
+    if (phoneNumber.length < 9) {
+      Swal.fire({
+        icon: "warning",
+        title: "Nomor terlalu pendek",
+        text: "Nomor minimal 9 digit setelah +62.",
+      });
+      return;
+    }
+
+    const fullPhone = `+62${phoneNumber}`;
+
+    // Konfirmasi sebelum kirim OTP
+    const confirmResult = await Swal.fire({
+      title: "Kirim OTP?",
+      text: `OTP akan dikirim ke nomor ${fullPhone}. Lanjutkan?`,
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonColor: "#f97316",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Ya, kirim OTP",
+      cancelButtonText: "Batal",
+    });
+
+    if (!confirmResult.isConfirmed) return;
+
     setLoading(true);
-
-    const fullPhone = `+62${formData.phoneNumber}`;
-
     try {
-      const response = await axios.post("/api/v1/auth/login ", {
+      const response = await axios.post("/api/v1/auth/login", {
         phoneNumber: fullPhone,
+        captchaToken: "dummy-captcha-token",
       });
 
-      // Save phone number into LoginContext
       setLoginData({ phoneNumber: fullPhone });
 
-      console.log("Login OTP request success:", response.data);
+      Swal.fire({
+        icon: "success",
+        title: "OTP Dikirim!",
+        text: "Silakan periksa WhatsApp Anda untuk kode OTP.",
+        timer: 2000,
+        showConfirmButton: false,
+      });
 
-      // Navigate to OTP verification
       navigate("/login/otp");
     } catch (err) {
       console.error(err);
-      setError(
-        err.response?.data?.message ||
-        err.message ||
-        "Something went wrong."
-      );
+      Swal.fire({
+        icon: "error",
+        title: "Gagal Mengirim OTP",
+        text:
+          err.response?.data?.message ||
+          err.message ||
+          "Terjadi kesalahan saat mengirim OTP.",
+      });
     } finally {
       setLoading(false);
     }
@@ -92,7 +136,6 @@ function LoginContextContent() {
       <OrangeHeader />
       <WhiteCardContainer>
         <OrangePayLogo />
-
         <h2 className="mt-6 text-2xl font-bold text-center">Welcome Back</h2>
         <LoginTextContainer>Please sign in to continue</LoginTextContainer>
 
