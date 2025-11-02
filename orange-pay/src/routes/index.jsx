@@ -25,7 +25,6 @@ import ResetPin from "../components/login/ResetPin";
 import ResetPinOtp from "../components/login/ResetPinOtp";
 import DashboardPage from "../pages/DashboardPage";
 import HistoryTransactionPage from "../pages/HistoryTransactionPage";
-import TopUpPage from "../pages/TopUpPage";
 import { isAuthenticated } from "../services/authService";
 import { RegistrationProvider } from "../context/RegistrationContext";
 import AddWalletPage from "../pages/AddWalletPage";
@@ -61,6 +60,10 @@ import AccountLandingPage from "../pages/account/AccountLandingPage";
 
 /* transaction limit */
 import TransactionLimitPage from "../pages/transactionLimit/TransactionLimitPage";
+
+/* topup */
+import { TopupProvider } from "../context/TopupContext";
+import TopUpPage from "../pages/topup/TopUpPage";
 
 export function PublicRoute({ children, redirectTo = "/app/dashboard" }) {
   const location = useLocation();
@@ -113,6 +116,14 @@ function ProfileLayout() {
     <ProfileProvider>
       <Outlet />
     </ProfileProvider>
+  );
+}
+
+function TopupLayout() {
+  return (
+    <TopupProvider>
+      <Outlet />
+    </TopupProvider>
   );
 }
 
@@ -181,7 +192,6 @@ export default function AppRoutes() {
         <Route path="/app/*" element={<ProtectedRoute />}>
           <Route path="dashboard" element={<DashboardPage />} />
           <Route path="transactions" element={<HistoryTransactionPage />} />
-          <Route path="topup" element={<TopUpPage />} />
           <Route path="receipt/:trxId" element={<ReceiptPage />} />
           {/* === TESTING ROUTE (tanpa param): buka /app/members-test === */}
           <Route
@@ -204,8 +214,14 @@ export default function AppRoutes() {
 
           {/* account page */}
           <Route path="account" element={<AccountLandingPage />} />
-          
-          
+
+          {/* topup page */}
+          <Route element={<TopupLayout />}>
+            <Route path="topup" element={<TopUpPage />} />
+          </Route>
+
+
+
           {/* user profile page */}
           <Route element={<ProfileLayout />}>
             <Route path="profile" element={<ProfilePage />} />
