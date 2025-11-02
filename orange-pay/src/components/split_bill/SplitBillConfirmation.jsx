@@ -1114,7 +1114,6 @@ export default function SplitBillConfirmation({
 }
 
 /* ================= KOMPONEN: Animasi Success dengan Checkmark ================= */
-/* ================= KOMPONEN: Animasi Success dengan Checkmark ================= */
 function HighFiveAnimation({ members = [] }) {  // ← TAMBAHAN: Terima props members
   const [stage, setStage] = useState(0);
 
