@@ -1,14 +1,10 @@
-// TemplatePin.jsx
 import React, { useEffect, useState } from "react";
 
-/**
- * Presentational PIN screen.
- */
 export default function TemplatePin({
   title = "Enter your PIN",
   dots = { length: 6, filled: 0, danger: false, shaking: false },
-  onBack,
-  onForgot,
+  onBack,                 // ← opsional
+  onForgot,               // ← opsional
   onDigit,
   onConfirm,
   onDelete,
@@ -35,11 +31,8 @@ export default function TemplatePin({
     }
   }, [enableKeyboard, autoFocusHidden, hiddenRef]);
 
-  // Force re-render animation dengan key change setiap kali shaking true
   useEffect(() => {
-    if (shaking) {
-      setShakingKey((prev) => prev + 1);
-    }
+    if (shaking) setShakingKey((prev) => prev + 1);
   }, [shaking]);
 
   return (
@@ -74,25 +67,27 @@ export default function TemplatePin({
         }
       `}</style>
 
-      {/* Header: back button */}
+      {/* Header: back button — tampil HANYA jika onBack dikirim */}
       <div className="w-full mx-auto max-w-[560px] px-[var(--pin-pad-x)]">
         <div className="flex items-center">
-          <button
-            type="button"
-            onClick={onBack}
-            className="w-9 h-9 rounded-full flex items-center justify-center hover:bg-gray-100 active:scale-95 transition"
-            aria-label="Back"
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-              <path
-                d="M15 18l-6-6 6-6"
-                stroke="#111827"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </button>
+          {typeof onBack === "function" ? (
+            <button
+              type="button"
+              onClick={onBack}
+              className="w-9 h-9 rounded-full flex items-center justify-center hover:bg-gray-100 active:scale-95 transition"
+              aria-label="Back"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <path
+                  d="M15 18l-6-6 6-6"
+                  stroke="#111827"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </button>
+          ) : null}
           <div className="flex-1" />
         </div>
       </div>
@@ -103,15 +98,10 @@ export default function TemplatePin({
           {title}
         </h2>
 
-        {/* PIN Dots - Force re-render dengan key untuk retrigger animation */}
         <div
           key={shakingKey}
           className="mt-4 flex items-center justify-center gap-3"
-          style={
-            shaking
-              ? { animation: "pin-shake 0.5s ease forwards" }
-              : { animation: "pin-pop 180ms ease forwards" }
-          }
+          style={shaking ? { animation: "pin-shake 0.5s ease forwards" } : { animation: "pin-pop 180ms ease forwards" }}
           aria-label="PIN progress"
         >
           {Array.from({ length }).map((_, i) => {
@@ -133,14 +123,16 @@ export default function TemplatePin({
           })}
         </div>
 
-        {/* Forgot PIN */}
-        <button
-          type="button"
-          className="mt-2 text-[13px] font-semibold text-[#FF9A25] hover:underline active:opacity-80 transition"
-          onClick={onForgot}
-        >
-          Forgot PIN
-        </button>
+        {/* Forgot PIN — tampil HANYA jika onForgot dikirim */}
+        {typeof onForgot === "function" ? (
+          <button
+            type="button"
+            className="mt-2 text-[13px] font-semibold text-[#FF9A25] hover:underline active:opacity-80 transition"
+            onClick={onForgot}
+          >
+            Forgot PIN
+          </button>
+        ) : null}
       </div>
 
       {/* Hidden input for keyboard */}
@@ -160,30 +152,18 @@ export default function TemplatePin({
       )}
 
       {/* Keypad */}
-      <div
-        className="w-full mx-auto max-w-[560px] px-[var(--pin-pad-x)] pb-24"
-      >
-        <div
-          className="grid grid-cols-3 justify-items-center animate-[pin-up_260ms_ease]"
-          style={{ gap: "var(--pin-gap)" }}
-        >
+      <div className="w-full mx-auto max-w-[560px] px-[var(--pin-pad-x)] pb-24">
+        <div className="grid grid-cols-3 justify-items-center animate-[pin-up_260ms_ease]" style={{ gap: "var(--pin-gap)" }}>
           <div className="contents">
             {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => (
               <NumKey key={n} label={n} onClick={() => onDigit(String(n))} />
             ))}
-
-            {/* Check button (confirm) */}
             <ActionKey type="check" onClick={onConfirm} disabled={!canConfirm} />
-
-            {/* Zero */}
             <NumKey label={0} onClick={() => onDigit("0")} />
-
-            {/* Delete - menggunakan SVG dari public */}
             <DeleteKey onClick={onDelete} disabled={!canDelete} />
           </div>
         </div>
 
-        {/* Error message */}
         {errorText ? (
           <div className="mt-4 px-4 py-2.5 rounded-lg bg-red-50 border border-red-200 animate-[pin-up_220ms_ease]">
             <p className="text-sm text-red-800 font-medium text-center">{errorText}</p>
@@ -193,8 +173,6 @@ export default function TemplatePin({
     </div>
   );
 }
-
-/* —— Subcomponents —— */
 
 function NumKey({ label, onClick }) {
   return (
@@ -257,7 +235,6 @@ function ActionKey({ type, onClick, disabled }) {
       </button>
     );
   }
-
   return null;
 }
 
@@ -280,22 +257,12 @@ function DeleteKey({ onClick, disabled }) {
         focus:outline-none focus:ring-2 focus:ring-gray-300/60
         disabled:opacity-50 disabled:cursor-not-allowed
       `}
-      style={{
-        width: "var(--pin-key)",
-        height: "var(--pin-key)",
-      }}
+      style={{ width: "var(--pin-key)", height: "var(--pin-key)" }}
       aria-label="Delete all digits"
     >
       <span className="absolute inset-0 rounded-full pointer-events-none bg-gradient-to-b from-white/60 to-transparent" />
       <span className="relative flex items-center justify-center">
-        {/* SVG diambil dari public folder */}
-        <img
-          src="/public/del_pin.svg"
-          alt="delete"
-          width="39"
-          height="29"
-          style={{ display: "block" }}
-        />
+        <img src="/public/del_pin.svg" alt="delete" width="39" height="29" style={{ display: "block" }} />
       </span>
     </button>
   );
