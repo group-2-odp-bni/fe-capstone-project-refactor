@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo } from "react";
 import TopUpMethod from "./TopUpMethod";
 import TopUpAmount from "./TopUpAmount";
 import TopUpConfirmationStep from "./TopUpConfirmationStep";
-import TopUpSuccessPage from "./TopUpSuccessPage"; // ⬅️ tambahkan file ini (yang mirip screenshot sukses)
+import TopUpSuccessPage from "./TopUpSuccessPage";
 import { useTopUp } from "../../hooks/api/useTopUp";
 
 const SS_KEY = "topupFlowState";
@@ -10,8 +10,13 @@ const SS_KEY = "topupFlowState";
 export default function TopUpFlow() {
   // 'method' | 'amount' | 'confirmation' | 'success'
   const [step, setStep] = useState("method");
-  const [method, setMethod] = useState({ code: "BNI_VA", name: "BNI Virtual Account" });
+  
+  const [method, setMethod] = useState(
+    { code: "BNI_VA", name: "BNI Virtual Account" }
+  );
+  
   const [amount, setAmount] = useState(""); // simpan input apa adanya, kirim ke API sebagai number
+  
   const [confirmData, setConfirmData] = useState(null); // { va, expiresAt, trxId, completedAt? }
 
   const { createTopUpSafe, loading, error } = useTopUp();
@@ -26,7 +31,7 @@ export default function TopUpFlow() {
       if (parsed?.method) setMethod(parsed.method);
       if (parsed?.amount) setAmount(parsed.amount);
       if (parsed?.confirmData) setConfirmData(parsed.confirmData);
-    } catch {}
+    } catch { }
   }, []);
 
   // Persist state (opsional)
@@ -88,7 +93,7 @@ export default function TopUpFlow() {
   );
 
   return (
-    <div className="w-full">
+    <div>
       {step === "method" && (
         <TopUpMethod defaultMethod={method} onSelect={handleSelectMethod} />
       )}

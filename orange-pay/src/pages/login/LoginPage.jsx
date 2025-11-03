@@ -11,14 +11,24 @@ import LoginTextContainer from "../../components/login/LoginTextContainer";
 import { FullSubmitButton } from "../../components/button/FullSubmitButton";
 import PhoneNumberInput from "../../components/login/PhoneNumberInput";
 import { useLoginContext } from "../../context/LoginContext";
+import { GoogleReCaptchaProvider, useGoogleReCaptcha } from "react-google-recaptcha-v3";
 
 export default function LoginPage() {
   return (
-    <PhoneLayoutBackground>
-      <MobileShell bg="bg-white">
-        <LoginContextContent />
-      </MobileShell>
-    </PhoneLayoutBackground>
+    <GoogleReCaptchaProvider
+      reCaptchaKey={import.meta.env.VITE_RECAPTCHA_SITE_KEY}
+      scriptProps={{
+        async: true,
+        defer: true,
+        appendTo: "body",
+      }}
+    >
+      <PhoneLayoutBackground>
+        <MobileShell bg="bg-white">
+          <LoginContextContent />
+        </MobileShell>
+      </PhoneLayoutBackground>
+    </GoogleReCaptchaProvider>
   );
 }
 
@@ -26,6 +36,7 @@ function LoginContextContent() {
   const navigate = useNavigate();
   const inputRef = useRef(null);
   const { setLoginData } = useLoginContext();
+  const { executeRecaptcha } = useGoogleReCaptcha();
 
   const [formData, setFormData] = useState({
     phoneNumber: "",
@@ -53,6 +64,12 @@ function LoginContextContent() {
   /** Handle form submit */
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (!executeRecaptcha) {
+      setError("reCAPTCHA belum siap. Coba beberapa detik lagi.");
+      setLoading(false);
+      return;
+    }
 
     const { phoneNumber } = formData;
     if (!phoneNumber) {
@@ -100,9 +117,13 @@ function LoginContextContent() {
 
     setLoading(true);
     try {
+      //get google captcha token
+      const token = await executeRecaptcha("register");
+
+      //hit login
       const response = await axios.post("/api/v1/auth/login", {
         phoneNumber: fullPhone,
-        captchaToken: "dummy-captcha-token",
+        captchaToken: token,
       });
 
       setLoginData({ phoneNumber: fullPhone });
