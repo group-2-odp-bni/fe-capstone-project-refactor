@@ -161,8 +161,7 @@ export default function TemplatePin({
 
       {/* Keypad */}
       <div
-        className="w-full mx-auto max-w-[560px] px-[var(--pin-pad-x)] pb-5"
-        style={{ paddingBottom: "max(env(safe-area-inset-bottom), 22px)" }}
+        className="w-full mx-auto max-w-[560px] px-[var(--pin-pad-x)] pb-24"
       >
         <div
           className="grid grid-cols-3 justify-items-center animate-[pin-up_260ms_ease]"
