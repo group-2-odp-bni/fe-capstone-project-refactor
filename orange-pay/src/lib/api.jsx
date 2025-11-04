@@ -8,8 +8,8 @@ import {
 
 const api = axios.create({
   baseURL: "",
-  timeout: 15000,
-  headers: { "Content-Type": "application/json" },
+  timeout: 30000,
+  // headers: { "Content-Type": "application/json" },
 });
 
 api.interceptors.request.use((config) => {
