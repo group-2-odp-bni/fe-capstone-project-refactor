@@ -66,6 +66,7 @@ function LoginContextContent() {
     try {
       const response = await axios.post("/api/v1/auth/login ", {
         phoneNumber: fullPhone,
+        captchaToken: "awawa"
       });
 
       // Save phone number into LoginContext
