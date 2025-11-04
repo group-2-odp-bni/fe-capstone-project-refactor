@@ -1,12 +1,8 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import {
-  RegistrationProvider,
-  useRegistrationContext,
-} from "../../context/RegistrationContext";
+import { useRegistrationContext } from "../../context/RegistrationContext";
 import PhoneLayoutBackground from "../../components/PhoneLayoutBackground";
 import { FullSubmitButton } from "../../components/button/FullSubmitButton";
-import GoogleCaptcha from "../../components/recaptcha/GoogleCaptcha";
 
 import MobileShell from "../../components/layout/MobileShell";
 import InputField from "../../components/register/RegisterGeneralInput";
@@ -15,19 +11,33 @@ import WhiteCardContainer from "../../components/register/WhiteCardContainer";
 import OrangePayLogo from "../../components/register/OrangePayLogo";
 import RegisterTextContainer from "../../components/register/RegisterTextContainer";
 import api from "../../lib/api";
+import { GoogleReCaptchaProvider, useGoogleReCaptcha } from "react-google-recaptcha-v3";
+
+
 export default function RegisterPage() {
   return (
-    <PhoneLayoutBackground>
-      <MobileShell>
-        <RegisterContent />
-      </MobileShell>
-    </PhoneLayoutBackground>
+    <GoogleReCaptchaProvider
+      reCaptchaKey={import.meta.env.VITE_RECAPTCHA_SITE_KEY}
+      scriptProps={{
+        async: true,
+        defer: true,
+        appendTo: "body",
+      }}
+    >
+      <PhoneLayoutBackground>
+        <MobileShell>
+          <RegisterContent />
+        </MobileShell>
+      </PhoneLayoutBackground>
+    </GoogleReCaptchaProvider>
+
   );
 }
 
 function RegisterContent() {
   const navigate = useNavigate();
   const { setRegistrationData } = useRegistrationContext();
+  const { executeRecaptcha } = useGoogleReCaptcha();
 
   // Local form state
   const [formData, setFormData] = useState({
@@ -49,10 +59,21 @@ function RegisterContent() {
     setError("");
     setLoading(true);
 
+    if (!executeRecaptcha) {
+      setError("reCAPTCHA belum siap. Coba beberapa detik lagi.");
+      setLoading(false);
+      return;
+    }
+
     //hit api
     try {
-      const { data } = await api.post("/api/v1/auth/request", {
+      //get google captcha token
+      const token = await executeRecaptcha("register");
+
+      //hit login
+      const { data } = await api.post("/api/v1/auth/register", {
         phoneNumber: formData.phoneNumber,
+        captchaToken: token,
       });
 
       //Save user info for later use
@@ -113,7 +134,6 @@ function RegisterContent() {
             onChange={handleChange}
           />
 
-          {/* <GoogleCaptcha /> */}
 
           {error && <p className="text-red-500 text-xs">{error}</p>}
 
