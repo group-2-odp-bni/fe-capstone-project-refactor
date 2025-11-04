@@ -5,12 +5,30 @@ export default defineConfig({
   plugins: [react()],
   server: {
     proxy: {
-      // online service
+      // online service, comment this for local testing
       "/api": {
         target: "https://api-dev.orangebybni.my.id",
         changeOrigin: true,
         secure: false,
       },
+      // uncomment this for local testing and adjust manually the port on each services
+
+      // "/api/v1/auth": {
+      //   target: "http://localhost:8081",
+      //   changeOrigin: true,
+      //   secure: false,
+      // },
+      // "/api/v1/wallets": {
+      //   target: "http://localhost:8080",
+      //   changeOrigin: true,
+      //   secure: false,
+      // },
+      // User service (8082)
+      // "/api/v1/user": {
+      //   target: "http://localhost:8082",
+      //   changeOrigin: true,
+      //   secure: false,
+      // },
     },
   },
 });

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 
-export default function CountdownTimer({ initialSeconds }) {
+export default function CountdownTimer({ initialSeconds, className = "" }) {
   const [secondsLeft, setSecondsLeft] = useState(initialSeconds);
 
   useEffect(() => {
@@ -18,7 +18,7 @@ export default function CountdownTimer({ initialSeconds }) {
   };
 
   return (
-    <p className="text-center text-gray-500 font-medium">
+    <p className={`text-center text-gray-500 font-medium ${className}`}>
       {formatTimer(secondsLeft)}
     </p>
   );
