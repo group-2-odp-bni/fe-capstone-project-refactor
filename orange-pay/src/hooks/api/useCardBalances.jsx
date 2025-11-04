@@ -16,7 +16,7 @@ function mapWalletToCard(wallet) {
   const meta = parseJsonSafe(wallet.metadata, {});
   const color = meta.colors || meta.color || "#085753ff";
   const bg =
-    meta.bg || `linear-gradient(135deg, ${color} 0%, rgba(0,0,0,0.28) 100%)`;
+    meta.bg || `linear-gradient(135deg, ${color} 0%, rgba(0, 0, 0, 0.8) 95%)`;
 
   const title =
     wallet.name && wallet.name.trim().length > 0

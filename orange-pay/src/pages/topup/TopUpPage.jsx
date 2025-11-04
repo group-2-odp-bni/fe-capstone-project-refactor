@@ -7,7 +7,7 @@ export default function TopUpPage() {
 
 
   return (
-    <MobileView>
+    // <MobileView>
       <div className="p-4">
         <p className="text-sm text-gray-600 mb-4 font-semibold mb-6">
           Top Up di app orange-pay
@@ -34,7 +34,7 @@ export default function TopUpPage() {
 
       </div>
 
-    </MobileView>
+    // {/* </MobileView> */}
 
   );
 }

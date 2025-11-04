@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import useRecentTransfer from "../../hooks/api/useRecentTransfer";
+import useRecentTransfer from "../../hooks/api/useHistory";
 import MonthChips, { MONTHS } from "../history_transaksi/MonthChips";
 
 const fmt = (n) => (Number(n) || 0).toLocaleString("id-ID");

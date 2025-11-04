@@ -1,70 +1,89 @@
 // src/components/QuickTransfer.jsx
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import useQuickTransfer from "../../hooks/api/useTransfer";
+import useTransferApi from "../../hooks/api/useTransfer";
 import QuickTransferUI from "../ui/QuickTransfer";
 
-const ITEM_W_PX = 120; // desktop fixed width
-const MOBILE_ITEM_PX = 92; // mobile min width
+const ITEM_W_PX = 120;
+const MOBILE_ITEM_PX = 92;
 const MOBILE_VISIBLE = 4;
 
-const getFirstName = (raw = "") => {
-  if (!raw) return "";
-  const s = String(raw).trim();
-  if (!s) return "";
-  return s.split(/\s+/)[0];
-};
+const getFirstName = (raw = "") =>
+  String(raw || "")
+    .trim()
+    .split(/\s+/)[0] || "";
 
-// local 08… format (UI friendly)
 const normalizePhoneLocal = (phone = "") => {
   const digits = String(phone || "").replace(/[^\d+]/g, "");
   if (!digits) return "";
   if (digits.startsWith("+62")) return "0" + digits.slice(3);
   if (digits.startsWith("62")) return "0" + digits.slice(2);
-  return digits; // already 08…
+  return digits;
 };
 
-// Map any favorite contact shape into a canonical object
-const mapFav = (c = {}) => {
-  const name =
-    c.recipientName || c.name || c.alias || c.displayName || "" ;
-
-  const phone =
-    c.recipientPhone || c.phone || "";
-
-  const receiverUserId =
+const mapFav = (c = {}) => ({
+  name: String(
+    c.recipientName || c.name || c.alias || c.displayName || ""
+  ).trim(),
+  phone: normalizePhoneLocal(c.recipientPhone || c.phone || ""),
+  receiverUserId:
     c.receiverUserId ??
     c.recipientUserId ??
     c.userId ??
-    c.user_id ??
     c.accountId ??
-    c.account_id ??
-    null;
-
-  const receiverWalletId =
+    null,
+  receiverWalletId:
     c.receiverWalletId ??
     c.walletId ??
-    c.wallet_id ??
-    null;
-
-  const lastTransferAt = c.lastTransferAt || c.updatedAt || c.createdAt || null;
-
-  return {
-    name: String(name || "").trim(),
-    phone: normalizePhoneLocal(phone || ""),
-    receiverUserId,
-    receiverWalletId,
-    lastTransferAt,
-    _raw: c,
-  };
-};
+    null,
+  lastTransferAt: c.lastTransferAt || c.updatedAt || c.createdAt || null,
+  avatarUrl: c.avatarUrl || null,
+  isFavorite: c.isFavorite ?? true,
+  _raw: c,
+});
 
 export default function QuickTransfer() {
-  // assumes your hook returns favorites/recents (whatever you call it) in `contacts`
-  const { contacts = [], loading } = useQuickTransfer({ limit: 50 });
+  const { fetchFavorites, fetchSavedContacts, lookupMainByPhone } =
+    useTransferApi();
+
+  const [contacts, setContacts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const clickLock = useRef(false);
   const navigate = useNavigate();
 
-  // Dedup by name (keep most recent)
+  // ✅ ACTUAL EFFECT TO CALL APIs
+  useEffect(() => {
+    let mounted = true;
+
+    (async () => {
+      setLoading(true);
+      try {
+        const [saved, favorites] = await Promise.all([
+          fetchSavedContacts?.() || [],
+          fetchFavorites?.() || [],
+        ]);
+
+        if (!mounted) return;
+
+        // combine and mark favorites
+        const merged = [
+          ...favorites.map((x) => ({ ...x, isFavorite: true })),
+          ...saved.map((x) => ({ ...x, isFavorite: false })),
+        ];
+
+        setContacts(merged);
+      } catch (e) {
+        console.error("QuickTransfer load error:", e);
+      } finally {
+        mounted && setLoading(false);
+      }
+    })();
+
+    return () => {
+      mounted = false;
+    };
+  }, []); // ✅ runs once
+
   const uniqueRecent = useMemo(() => {
     const map = new Map();
     for (const raw of contacts) {
@@ -76,54 +95,69 @@ export default function QuickTransfer() {
     }
     return Array.from(map.values())
       .sort((a, b) => b.when - a.when)
-      .map(x => x.contact);
+      .map((x) => x.contact);
   }, [contacts]);
 
-  const handleSelectContact = (metaOrDetails) => {
-    // Accept either what UI passes or our mapped contact
-    const m = mapFav(metaOrDetails?._raw || metaOrDetails || {});
-    const titleName = m.name || "—";
-
-    // If we already know both IDs -> go straight to amount
-    if (m.receiverUserId && m.receiverWalletId) {
-      navigate("/app/transfer", {
-        state: {
-          step: "amount",
-          data: {
-            phone: m.phone || "",
-            contactName: titleName,
-            receiverUserId: m.receiverUserId,
-            receiverWalletId: m.receiverWalletId,
-          },
-        },
-      });
-      return;
-    }
-
-    // Else we only know the user (or just phone) -> go to verify to fetch walletId
+  const goAmount = (payload) =>
     navigate("/app/transfer", {
-      state: {
-        step: "verify",
-        data: {
+      state: { step: "amount", data: payload },
+    });
+
+  const goVerify = (payload) =>
+    navigate("/app/transfer", {
+      state: { step: "verify", data: payload },
+    });
+
+  const handleSelectContact = async (metaOrDetails) => {
+    if (clickLock.current) return;
+    clickLock.current = true;
+
+    try {
+      const m = mapFav(metaOrDetails?._raw || metaOrDetails || {});
+      const titleName = m.name || "—";
+
+      if (m.receiverUserId && m.receiverWalletId) {
+        goAmount({
           phone: m.phone || "",
           contactName: titleName,
-          // pass through whatever we have; verify will fill the rest
-          receiverUserId: m.receiverUserId ?? null,
-          receiverWalletId: m.receiverWalletId ?? null,
-        },
-      },
-    });
+          receiverUserId: m.receiverUserId,
+          receiverWalletId: m.receiverWalletId,
+        });
+        return;
+      }
+
+      const found = await lookupMainByPhone(m.phone || "");
+      const finalUID = found?.receiverUserId || m.receiverUserId || null;
+      const finalWID = found?.receiverWalletId || m.receiverWalletId || null;
+
+      if (finalUID && finalWID) {
+        goAmount({
+          phone: found?.phone || m.phone || "",
+          contactName: found?.name || titleName,
+          receiverUserId: finalUID,
+          receiverWalletId: finalWID,
+        });
+      } else {
+        goVerify({
+          phone: found?.phone || m.phone || "",
+          contactName: found?.name || titleName,
+          receiverUserId: finalUID,
+          receiverWalletId: finalWID,
+        });
+      }
+
+    } finally {
+      setTimeout(() => {
+        clickLock.current = false;
+      }, 300);
+    }
   };
 
-  // Adapt to UI props
-  const itemsForUI = uniqueRecent.map((meta) => {
-    const full = meta.name || "";
-    return {
-      displayName: getFirstName(full),
-      fullName: full || meta.phone || "—",
-      meta, // we pass the mapped contact so onSelect gets consistent fields
-    };
-  });
+  const itemsForUI = uniqueRecent.map((meta) => ({
+    displayName: getFirstName(meta.name),
+    fullName: meta.name || meta.phone || "—",
+    meta, // contains isFavorite so star shows
+  }));
 
   return (
     <QuickTransferUI
