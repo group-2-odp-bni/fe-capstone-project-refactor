@@ -4,29 +4,32 @@ import EditRincian from "./EditRincian";
 import CameraPage from "./CameraPage";
 import SelectContacts from "./SelectContacts";
 import SplitBillConfirmation from "./SplitBillConfirmation";
-import SplitBillConfirmed from "./SplitBillConfirmed";
 import useTransferApi from "../../hooks/api/useTransferApi";
 import useQuickTransfer from "../../hooks/api/useQuickTransfer";
 
+import { useNavigate } from "react-router-dom";
+import api from "../../lib/api";
 
-export default function ReceiptResult({
-  receiptData,
-  onBack,
-  onConfirm,
-}) {
+const formatIDR = (n) =>
+  new Intl.NumberFormat("id-ID", {
+    style: "currency",
+    currency: "IDR",
+    maximumFractionDigits: 0,
+  }).format(n || 0);
+
+export default function ReceiptResult({ receiptData, onBack, onConfirm }) {
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [showEditPage, setShowEditPage] = useState(false);
   const [showCameraPage, setShowCameraPage] = useState(false);
   const [showContacts, setShowContacts] = useState(false);
   const [showImagePopup, setShowImagePopup] = useState(false);
   const [imageAspect, setImageAspect] = useState(9 / 16);
-  
-  const [showFinalConfirmed, setShowFinalConfirmed] = useState(false);
-  const [finalConfirmedData, setFinalConfirmedData] = useState(null);
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [editableData, setEditableData] = useState(receiptData);
   const [splitName, setSplitName] = useState(
-    editableData?.splitName || editableData?.merchantName || ""
+    editableData?.splitName || editableData?.merchantName || "Split Bill"
   );
 
   const [splitMembers, setSplitMembers] = useState([]);
@@ -36,22 +39,22 @@ export default function ReceiptResult({
   const [alertMessage, setAlertMessage] = useState("");
 
   const transferApi = useTransferApi();
-  
-  // ✅ PERBAIKAN: Hook untuk ambil quick transfer contacts (4 teratas)
   const { contacts: quickContacts } = useQuickTransfer({ limit: 4 });
 
-  const receiptImage = editableData?.imageUrl || receiptData?.imageUrl || null;
+  const receiptImage =
+    editableData?.receipt_url || receiptData?.receipt_url || null;
 
   useEffect(() => {
     if (!receiptImage) return;
     const img = new Image();
-    img.onload = () => setImageAspect((img.width / img.height) || 9 / 16);
+    img.onload = () => setImageAspect(img.width / img.height || 9 / 16);
     img.src = receiptImage;
   }, [receiptImage]);
-
   useEffect(() => {
     document.body.style.overflow = showImagePopup ? "hidden" : "";
-    return () => { document.body.style.overflow = ""; };
+    return () => {
+      document.body.style.overflow = "";
+    };
   }, [showImagePopup]);
 
   useEffect(() => {
@@ -63,18 +66,14 @@ export default function ReceiptResult({
     }
   }, [showAlert]);
 
-  const fmt = (n) => Number(n || 0).toLocaleString("id-ID");
-
   const items = editableData?.items || [];
-  const subtotal = useMemo(
-    () => items.reduce((s, it) => s + Number(it.total || 0), 0),
-    [items]
-  );
+
+  const subtotal = Number(editableData?.subtotal ?? 0);
   const pajak = Number(editableData?.pajak ?? 0);
   const service = Number(editableData?.service ?? 0);
   const discount = Number(editableData?.discount ?? 0);
-  const other = Number(editableData?.other ?? 0);
-  const total = subtotal + pajak + service + discount + other;
+  const other = Number(editableData?.tip ?? 0);
+  const total = Number(editableData?.total ?? 0);
 
   const handleProceed = () => {
     if (!splitName.trim()) {
@@ -95,8 +94,8 @@ export default function ReceiptResult({
   const handleBackFromEdit = () => setShowEditPage(false);
 
   const handleRetake = () => setShowCameraPage(true);
-  const handleCameraDone = (newImageUrl) => {
-    if (newImageUrl) setEditableData((prev) => ({ ...prev, imageUrl: newImageUrl }));
+  const handleCameraDone = (ocrResult) => {
+    if (ocrResult) setEditableData(ocrResult);
     setShowCameraPage(false);
   };
   const handleCameraBack = () => setShowCameraPage(false);
@@ -114,43 +113,56 @@ export default function ReceiptResult({
     setShowContacts(true);
   };
 
-  const handleFinalConfirm = (payload) => {
-    const finalData = {
-      ...payload,
-      splitName: splitName,
-      receiptImage: receiptImage,
-      subtotal: subtotal,
-      total: total,
-      pajak: pajak,
-      service: service,
-      discount: discount,
-      other: other,
-      members: splitMembers,
-      currentUser: { id: "me", name: "Kamu", phoneMasked: "*7196" },
-    };
-    
-    setFinalConfirmedData(finalData);
-    setShowConfirmation(false);
-    setShowFinalConfirmed(true);
+  const handleFinalConfirm = async (payloadFromConfirmation) => {
+    setIsSubmitting(true);
+    setAlertMessage("");
+    setShowAlert(false);
+
+    try {
+      const finalPayload = {
+        title: splitName,
+        destinationWalletId: "wallet_creator_123", // TODO: Ganti
+        imageUrl: receiptImage,
+
+        items: editableData.items,
+        fees: {
+          tax: pajak,
+          service: service,
+          tip: other,
+          total: total,
+        },
+
+        assignments: payloadFromConfirmation.assignments,
+        tax_strategy: "proportional",
+      };
+
+      if (!finalPayload.assignments || finalPayload.assignments.length === 0) {
+        throw new Error("Data 'assignments' (pembagian) tidak ada.");
+      }
+
+      const response = await api.post("/api/v1/split-bill/bills", finalPayload);
+
+      if (response.data && !response.data.error) {
+        const apiResponseData = response.data.data;
+        if (onConfirm) {
+          onConfirm({
+            ...apiResponseData,
+            ...finalPayload,
+          });
+        }
+      } else {
+        throw new Error(response.data.message || "Gagal membuat bill");
+      }
+    } catch (err) {
+      console.error("Gagal submit bill:", err);
+      setAlertMessage(err.message || "Gagal terhubung ke server.");
+      setShowAlert(true);
+      setIsSubmitting(false);
+    }
   };
 
-  const handleBackFromFinalConfirmed = () => {
-    setShowFinalConfirmed(false);
-    setShowConfirmation(true);
-  };
-
-  const handleBackToHomeFromFinalConfirmed = () => {
-    onConfirm?.({
-      ...finalConfirmedData,
-      completed: true,
-    });
-  };
-  
-  /* ================================================= */
-  /* ============ CONDITIONAL RENDERING ============ */
-  /* ================================================= */
-
-  if (showCameraPage) return <CameraPage onBack={handleCameraBack} onDone={handleCameraDone} />;
+  if (showCameraPage)
+    return <CameraPage onBack={handleCameraBack} onDone={handleCameraDone} />;
 
   if (showEditPage) {
     return (
@@ -162,20 +174,8 @@ export default function ReceiptResult({
     );
   }
 
-  if (showFinalConfirmed) {
-    return (
-      <SplitBillConfirmed
-        data={finalConfirmedData}
-        receiptImage={receiptImage}
-        onBack={handleBackFromFinalConfirmed}
-        onBackToHome={handleBackToHomeFromFinalConfirmed}
-      />
-    );
-  }
-
   if (showConfirmation) {
     const currentUserForConf = { id: "me", name: "Kamu", phoneMasked: "*7196" };
-
     return (
       <SplitBillConfirmation
         splitName={splitName}
@@ -191,58 +191,48 @@ export default function ReceiptResult({
         onBack={handleBackFromConfirmation}
         onEditMembers={handleEditMembers}
         onConfirm={handleFinalConfirm}
+        isSubmitting={isSubmitting}
       />
     );
   }
 
   if (showContacts) {
-    const currentUserForContacts = { id: "me", name: "Kamu", phoneMasked: "*7195", avatarText: "K" };
-    
-    // ✅ PERBAIKAN: Ambil semua contacts dari MAIN_CONTACTS (satu source)
+    const currentUserForContacts = {
+      id: "me",
+      name: "Kamu",
+      phoneMasked: "*7195",
+      avatarText: "K",
+    };
     const mainContacts = transferApi.getAllAccounts();
-    
     const allContacts = mainContacts.map((contact) => ({
       id: contact.accountId,
       name: contact.name,
       phone: contact.phone,
       isOrangePayUser: true,
     }));
-
-    // ✅ PERBAIKAN: Recommended IDs dari MAIN_CONTACTS (bukan quickContacts)
-    // Ambil 4 teratas dari mainContacts, bukan dari quickContacts yang beda source
     const recommendedIds = mainContacts
-      .slice(0, 4) // Ambil 4 teratas dari MAIN_CONTACTS
-      .map(c => c.accountId)
+      .slice(0, 4)
+      .map((c) => c.accountId)
       .filter(Boolean);
-
-    // ✅ PERBAIKAN: Debug log (bisa dihapus nanti)
-    console.log("mainContacts:", mainContacts);
-    console.log("recommendedIds:", recommendedIds);
-    console.log("quickContacts:", quickContacts);
-
     return (
       <SelectContacts
         currentUser={currentUserForContacts}
         contacts={allContacts}
         recommendedIds={recommendedIds}
-        initialSelectedIds={splitMembers.filter(m => m.id !== 'me').map(m => m.id)} 
+        initialSelectedIds={splitMembers
+          .filter((m) => m.id !== "me")
+          .map((m) => m.id)}
         onBack={() => setShowContacts(false)}
         onConfirm={({ selectedContacts }) => {
-          const currentUserAsMember = { 
-            id: currentUserForContacts.id, 
-            name: currentUserForContacts.name, 
-            phoneMasked: currentUserForContacts.phoneMasked 
+          const currentUserAsMember = {
+            id: currentUserForContacts.id,
+            name: currentUserForContacts.name,
+            phoneMasked: currentUserForContacts.phoneMasked,
           };
-          
-          const allMembers = [
-            currentUserAsMember, 
-            ...selectedContacts,
-          ];
-
+          const allMembers = [currentUserAsMember, ...selectedContacts];
           setSplitMembers(allMembers);
-          
           setShowContacts(false);
-          setShowConfirmation(true); 
+          setShowConfirmation(true);
         }}
       />
     );
@@ -251,7 +241,6 @@ export default function ReceiptResult({
   return (
     <>
       <div className="min-h-screen bg-white flex flex-col">
-        {/* Header */}
         <div className="bg-white border-b border-gray-200 px-4 py-3 sticky top-0 z-10">
           <div className="max-w-2xl mx-auto flex items-center justify-between">
             <button
@@ -260,23 +249,28 @@ export default function ReceiptResult({
               aria-label="Kembali"
             >
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                <path d="M15 18l-6-6 6-6" stroke="#1F2937" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                <path
+                  d="M15 18l-6-6 6-6"
+                  stroke="#1F2937"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
               </svg>
             </button>
-            <h1 className="text-base md:text-lg font-bold text-gray-900">Split Bill</h1>
+            <h1 className="text-base md:text-lg font-bold text-gray-900">
+              Split Bill
+            </h1>
             <div className="w-10" />
           </div>
         </div>
 
-        {/* Content */}
         <div className="flex-1 overflow-auto px-4 py-5">
           <div className="max-w-2xl mx-auto space-y-5">
-            {/* Nama Split Bill */}
             <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
               <label className="text-[13px] font-semibold text-gray-800 block mb-2">
                 Nama Split Bill
               </label>
-
               <input
                 type="text"
                 value={splitName}
@@ -285,13 +279,16 @@ export default function ReceiptResult({
                   if (splitNameError) setSplitNameError(false);
                 }}
                 className={`w-full bg-transparent border-b 
-                                   text-[13px] text-gray-900 font-medium 
-                                   focus:outline-none focus:border-[#FF9A25] 
-                                   transition-all duration-150 ease-in-out
-                                   ${splitNameError ? "border-red-500" : "border-gray-400"}`}
+                             text-[13px] text-gray-900 font-medium 
+                             focus:outline-none focus:border-[#FF9A25] 
+                             transition-all duration-150 ease-in-out
+                             ${
+                               splitNameError
+                                 ? "border-red-500"
+                                 : "border-gray-400"
+                             }`}
                 placeholder="Masukkan nama split bill"
               />
-
               {splitNameError && (
                 <p className="mt-2 text-[12px] italic font-medium text-red-600">
                   Silakan isi nama split bill
@@ -299,13 +296,13 @@ export default function ReceiptResult({
               )}
             </div>
 
-            {/* Struk berhasil di-scan */}
             <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
-              <p className="text-[13px] font-semibold text-gray-800 mb-1">Struk berhasil di-scan</p>
+              <p className="text-[13px] font-semibold text-gray-800 mb-1">
+                Struk berhasil di-scan
+              </p>
               <p className="text-[11px] text-gray-500 italic mb-3">
                 Klik gambar di bawah buat liat foto struk lebih jelas
               </p>
-
               <div className="mt-4 flex items-center justify-center gap-6">
                 {receiptImage ? (
                   <button
@@ -314,7 +311,11 @@ export default function ReceiptResult({
                     className="rounded-md overflow-hidden shadow-md hover:shadow-lg hover:scale-105 active:scale-95 transition-all duration-200"
                     style={{ width: "80px", aspectRatio: imageAspect }}
                   >
-                    <img src={receiptImage} alt="Struk" className="w-full h-full object-cover" />
+                    <img
+                      src={receiptImage}
+                      alt="Struk"
+                      className="w-full h-full object-cover"
+                    />
                   </button>
                 ) : (
                   <div
@@ -324,19 +325,23 @@ export default function ReceiptResult({
                     <span className="text-[11px] text-gray-400">No Image</span>
                   </div>
                 )}
-
                 <button
                   type="button"
                   onClick={handleRetake}
                   className="inline-flex items-center gap-2 px-4 h-10 rounded-xl bg-white border border-gray-200 shadow-[0_4px_0_rgba(0,0,0,0.06)] hover:shadow-md active:translate-y-[1px] transition-all"
                 >
-                  <img src="/camera-icon.svg" alt="Ikon kamera" className="w-[18px] h-[18px]" />
-                  <span className="font-semibold text-[13px] text-gray-800">Foto ulang</span>
+                  <img
+                    src="/camera-icon.svg"
+                    alt="Ikon kamera"
+                    className="w-[18px] h-[18px]"
+                  />
+                  <span className="font-semibold text-[13px] text-gray-800">
+                    Foto ulang
+                  </span>
                 </button>
               </div>
             </div>
 
-            {/* Items + Ringkasan */}
             <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
               <div className="space-y-3 mb-4">
                 {items.map((it, idx) => (
@@ -345,25 +350,39 @@ export default function ReceiptResult({
                       {it.name}
                     </p>
                     <span className="w-12 shrink-0 text-right text-gray-700 font-medium tabular-nums text-[13px]">
-                      x{it.quantity}
+                      x{it.qty} {/* <-- Ganti 'quantity' ke 'qty' */}
                     </span>
                     <span className="w-24 shrink-0 text-right text-gray-800 font-semibold tabular-nums text-[13px]">
-                      {fmt(it.total)}
+                      {formatIDR(it.line_subtotal_rp)}{" "}
                     </span>
                   </div>
                 ))}
               </div>
 
               <div className="space-y-2">
-                <Row label="Subtotal" value={fmt(subtotal)} />
-                <Row label="Pajak" value={fmt(pajak)} hideIfZero />
-                <Row label="Servis" value={fmt(service)} hideIfZero />
-                <Row label="Diskon" value={fmt(discount)} hideIfZero valueClass={discount < 0 ? "text-red-600" : ""} />
-                <Row label="Lainnya" value={fmt(other)} hideIfZero valueClass={other < 0 ? "text-red-600" : ""} />
-                <p className="text-[#FF9A25] text-[11px] pt-1">Pastiin jumlah sudah benar</p>
+                <Row label="Subtotal" value={formatIDR(subtotal)} />
+                <Row label="Pajak" value={formatIDR(pajak)} hideIfZero />
+                <Row label="Servis" value={formatIDR(service)} hideIfZero />
+                <Row
+                  label="Diskon"
+                  value={formatIDR(discount)}
+                  hideIfZero
+                  valueClass={discount < 0 ? "text-red-600" : ""}
+                />
+                <Row
+                  label="Lainnya"
+                  value={formatIDR(other)}
+                  hideIfZero
+                  valueClass={other < 0 ? "text-red-600" : ""}
+                />
+                <p className="text-[#FF9A25] text-[11px] pt-1">
+                  Pastiin jumlah sudah benar
+                </p>
                 <div className="flex justify-between items-center pt-3 border-t-2 border-gray-200 font-bold">
-                  <span className="text-gray-900 text-[13px]">Jumlah total</span>
-                  <span className="text-base">{fmt(total)}</span>
+                  <span className="text-gray-900 text-[13px]">
+                    Jumlah total
+                  </span>
+                  <span className="text-base">{formatIDR(total)}</span>
                 </div>
 
                 <div className="pt-4">
@@ -373,10 +392,23 @@ export default function ReceiptResult({
                     className="w-full h-11 rounded-xl bg-white border border-gray-200 shadow-[0_4px_0_rgba(0,0,0,0.06)] hover:shadow-md active:translate-y-[1px] transition-all flex items-center justify-center gap-2"
                   >
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                      <path d="M12 20h9" stroke="#FF9A25" strokeWidth="2" strokeLinecap="round" />
-                      <path d="M16.5 3.5a2.121 2.121 0 013 3L8 18l-4 1 1-4 11.5-11.5z" stroke="#FF9A25" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      <path
+                        d="M12 20h9"
+                        stroke="#FF9A25"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                      />
+                      <path
+                        d="M16.5 3.5a2.121 2.121 0 013 3L8 18l-4 1 1-4 11.5-11.5z"
+                        stroke="#FF9A25"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
                     </svg>
-                    <span className="font-semibold text-[13px] text-gray-800">Ubah Rincian</span>
+                    <span className="font-semibold text-[13px] text-gray-800">
+                      Ubah Rincian
+                    </span>
                   </button>
                 </div>
               </div>
@@ -384,7 +416,6 @@ export default function ReceiptResult({
           </div>
         </div>
 
-        {/* Footer */}
         <div className="bg-white border-t border-gray-200 px-4 py-4 sticky bottom-0">
           <div className="max-w-2xl mx-auto">
             <button
@@ -397,39 +428,66 @@ export default function ReceiptResult({
         </div>
       </div>
 
-      {/* Alert/Toast Notification */}
       {showAlert && (
         <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 animate-slide-down">
           <div className="bg-red-500 text-white px-6 py-3 rounded-xl shadow-2xl flex items-center gap-3 min-w-[280px]">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="shrink-0">
-              <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
-              <path d="M12 8v4M12 16h.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+            <svg
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              className="shrink-0"
+            >
+              <circle
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="2"
+              />
+              <path
+                d="M12 8v4M12 16h.01"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+              />
             </svg>
             <span className="font-semibold text-sm">{alertMessage}</span>
           </div>
         </div>
       )}
-
       {showImagePopup && receiptImage && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm" onClick={handleClosePopup}>
-          <div className="relative max-w-4xl max-h-[90vh] mx-4" onClick={(e) => e.stopPropagation()}>
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm"
+          onClick={handleClosePopup}
+        >
+          <div
+            className="relative max-w-4xl max-h-[90vh] mx-4"
+            onClick={(e) => e.stopPropagation()}
+          >
             <button
               onClick={handleClosePopup}
               className="absolute -top-12 right-0 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-md flex items-center justify-center transition-all active:scale-95"
               aria-label="Close"
             >
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                <path d="M6 6L18 18M6 18L18 6" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
+                <path
+                  d="M6 6L18 18M6 18L18 6"
+                  stroke="white"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                />
               </svg>
             </button>
-
-            <img src={receiptImage} alt="Struk Detail" className="max-w-full max-h-[90vh] object-contain rounded-2xl shadow-2xl" />
+            <img
+              src={receiptImage}
+              alt="Struk Detail"
+              className="max-w-full max-h-[90vh] object-contain rounded-2xl shadow-2xl"
+            />
           </div>
         </div>
       )}
-
-      {/* CSS Animation untuk slide down */}
-      <style jsx>{`
+      {/* <style jsx>{`
         @keyframes slide-down {
           from {
             opacity: 0;
@@ -443,7 +501,7 @@ export default function ReceiptResult({
         .animate-slide-down {
           animation: slide-down 0.3s ease-out;
         }
-      `}</style>
+      `}</style> */}
     </>
   );
 }

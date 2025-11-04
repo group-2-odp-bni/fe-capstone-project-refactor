@@ -13,7 +13,6 @@ export default function CameraPage({ onBack, onDone }) {
   const [showHelp, setShowHelp] = useState(false);
   const [flashMode, setFlashMode] = useState("off");
 
-  // Stop camera helper
   const stopCamera = (message) => {
     const el = videoRef.current;
     if (!el) {
@@ -64,7 +63,6 @@ export default function CameraPage({ onBack, onDone }) {
     return () => {
       stopCamera();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const toggleFacing = async () => {
@@ -80,7 +78,6 @@ export default function CameraPage({ onBack, onDone }) {
     setFlashMode(modes[nextIndex]);
   };
 
-  // Capture with crop
   const handleCapture = () => {
     const video = videoRef.current;
     if (!video || !video.videoWidth || !video.videoHeight) return;
@@ -119,14 +116,12 @@ export default function CameraPage({ onBack, onDone }) {
     setCapturedImage(imageData);
   };
 
-  // Handle gallery/file picker
   const handleOpenGallery = () => {
     if (fileInputRef.current) {
       fileInputRef.current.click();
     }
   };
 
-  // Handle file selection
   const handleFileChange = (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -161,36 +156,39 @@ export default function CameraPage({ onBack, onDone }) {
     startCamera();
   };
 
-  // ✅ Handle close button
   const handleClose = () => {
     stopCamera("Kamera dimatikan.");
     if (onBack) {
       onBack();
     }
   };
-
-  // ✅ Handle NextStep done (pass image back)
   const handleNextStepDone = (imageData) => {
     if (onDone) {
       onDone(imageData);
     }
   };
-
-  // ✅ Handle NextStep retake
   const handleRetakeFromNextStep = () => {
     setCapturedImage(null);
     startCamera();
   };
-
   if (capturedImage) {
     return (
-      <NextStep 
-        image={capturedImage} 
+      <NextStep
+        image={capturedImage}
         onRetake={handleRetakeFromNextStep}
-        onDone={handleNextStepDone}
+        onConfirm={handleNextStepDone}
       />
     );
   }
+  // if (capturedImage) {
+  //   return (
+  //     <NextStep
+  //       image={capturedImage}
+  //       onRetake={handleRetakeFromNextStep}
+  //       onDone={handleNextStepDone}
+  //     />
+  //   );
+  // }
 
   if (showHelp) {
     return <HelpScreen onClose={handleCloseHelp} />;
@@ -198,7 +196,6 @@ export default function CameraPage({ onBack, onDone }) {
 
   return (
     <div className="min-h-screen w-full bg-white flex flex-col relative overflow-hidden">
-      {/* Hidden file input */}
       <input
         ref={fileInputRef}
         type="file"
@@ -206,11 +203,8 @@ export default function CameraPage({ onBack, onDone }) {
         onChange={handleFileChange}
         className="hidden"
       />
-
-      {/* Top Controls */}
       <div className="relative z-30 px-4 sm:px-6 pt-6 pb-4 bg-white">
         <div className="max-w-2xl mx-auto flex items-center justify-between">
-          {/* ✅ Close button with onBack handler */}
           <button
             aria-label="Close"
             title="Tutup"
@@ -239,8 +233,6 @@ export default function CameraPage({ onBack, onDone }) {
               />
             </svg>
           </button>
-
-          {/* Title */}
           <h1
             className="text-lg sm:text-xl font-bold bg-gradient-to-r from-[#FF9A25] to-[#FF7A25] bg-clip-text text-transparent"
             style={{
@@ -250,7 +242,6 @@ export default function CameraPage({ onBack, onDone }) {
             Scan Struk
           </h1>
 
-          {/* Help button */}
           <button
             aria-label="Help"
             title="Bantuan"
@@ -283,7 +274,6 @@ export default function CameraPage({ onBack, onDone }) {
         </div>
       </div>
 
-      {/* Camera Preview */}
       <div className="flex-1 flex items-center justify-center px-4 py-8 relative z-10">
         <div
           className="w-full max-w-md aspect-[9/16] rounded-3xl overflow-hidden relative
@@ -294,7 +284,6 @@ export default function CameraPage({ onBack, onDone }) {
               "zoomIn 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) 0.3s both",
           }}
         >
-          {/* Video element */}
           <video
             ref={videoRef}
             autoPlay
@@ -303,9 +292,7 @@ export default function CameraPage({ onBack, onDone }) {
             className="absolute inset-0 w-full h-full object-cover"
           />
 
-          {/* Scan guide overlay */}
           <div className="absolute inset-0 pointer-events-none">
-            {/* Corner brackets */}
             <svg
               className="absolute inset-4 w-[calc(100%-32px)] h-[calc(100%-32px)]"
               viewBox="0 0 100 100"
@@ -341,14 +328,19 @@ export default function CameraPage({ onBack, onDone }) {
               />
 
               <defs>
-                <linearGradient id="gradient1" x1="0%" y1="0%" x2="100%" y2="0%">
+                <linearGradient
+                  id="gradient1"
+                  x1="0%"
+                  y1="0%"
+                  x2="100%"
+                  y2="0%"
+                >
                   <stop offset="0%" stopColor="#FF9A25" stopOpacity="0.9" />
                   <stop offset="100%" stopColor="#FFCE52" stopOpacity="0.9" />
                 </linearGradient>
               </defs>
             </svg>
 
-            {/* Center guide text */}
             <div className="absolute inset-0 flex items-center justify-center">
               <div
                 className="backdrop-blur-md bg-white/90 px-4 py-2 rounded-full border border-gray-200 shadow-lg"
@@ -363,7 +355,6 @@ export default function CameraPage({ onBack, onDone }) {
             </div>
           </div>
 
-          {/* Error/Loading overlay */}
           {!streaming && (
             <div className="absolute inset-0 bg-white backdrop-blur-sm flex items-center justify-center">
               <div className="text-center px-6">
@@ -385,10 +376,8 @@ export default function CameraPage({ onBack, onDone }) {
         </div>
       </div>
 
-      {/* Bottom Controls */}
       <div className="relative z-30 px-4 sm:px-6 pb-6 pt-4 bg-white">
         <div className="max-w-2xl mx-auto flex items-center justify-between">
-          {/* Gallery button */}
           <button
             onClick={handleOpenGallery}
             aria-label="Open gallery"
@@ -427,7 +416,6 @@ export default function CameraPage({ onBack, onDone }) {
             </svg>
           </button>
 
-          {/* Capture button */}
           <button
             onClick={handleCapture}
             disabled={!streaming}
@@ -454,7 +442,6 @@ export default function CameraPage({ onBack, onDone }) {
             />
           </button>
 
-          {/* Flash toggle */}
           <button
             aria-label="Flash"
             title={`Flash: ${flashMode}`}
@@ -483,7 +470,6 @@ export default function CameraPage({ onBack, onDone }) {
           </button>
         </div>
 
-        {/* Flip camera button */}
         <button
           onClick={toggleFacing}
           aria-label="Flip camera"
@@ -509,7 +495,6 @@ export default function CameraPage({ onBack, onDone }) {
         </button>
       </div>
 
-      {/* Animations */}
       <style>{`
         @keyframes fadeInDown {
           from { opacity: 0; transform: translateY(-20px); }
