@@ -1,6 +1,6 @@
 // src/components/transfer/StepVerifyContact.jsx
-import React, { useRef, useState } from "react";
-import useTransferApi from "../../hooks/api/useTransferApi";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import useTransferApi from "../../hooks/api/useTransfer";
 import { useTransfer } from "../../context/TransferContext";
 import BottomConfirmSheet from "../ui/transfer/BottomConfirmSheet";
 
@@ -12,6 +12,15 @@ function normalizePhone(phone = "") {
   if (digits.startsWith("62")) return "0" + digits.slice(2);
   return digits;
 }
+function toE164ID(phone = "") {
+  const raw = (phone || "").replace(/[^\d+]/g, "");
+  if (!raw) return "";
+  if (raw.startsWith("+62")) return raw;
+  if (raw.startsWith("62")) return "+" + raw;
+  if (raw.startsWith("0")) return "+62" + raw.slice(1);
+  if (raw.startsWith("+")) return raw;
+  return raw;
+}
 function formatPhoneDisplay(phone = "") {
   if (!phone) return "";
   const digits = (phone || "").replace(/\D/g, "");
@@ -19,6 +28,42 @@ function formatPhoneDisplay(phone = "") {
   if (digits.startsWith("62")) return `+62 ${digits.slice(2)}`;
   if (digits.startsWith("8")) return `+62 ${digits}`;
   return `+${digits}`;
+}
+
+/** Map API verify/inquiry response into a unified contact shape */
+function mapApiContact(payload = {}, fallbackPhoneE164 = "") {
+  const name =
+    payload.name ||
+    payload.fullName ||
+    payload.accountName ||
+    payload.alias ||
+    "";
+
+  const phoneE164 =
+    payload.phoneNumber || payload.phone || payload.msisdn || fallbackPhoneE164;
+
+  const receiverUserId =
+    payload.userId ??
+    payload.user_id ??
+    payload.accountId ??
+    payload.account_id ??
+    null;
+
+  const receiverWalletId =
+    payload.walletId ??
+    payload.wallet_id ??
+    payload.mainWalletId ??
+    payload.main_wallet_id ??
+    payload.destinationWalletId ??
+    payload.destination_wallet_id ??
+    null;
+
+  return {
+    name: String(name || ""),
+    phone: normalizePhone(String(phoneE164 || "")), // UI uses 08…
+    receiverUserId,
+    receiverWalletId, 
+  };
 }
 
 export default function StepVerifyContact() {
@@ -33,43 +78,96 @@ export default function StepVerifyContact() {
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(data?.phone || "");
 
-  React.useEffect(() => {
+  useEffect(() => {
     mountedRef.current = true;
     return () => {
       mountedRef.current = false;
     };
   }, []);
 
+  // Prefilled from StepSelectContacts (after inquiry or saved contact)
+  const prefilled = useMemo(
+    () => ({
+      name: data?.contactName || "",
+      phone: data?.phone || "",
+      receiverUserId: data?.receiverUserId ?? data?.accountId ?? null,
+      receiverWalletId: data?.receiverWalletId ?? data?.walletId ?? null,
+      // keep sender wallet as-is (do not touch it here)
+      senderWalletId: data?.senderWalletId ?? null,
+    }),
+    [data]
+  );
+
+  // If we already have IDs from the previous step, show the confirm sheet immediately.
+  useEffect(() => {
+    const hasIds = !!(prefilled.receiverUserId || prefilled.receiverWalletId);
+    if (!hasIds) return;
+
+    setContact({
+      name: prefilled.name || "—",
+      phone: normalizePhone(prefilled.phone || ""),
+      receiverUserId: prefilled.receiverUserId || null,
+      receiverWalletId: prefilled.receiverWalletId || null,
+    });
+    setStatus("found");
+    setSheetVisible(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // run once on mount
+
   const runVerify = async () => {
     setErrorMsg("");
     setContact(null);
 
-    const raw = (data?.phone || "").toString().trim();
+    const raw = (isEditing ? editValue : data?.phone || "").toString().trim();
     if (!raw) {
       setStatus("invalid");
       setErrorMsg("No phone to verify");
       return;
     }
 
-    const normalized = normalizePhone(raw);
-    if (!normalized) {
+    const normalized08 = normalizePhone(raw);
+    if (!normalized08) {
       setStatus("invalid");
       setErrorMsg("Invalid phone format");
       return;
     }
 
+    // If IDs already exist (prefilled), skip network and confirm directly
+    if (prefilled.receiverUserId || prefilled.receiverWalletId) {
+      setStatus("found");
+      setContact({
+        name: prefilled.name || "—",
+        phone: normalized08,
+        receiverUserId: prefilled.receiverUserId || null,
+        receiverWalletId: prefilled.receiverWalletId || null,
+      });
+      setSheetVisible(true);
+      return;
+    }
+
+    // Otherwise, call backend verify/inquiry once
     setStatus("checking");
     try {
-      const res = await api.verifyPhone(normalized);
+      const phoneE164 = toE164ID(normalized08);
+      const res = await api.verifyPhone(phoneE164); // expects +62 format
       if (!mountedRef.current) return;
-      if (res.status === "saved" || res.status === "main") {
+
+      const payload =
+        (res?.contact && res.contact) ||
+        (res?.data && res.data) ||
+        res ||
+        {};
+
+      const mapped = mapApiContact(payload, phoneE164);
+
+      if (mapped.receiverUserId || mapped.receiverWalletId) {
+        setContact(mapped);
         setStatus("found");
-        setContact(res.contact || null);
         setSheetVisible(true);
-        return;
+      } else {
+        setStatus("notfound");
+        setErrorMsg("Number not found on Orange-Pay");
       }
-      setStatus("invalid");
-      setErrorMsg("Invalid phone");
     } catch (err) {
       if (!mountedRef.current) return;
       setStatus("error");
@@ -77,33 +175,53 @@ export default function StepVerifyContact() {
     }
   };
 
-  const handleConfirm = async () => {
-    if (contact) {
-      setData({
-        phone: contact.phone,
-        contactName: contact.name,
-        accountId: contact.accountId,
-        verified: true, // <-- mark verified
-      });
-    } else {
-      setData({
-        phone: normalizePhone(data?.phone || ""),
-        contactName: "",
-        accountId: null,
-        verified: true, // <-- mark verified even for fallback
-      });
-    }
+  const handleConfirm = () => {
+    const normalized08 = contact?.phone || normalizePhone(data?.phone || "");
+
+    setData({
+      // keep sender wallet unchanged
+      senderWalletId: data?.senderWalletId ?? null,
+
+      // receiver info
+      phone: normalized08,
+      contactName: contact?.name || data?.contactName || "",
+      receiverUserId:
+        contact?.receiverUserId ??
+        data?.receiverUserId ??
+        data?.accountId ??
+        null,
+      receiverWalletId:
+        contact?.receiverWalletId ??
+        data?.receiverWalletId ??
+        data?.walletId ??
+        null,
+
+      verified: true,
+    });
+
     setSheetVisible(false);
     setStep("amount");
   };
-  
 
   const handleSaveEdit = () => {
-    setData({ ...data, phone: editValue });
+    // When editing the phone, clear ONLY receiver IDs to avoid mismatches
+    setData({
+      ...data,
+      phone: editValue,
+      receiverUserId: null,
+      receiverWalletId: null,
+      accountId: null,
+      walletId: null,
+      verified: false,
+      // senderWalletId remains as-is
+    });
     setIsEditing(false);
+    setStatus("idle");
+    setContact(null);
+    setErrorMsg("");
   };
 
-  const formattedPhone = formatPhoneDisplay(data?.phone || "");
+  const formattedPhone = formatPhoneDisplay(isEditing ? editValue : data?.phone || "");
 
   return (
     <div>
@@ -129,13 +247,11 @@ export default function StepVerifyContact() {
           )}
         </div>
 
-        {/* Toggle button: X when view mode, check when editing */}
+        {/* Toggle button: check when editing, X when view mode */}
         <div className="ml-3">
           <button
             type="button"
-            onClick={() =>
-              isEditing ? handleSaveEdit() : setIsEditing(true)
-            }
+            onClick={() => (isEditing ? handleSaveEdit() : setIsEditing(true))}
             className="h-8 w-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-500 transition"
           >
             {isEditing ? (
@@ -171,12 +287,12 @@ export default function StepVerifyContact() {
         </div>
       </div>
 
-      {/* === ERROR TEXT === */}
+      {/* error text */}
       {errorMsg ? (
         <div className="text-xs text-red-500 mb-3 text-center">{errorMsg}</div>
       ) : null}
 
-      {/* === VERIFY BUTTON === */}
+      {/* verify button */}
       <button
         onClick={runVerify}
         disabled={status === "checking"}
@@ -189,12 +305,12 @@ export default function StepVerifyContact() {
         {status === "checking" ? "Checking…" : "Verify"}
       </button>
 
-      {/* === CONFIRM SHEET === */}
+      {/* confirm sheet */}
       <BottomConfirmSheet
         visible={sheetVisible}
         contact={{
-          name: contact?.name || "—",
-          phone: formatPhoneDisplay(data?.phone || "") || "—",
+          name: contact?.name || data?.contactName || "—",
+          phone: formatPhoneDisplay(contact?.phone || data?.phone || "") || "—",
         }}
         onClose={() => setSheetVisible(false)}
         onConfirm={handleConfirm}

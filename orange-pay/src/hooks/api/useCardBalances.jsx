@@ -14,9 +14,9 @@ function parseJsonSafe(v, fb = {}) {
 
 function mapWalletToCard(wallet) {
   const meta = parseJsonSafe(wallet.metadata, {});
-  const color = meta.colors || meta.color || "#2F5755";
+  const color = meta.colors || meta.color || "#085753ff";
   const bg =
-    meta.bg || `linear-gradient(135deg, ${color} 0%, rgba(0,0,0,0.28) 100%)`;
+    meta.bg || `linear-gradient(135deg, ${color} 0%, rgba(0, 0, 0, 0.8) 95%)`;
 
   const title =
     wallet.name && wallet.name.trim().length > 0
@@ -34,17 +34,18 @@ function mapWalletToCard(wallet) {
     walletName: title,
     title,
     type: uiType,
+    defaultForUser: isMain,
     isMain,
     serverType,
     bg,
     accent: color,
     balance: Number(wallet.balanceSnapshot ?? 0),
     links: {
-      history: `/app/wallets/${wallet.id}/history`,
-      split: `/app/wallets/${wallet.id}/split`,
-      topup: `/app/wallets/${wallet.id}/topup`,
-      addbalancefromwallet: `/app/wallets/${wallet.id}/add`,
-      transfer: `/app/wallets/${wallet.id}/transfer`,
+      history: `/app/wallets/history`,
+      split: `/app/wallets/split`,
+      topup: `/app/topup`,
+      addbalancefromwallet: `/app/wallets/add`,
+      transfer: `/app/transfer`,
     },
   };
 }

@@ -32,7 +32,7 @@ import AddBalanceFromWalletPage from "../pages/AddBalanceFromWalletPageNew";
 import AllHistoryPage from "../pages/AllHistory";
 import ConfirmAddBalancePage from "../pages/ConfirmAddBalancePage";
 // import ReceiptPage from "../pages/ReceiptPage";
-import ReceiptPage from "../pages/ReceiptAddBalanceFromWalletPage";
+import ReceiptPage from "../pages/ReceiptPage";
 import InviteClaimPage from "../pages/InviteClaimsPage";
 import AddBalancePinPage from "../pages/AddBalancePinPage";
 /* login flow context & step guard */

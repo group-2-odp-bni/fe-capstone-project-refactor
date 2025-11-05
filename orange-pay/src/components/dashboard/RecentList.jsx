@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import useRecentTransfer from "../../hooks/api/useRecentTransfer";
+import useRecentTransfer from "../../hooks/api/useHistory";
 
 export default function RecentList() {
   const { users = [], loading } = useRecentTransfer();

@@ -1,7 +1,7 @@
 // src/components/transfer/StepPin.jsx
 import React, { useState, useEffect } from "react";
 import { useTransfer } from "../../context/TransferContext";
-import useTransferApi from "../../hooks/api/useTransferApi";
+import useTransferApi from "../../hooks/api/useTransfer";
 import { useNavigate } from "react-router-dom";
 
 const Key = ({ children, onClick, className }) => (
@@ -11,7 +11,7 @@ const Key = ({ children, onClick, className }) => (
 export default function StepPin() {
   // ----- hooks first -----
   const { data, setStep, reset } = useTransfer();
-  const { performTransfer } = useTransferApi();
+  const { executeTransfer } = useTransferApi();
   const navigate = useNavigate();
 
   const [pin, setPinLocal] = useState("");
@@ -20,7 +20,7 @@ export default function StepPin() {
 
   // redirect if required data missing
   useEffect(() => {
-    if (!data || !data.phone || !data.amount) {
+    if (!data || !data.phone || !data.amount || !data.transactionId) {
       navigate("/app/transfer", { replace: true });
     }
   }, [data, navigate]);
@@ -45,18 +45,16 @@ export default function StepPin() {
       return;
     }
 
+    if (!data.transactionId) {
+      setError("Missing transaction ID");
+      return;
+    }
+
     setLoading(true);
 
     try {
-      console.log("StepPin: calling performTransfer with", { phone: data.phone, amount: data.amount, note: data.note });
-
-      const res = await performTransfer({
-        phone: data.phone,
-        amount: data.amount,
-        note: data.note,
-        pin,
-      });
-
+      // ✅ pass transactionId to execute endpoint
+      const res = await executeTransfer({ transactionId: data.transactionId, pin });
       console.log("StepPin: performTransfer result:", res);
 
       if (!res) {
@@ -69,16 +67,22 @@ export default function StepPin() {
         return;
       }
 
-      // success: receipt saved by mock API and returned as `res`
-      const tx = res.transactionId;
-      console.log("StepPin: navigating to success tx=", tx);
+      // Prefer transactionId returned, fallback to initiated one
+      const tx =
+        res.transactionId ||
+        res.transaction_id ||
+        res.id ||
+        data.transactionId;
 
-      // Navigate to success page (receipt page will fetch receipt from mock API).
-      // Do NOT reset here. StepSuccess will reset the flow on unmount.
+      console.log("StepPin: navigating to success tx=", tx);
       navigate(`/app/transfer/success?tx=${encodeURIComponent(tx)}`, { replace: false });
     } catch (err) {
       console.error("submitPinAndTransfer error:", err);
-      setError(err?.message || "Transfer error");
+      const apiMsg =
+        err?.response?.data?.message ||
+        err?.response?.data?.error ||
+        err?.message;
+      setError(apiMsg || "Transfer error");
     } finally {
       setPinLocal("");
       setLoading(false);
