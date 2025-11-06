@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import ContentBox from "../../components/common/ContentBox";
 import WhiteHeader from "../../components/register/WhiteHeader";
@@ -16,11 +16,6 @@ export default function TransactionLimitPage() {
     const navigate = useNavigate();
     const { limitData, setLimitData } = useTransactionLimitContext()
 
-    //toggle state
-    const [isDailyLimitOn, setIsDailyLimitOn] = useState(false);
-    const [isWeeklyLimitOn, setIsWeeklyLimitOn] = useState(false);
-    const [isMonthlyLimitOn, setIsMonthlyLimitOn] = useState(false);
-
 
     const getUserLimit = async () => {
 
@@ -35,12 +30,17 @@ export default function TransactionLimitPage() {
             enforceWeekly: response.data.data.enforceWeekly,
             weeklyRemainingRp: response.data.data.weeklyRemainingRp,
 
-            weeklyMaxRp: response.data.data.monthlyMaxRp,
+            monthlyMaxRp: response.data.data.monthlyMaxRp,
             enforceMonthly: response.data.data.enforceMonthly,
             monthlyRemainingRp: response.data.data.monthlyRemainingRp,
         });
 
+
     }
+
+    useEffect(() => {
+        getUserLimit();
+    }, []);
 
 
     return (
@@ -51,7 +51,7 @@ export default function TransactionLimitPage() {
                     <div className="flex items-center justify-between">
                         <H2Medium>Daily Limit : </H2Medium>
                         <ToggleSwitch
-                            disabled="true"
+                            disabled={true}
                             name="enforceDaily"
                             enabled={limitData.enforceDaily}
                             onToggle={(val) =>
@@ -64,7 +64,7 @@ export default function TransactionLimitPage() {
                         name="dailyMaxRp"
                         type="number"
                         value={limitData.dailyMaxRp}
-                        readOnly="true"
+                        readOnly={true}
                     />
 
 
@@ -72,7 +72,7 @@ export default function TransactionLimitPage() {
                     <div className="flex items-center justify-between">
                         <H2Medium>Weekly Limit : </H2Medium>
                         <ToggleSwitch
-                            disabled="true"
+                            disabled={true}
                             name="enforceWeekly"
                             enabled={limitData.enforceWeekly}
                             onToggle={(val) =>
@@ -85,15 +85,15 @@ export default function TransactionLimitPage() {
                         id="weeklyMaxRp"
                         name="weeklyMaxRp"
                         type="number"
-                        value={limitData.dailyMaxRp}
-                        readOnly="true"
+                        value={limitData.weeklyMaxRp}
+                        readOnly={true}
                     />
 
 
                     <div className="flex items-center justify-between">
                         <H2Medium>Monthly Limit : </H2Medium>
                         <ToggleSwitch
-                            disabled="true"
+                            disabled={true}
                             name="enforceMonthly"
                             enabled={limitData.enforceMonthly}
                             onToggle={(val) =>
@@ -106,7 +106,7 @@ export default function TransactionLimitPage() {
                         name="monthlyMaxRp"
                         type="number"
                         value={limitData.monthlyMaxRp}
-                        readOnly="true"
+                        readOnly={true}
                     />
 
 

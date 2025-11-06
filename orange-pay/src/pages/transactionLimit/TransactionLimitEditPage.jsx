@@ -6,9 +6,9 @@ import MobileView from "../../components/view/MobileView";
 import api from "../../lib/api";
 import { useTransactionLimitContext } from "../../context/TransactionLimitContext";
 import H2Medium from "../../components/text/H2Medium";
-import { FullActionButton } from "../../components/button/FullActionButton";
 import ToggleSwitch from "../../components/button/ToggleSwitch";
 import NumberInputField from "../../components/input/NumberInputField";
+import { FullSubmitButton } from "../../components/button/FullSubmitButton";
 
 export default function TransactionLimitEditPage() {
     const navigate = useNavigate();
@@ -24,6 +24,8 @@ export default function TransactionLimitEditPage() {
 
         monthlyMaxRp: limitData.monthlyMaxRp || 0,
         enforceMonthly: limitData.enforceMonthly || false,
+
+        timezone: "Asia/Jakarta",
     });
 
     const handleChange = (e) => {
@@ -34,7 +36,7 @@ export default function TransactionLimitEditPage() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            await api.post("/api/v1/wallets/limits", formData);
+            await api.put("/api/v1/wallets/limits", formData);
             navigate(-1);
         } catch (error) {
             console.error("Error updating limits:", error);
@@ -109,7 +111,7 @@ export default function TransactionLimitEditPage() {
                         />
 
 
-                    <FullActionButton onClick={handleSubmit}>Save Changes</FullActionButton>
+                    <FullSubmitButton>Save Changes</FullSubmitButton>
                 </form>
             </ContentBox>
         </MobileView>
