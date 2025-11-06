@@ -2,25 +2,18 @@
 import React, { useEffect } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
-import PhoneLayoutBackground from "../../components/PhoneLayoutBackground";
-import MobileShell from "../../components/layout/MobileShell";
-import { FullSubmitButton } from "../../components/button/FullSubmitButton";
-import WhiteCardContainer from "../../components/register/WhiteCardContainer";
 import UserInfoCard from "../../components/account/userInfoCard";
-import OrangeHeader from "../../components/register/OrangeHeader";
 import ProfileImage from "../../components/account/ProfileImage";
 import { clearTokens } from "../../services/auth/authService";
 import { FullActionButton } from "../../components/button/FullActionButton";
 import { useProfileContext } from "../../context/ProfileContext";
+import MobileView from "../../components/view/MobileView";
+import WhiteHeader from "../../components/register/WhiteHeader";
+import ContentBox from "../../components/common/ContentBox";
 
 export default function ProfilePage() {
   const navigate = useNavigate();
   const { profileData, setProfileData } = useProfileContext();
-
-  const handleLogout = () => {
-    clearTokens();
-    navigate("/login", { replace: true });
-  };
 
   useEffect(() => {
     const getUserProfile = async () => {
@@ -51,32 +44,30 @@ export default function ProfilePage() {
   }, []);
 
   return (
-    <PhoneLayoutBackground>
-      <MobileShell>
-        <OrangeHeader />
+    <MobileView>
+      <WhiteHeader title="Akun Saya" />
+      <ContentBox>
+        <ProfileImage />
 
-        <WhiteCardContainer>
-          <ProfileImage />
+        <UserInfoCard
+          name={profileData.name}
+          email={profileData.email}
+          phone={profileData.phoneNumber}
+          phoneVerified={profileData.phoneVerified}
+          emailVerified={profileData.emailVerified}
+          emailVerifyLink="/app/verifyEmail"
+          phoneVerifyLink="/app/verifyPhone"
+        />
 
-          <UserInfoCard
-            name={profileData.name}
-            email={profileData.email}
-            phone={profileData.phoneNumber}
-            phoneVerified={profileData.phoneVerified}
-            emailVerified={profileData.emailVerified}
-            emailVerifyLink="/app/verifyEmail"
-            phoneVerifyLink="/app/verifyPhone"
-          />
+        <div className="mt-6">
+          <FullActionButton onClick={() => navigate("/app/editProfile")}>
+            Edit Data
+          </FullActionButton>
+        </div>
 
-          <div className="mt-6 space-y-3">
-            <FullActionButton onClick={() => navigate("/app/editProfile")}>
-              Edit Data
-            </FullActionButton>
+      </ContentBox>
 
-            <FullActionButton onClick={handleLogout}>Keluar</FullActionButton>
-          </div>
-        </WhiteCardContainer>
-      </MobileShell>
-    </PhoneLayoutBackground>
+    </MobileView>
+
   );
 }

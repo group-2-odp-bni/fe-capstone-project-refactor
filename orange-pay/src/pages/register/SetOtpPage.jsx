@@ -41,7 +41,7 @@ function SetOtpContent() {
   const [otp, setOtp] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [timer, setTimer] = useState(300); // 5 minutes in seconds
+  const [timer, setTimer] = useState(60); // 5 minutes in seconds
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -75,7 +75,7 @@ function SetOtpContent() {
 
       setLoginData({ stateToken: response.data.data.stateToken });
       setOtp("");
-      setTimer(300); // Reset 5-minute timer
+      setTimer(60); // Reset 5-minute timer
     } catch (err) {
       console.error(err);
       setError(
@@ -99,7 +99,7 @@ function SetOtpContent() {
           value={otp}
           onChange={(e) => setOtp(e.target.value)}
         />
-        <CountdownTimer initialSeconds={300} />
+        <CountdownTimer initialSeconds={60} />
 
         {error && <p className="text-red-500 text-xs">{error}</p>}
 
