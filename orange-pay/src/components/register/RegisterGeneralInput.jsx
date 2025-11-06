@@ -15,12 +15,12 @@ export default function InputField({
   ...props
 }) {
   return (
-    <div className={clsx("w-full text-xs", className)}>
+    <div className={clsx("w-full text-sm", className)}>
       {/* Label */}
       {label && (
         <label
           htmlFor={id || name}
-          className="block font-medium text-gray-700 mb-1"
+          className="block text-gray-700 mb-1"
         >
           {label}
           {required && <span className="text-red-500"> *</span>}

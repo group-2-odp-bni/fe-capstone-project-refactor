@@ -60,6 +60,8 @@ import AccountLandingPage from "../pages/account/AccountLandingPage";
 
 /* transaction limit */
 import TransactionLimitPage from "../pages/transactionLimit/TransactionLimitPage";
+import { TransactionLimitProvider } from "../context/TransactionLimitContext";
+import TransactionLimitEditPage from "../pages/transactionLimit/TransactionLimitEditPage";
 
 /* topup */
 import { TopupProvider } from "../context/TopupContext";
@@ -127,6 +129,14 @@ function TopupLayout() {
     <TopupProvider>
       <Outlet />
     </TopupProvider>
+  );
+}
+
+function TransactionLimitLayout() {
+  return (
+    <TransactionLimitProvider>
+      <Outlet />
+    </TransactionLimitProvider>
   );
 }
 
@@ -227,7 +237,6 @@ export default function AppRoutes() {
           </Route>
 
 
-
           {/* user profile page */}
           <Route element={<ProfileLayout />}>
             <Route path="profile" element={<ProfilePage />} />
@@ -237,8 +246,10 @@ export default function AppRoutes() {
           </Route>
 
           {/* user transaction limit page */}
-          <Route path="transactionLimit" element={<TransactionLimitPage />} />
-
+          <Route element={<TransactionLimitLayout />}>
+            <Route path="transactionLimit" element={<TransactionLimitPage />} />
+            <Route path="edittransactionLimit" element={<TransactionLimitEditPage />} />
+          </Route>
 
 
           <Route path="wallets">
@@ -281,6 +292,6 @@ export default function AppRoutes() {
 
         <Route path="*" element={<NotFound />} />
       </Routes>
-    </BrowserRouter>
+    </BrowserRouter >
   );
 }

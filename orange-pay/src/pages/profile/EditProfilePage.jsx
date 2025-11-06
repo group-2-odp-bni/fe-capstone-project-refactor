@@ -1,14 +1,13 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
-import PhoneLayoutBackground from "../../components/PhoneLayoutBackground";
-import MobileShell from "../../components/layout/MobileShell";
-import OrangeHeader from "../../components/register/OrangeHeader";
-import WhiteCardContainer from "../../components/register/WhiteCardContainer";
 import InputField from "../../components/account/AccountGeneralInput";
 import { FullSubmitButton } from "../../components/button/FullSubmitButton";
 import ProfileImage from "../../components/account/ProfileImage";
 import { useProfileContext } from "../../context/ProfileContext";
+import MobileView from "../../components/view/MobileView";
+import WhiteHeader from "../../components/register/WhiteHeader";
+import ContentBox from "../../components/common/ContentBox";
 
 export default function EditProfilePage() {
     const navigate = useNavigate();
@@ -101,52 +100,47 @@ export default function EditProfilePage() {
     };
 
     return (
-        <PhoneLayoutBackground>
-            <MobileShell>
-                <OrangeHeader />
-                <WhiteCardContainer>
-                    <ProfileImage />
-                    <h2 className="text-2xl font-semibold text-center text-gray-800 mb-6">
-                        Edit Akun
-                    </h2>
+        <MobileView>
+            <WhiteHeader title="Edit Akun" />
+            <ContentBox>
+                <ProfileImage />
 
-                    <form onSubmit={handleSave}>
-                        <InputField
-                            id="name"
-                            name="name"
-                            label="Nama:"
-                            value={profileData.name}
-                            onChange={handleChange}
-                        />
+                <form onSubmit={handleSave}>
+                    <InputField
+                        id="name"
+                        name="name"
+                        label="Nama:"
+                        value={profileData.name}
+                        onChange={handleChange}
+                    />
 
-                        <InputField
-                            id="email"
-                            name="email"
-                            label="Email:"
-                            value={profileData.email}
-                            onChange={handleChange}
-                        />
+                    <InputField
+                        id="email"
+                        name="email"
+                        label="Email:"
+                        value={profileData.email}
+                        onChange={handleChange}
+                    />
 
-                        <InputField
-                            id="phone"
-                            name="phoneNumber"
-                            label="Nomor Telepon:"
-                            value={profileData.phoneNumber}
-                            onChange={handleChange}
-                        />
+                    <InputField
+                        id="phone"
+                        name="phoneNumber"
+                        label="Nomor Telepon:"
+                        value={profileData.phoneNumber}
+                        onChange={handleChange}
+                    />
 
-                        {error && (
-                            <p className="text-red-500 text-sm text-center mt-2">{error}</p>
-                        )}
+                    {error && (
+                        <p className="text-red-500 text-sm text-center mt-2">{error}</p>
+                    )}
 
-                        <div className="mt-4">
-                            <FullSubmitButton>
-                                {loading ? "Menyimpan..." : "Simpan Data"}
-                            </FullSubmitButton>
-                        </div>
-                    </form>
-                </WhiteCardContainer>
-            </MobileShell>
-        </PhoneLayoutBackground>
+                    <div className="mt-4">
+                        <FullSubmitButton>
+                            {loading ? "Menyimpan..." : "Simpan Data"}
+                        </FullSubmitButton>
+                    </div>
+                </form>
+            </ContentBox>
+        </MobileView>
     );
 }

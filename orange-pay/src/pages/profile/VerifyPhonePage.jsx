@@ -3,14 +3,13 @@ import PhoneLayoutBackground from "../../components/PhoneLayoutBackground";
 import MobileShell from "../../components/layout/MobileShell";
 import WhiteCardContainer from "../../components/register/WhiteCardContainer";
 import OrangeHeader from "../../components/register/OrangeHeader";
-import InputField from "../../components/register/RegisterGeneralInput";
 import { FullSubmitButton } from "../../components/button/FullSubmitButton";
 import RegisterTextContainer from "../../components/register/RegisterTextContainer";
 import OtpInputField from "../../components/input/OtpInputField";
 
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import ButtonLink from "../../components/button/ButtonLink";
+
 
 
 export default function VerifyPhonePage() {
