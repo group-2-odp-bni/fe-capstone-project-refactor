@@ -32,7 +32,7 @@ import AddBalanceFromWalletPage from "../pages/AddBalanceFromWalletPageNew";
 import AllHistoryPage from "../pages/AllHistory";
 import ConfirmAddBalancePage from "../pages/ConfirmAddBalancePage";
 // import ReceiptPage from "../pages/ReceiptPage";
-import ReceiptPage from "../pages/ReceiptAddBalanceFromWalletPage";
+import ReceiptPage from "../pages/ReceiptPage";
 import InviteClaimPage from "../pages/InviteClaimsPage";
 import AddBalancePinPage from "../pages/AddBalancePinPage";
 /* login flow context & step guard */
@@ -63,6 +63,9 @@ import TransactionLimitPage from "../pages/transactionLimit/TransactionLimitPage
 
 /* topup */
 import { TopupProvider } from "../context/TopupContext";
+import SetAmountPage from "../pages/topup/SetAmountPage";
+import TopUpConfirmationPage from "../pages/topup/TopupConfirmationPage";
+import TopupResultPage from "../pages/topup/TopupResultPage";
 import TopUpPage from "../pages/topup/TopUpPage";
 
 export function PublicRoute({ children, redirectTo = "/app/dashboard" }) {
@@ -216,8 +219,11 @@ export default function AppRoutes() {
           <Route path="account" element={<AccountLandingPage />} />
 
           {/* topup page */}
-          <Route element={<TopupLayout />}>
-            <Route path="topup" element={<TopUpPage />} />
+          <Route path="topup" element={<TopupLayout />}>
+            <Route index element={<TopUpPage />} />
+            <Route path="setAmount" element={<SetAmountPage />} />
+            <Route path="confirm" element={<TopUpConfirmationPage />} />
+            <Route path="result" element={<TopupResultPage />} />
           </Route>
 
 

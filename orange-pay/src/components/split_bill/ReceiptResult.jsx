@@ -5,8 +5,7 @@ import CameraPage from "./CameraPage";
 import SelectContacts from "./SelectContacts";
 import SplitBillConfirmation from "./SplitBillConfirmation";
 import SplitBillConfirmed from "./SplitBillConfirmed";
-import useTransferApi from "../../hooks/api/useTransferApi";
-import useQuickTransfer from "../../hooks/api/useQuickTransfer";
+import useQuickTransfer from "../../hooks/api/useTransfer";
 
 
 export default function ReceiptResult({

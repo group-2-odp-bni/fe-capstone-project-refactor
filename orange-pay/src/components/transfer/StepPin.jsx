@@ -1,14 +1,14 @@
 // src/components/transfer/StepPin.jsx
 import React, { useEffect, useRef, useState } from "react";
 import { useTransfer } from "../../context/TransferContext";
-import useTransferApi from "../../hooks/api/useTransferApi";
+import useTransferApi from "../../hooks/api/useTransfer";
 import { useNavigate } from "react-router-dom";
 import TemplatePin from "../ui/TemplatePin";
 
 export default function StepPin() {
-  // ----- hooks -----
-  const { data, setStep } = useTransfer();
-  const { performTransfer } = useTransferApi();
+  // ----- hooks first -----
+  const { data, setStep, reset } = useTransfer();
+  const { executeTransfer } = useTransferApi();
   const navigate = useNavigate();
 
   // ----- state -----
@@ -27,7 +27,7 @@ export default function StepPin() {
 
   // ----- guard data -----
   useEffect(() => {
-    if (!data || !data.phone || !data.amount) {
+    if (!data || !data.phone || !data.amount || !data.transactionId) {
       navigate("/app/transfer", { replace: true });
     }
   }, [data, navigate]);
@@ -125,14 +125,16 @@ export default function StepPin() {
       return;
     }
 
+    if (!data.transactionId) {
+      setError("Missing transaction ID");
+      return;
+    }
+
     setLoading(true);
     try {
-      const res = await performTransfer({
-        phone: data.phone,
-        amount: data.amount,
-        note: data.note,
-        pin,
-      });
+      // ✅ pass transactionId to execute endpoint
+      const res = await executeTransfer({ transactionId: data.transactionId, pin });
+      console.log("StepPin: performTransfer result:", res);
 
       if (!res) {
         setError("Unknown error from server");
@@ -143,13 +145,22 @@ export default function StepPin() {
         return;
       }
 
-      // success → opsional kosongkan PIN demi keamanan
-      setPin("");
-      navigate(`/app/transfer/success?tx=${encodeURIComponent(res.transactionId)}`, {
-        replace: false,
-      });
+      // Prefer transactionId returned, fallback to initiated one
+      const tx =
+        res.transactionId ||
+        res.transaction_id ||
+        res.id ||
+        data.transactionId;
+
+      console.log("StepPin: navigating to success tx=", tx);
+      navigate(`/app/transfer/success?tx=${encodeURIComponent(tx)}`, { replace: false });
     } catch (err) {
-      setError(err?.message || "Transfer error");
+      console.error("submitPinAndTransfer error:", err);
+      const apiMsg =
+        err?.response?.data?.message ||
+        err?.response?.data?.error ||
+        err?.message;
+      setError(apiMsg || "Transfer error");
     } finally {
       setLoading(false); // efek transisi loading akan retrigger shake bila error masih ada
     }

@@ -52,17 +52,20 @@ function SetPinContent() {
       saveTokens(accessToken, refreshToken);
 
       const idemKey = `wallet-create-${uuidv4()}`;
-      const createWalletRes = await api.post("/api/v1/wallets",
-        { type: "PERSONAL", name: "Default Main Wallet", metadata: JSON.stringify({ colors: "#2F5755" }) },
-        { headers: { Authorization: `Bearer ${accessToken}`, "Idempotency-Key": idemKey, "Content-Type": "application/json" } }
-      );
-
-      const walletId = createWalletRes.data?.data?.id || createWalletRes.data?.data?.walletId;
-      if (!walletId) throw new Error("Wallet ID tidak ditemukan dari response");
-
-      await api.put("/api/v1/users/me/receive/default",
-        { walletId },
-        { headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" } }
+      const createWalletRes = await api.post(
+        "/api/v1/wallets",
+        {
+          type: "PERSONAL",
+          name: "Default Main Wallet",
+          metadata: { colors: "#2F5755" },
+          is_default_for_wallet: true,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Idempotency-Key": idemKey,
+          },
+        }
       );
 
       navigate("/app/dashboard");

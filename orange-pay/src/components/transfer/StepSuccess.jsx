@@ -1,7 +1,7 @@
 // src/components/transfer/StepSuccess.jsx
 import React, { useEffect, useState, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import useTransferApi from "../../hooks/api/useTransferApi";
+import useTransferApi from "../../hooks/api/useTransfer";
 import { useTransfer } from "../../context/TransferContext";
 import { Copy } from "lucide-react";
 /**
@@ -162,34 +162,12 @@ export default function StepSuccess() {
               <div className="flex justify-between">
                 <div>
                   <div className="font-left font-bold text-gray-800">
-                    {receipt.receiver}
+                    {receipt.counterpartyName}
                   </div>
                   <div className="text-xs text-gray-500 mt-1">
-                    {receipt.phone}
+                    {receipt.counterpartyPhone}
                   </div>
                 </div>
-
-                {/* ✅ Small Add button */}
-                <button
-                  onClick={async () => {
-                    // try {
-                    //   await api.addRecipient({
-                    //     name: receipt.receiver,
-                    //     phone: receipt.phone,
-                    //   });
-                    //   alert("Recipient saved!");
-                    // } catch (e) {
-                    //   alert("Failed to save recipient");
-                    // }
-                  }}
-                  className="flex items-center justify-center active:scale-95 transition"
-                >
-                  <svg width="30" height="30" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M15 4.21875C23.625 4.21875 25.7812 6.375 25.7812 15C25.7812 23.625 23.625 25.7812 15 25.7812C6.375 25.7812 4.21875 23.625 4.21875 15C4.21875 6.375 6.375 4.21875 15 4.21875Z" stroke="black" stroke-linecap="round" stroke-linejoin="round"/>
-                  <path d="M18.5938 15H11.4062" stroke="black" stroke-linecap="round" stroke-linejoin="round"/>
-                  <path d="M15 11.4062V18.5938" stroke="black" stroke-linecap="round" stroke-linejoin="round"/>
-                  </svg>
-                </button>
               </div>
 
             </div>
