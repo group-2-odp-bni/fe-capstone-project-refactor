@@ -1,12 +1,9 @@
 // src/components/transfer/StepPin.jsx
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useTransfer } from "../../context/TransferContext";
 import useTransferApi from "../../hooks/api/useTransfer";
 import { useNavigate } from "react-router-dom";
-
-const Key = ({ children, onClick, className }) => (
-  <button type="button" onClick={onClick} className={`w-16 h-16 rounded-full text-lg ${className || ""}`}>{children}</button>
-);
+import TemplatePin from "../ui/TemplatePin";
 
 export default function StepPin() {
   // ----- hooks first -----
@@ -14,34 +11,117 @@ export default function StepPin() {
   const { executeTransfer } = useTransferApi();
   const navigate = useNavigate();
 
-  const [pin, setPinLocal] = useState("");
-  const [error, setError] = useState(null);
+  // ----- state -----
+  const [pin, setPin] = useState("");
+  const [error, setError] = useState("");       // string kosong = tidak ada error
   const [loading, setLoading] = useState(false);
 
-  // redirect if required data missing
+  // UI ala InputPin.jsx
+  const [suppressErrorUI, setSuppressErrorUI] = useState(false);
+  const [shaking, setShaking] = useState(false);
+  const shakeTimeoutRef = useRef(null);
+  const prevLoadingRef = useRef(loading);
+
+  // Hidden input (hosted di TemplatePin)
+  const hiddenRef = useRef(null);
+
+  // ----- guard data -----
   useEffect(() => {
     if (!data || !data.phone || !data.amount || !data.transactionId) {
       navigate("/app/transfer", { replace: true });
     }
   }, [data, navigate]);
 
-  const addDigit = (d) => {
-    if (pin.length >= 6) return;
-    setPinLocal((p) => p + d);
+  // ----- helpers -----
+  const triggerShake = () => {
+    if (shakeTimeoutRef.current) clearTimeout(shakeTimeoutRef.current);
+    setShaking(false);
+    const start = setTimeout(() => setShaking(true), 10);
+    shakeTimeoutRef.current = setTimeout(() => setShaking(false), 510);
+    return () => {
+      clearTimeout(start);
+      clearTimeout(shakeTimeoutRef.current);
+    };
   };
-  const backspace = () => setPinLocal((p) => p.slice(0, -1));
-  const clear = () => setPinLocal("");
+
+  // Error berubah → tampilkan & shake
+  useEffect(() => {
+    if (!error) return;
+    setSuppressErrorUI(false);
+    triggerShake();
+  }, [error]);
+
+  // Attempt selesai (loading true → false) + error ada → paksa tampil & shake
+  useEffect(() => {
+    const wasLoading = prevLoadingRef.current;
+    if (wasLoading && !loading && !!error) {
+      setSuppressErrorUI(false);
+      triggerShake();
+    }
+    prevLoadingRef.current = loading;
+  }, [loading, error]);
+
+  // Jika pin kosong (clear/backspace), sembunyikan error UI (balik normal/oranye)
+  useEffect(() => {
+    if (pin.length === 0) setSuppressErrorUI(true);
+  }, [pin]);
+
+  const clampNum = (raw) => (raw || "").toString().replace(/\D/g, "").slice(0, 6);
+
+  // keyboard/paste handlers (hidden input)
+  const onHiddenChange = (e) => {
+    if (loading) return;
+    setPin(clampNum(e.target.value));
+  };
+
+  const onHiddenKeyDown = (e) => {
+    if (loading) return;
+    if (/^\d$/.test(e.key) && pin.length < 6) {
+      e.preventDefault();
+      setPin((p) => (p + e.key).slice(0, 6));
+    } else if (e.key === "Backspace") {
+      e.preventDefault();
+      setPin((p) => p.slice(0, -1));
+    } else if (e.key === "Enter" && pin.length === 6) {
+      e.preventDefault();
+      submitPinAndTransfer();
+    }
+  };
+
+  // keypad actions (TemplatePin)
+  const onDigit = (d) => {
+    if (loading || pin.length >= 6) return;
+    setPin((p) => (p + d).slice(0, 6));
+  };
+
+  const onDelete = () => {
+    if (loading || pin.length === 0) return;
+    if (shakeTimeoutRef.current) clearTimeout(shakeTimeoutRef.current);
+    setPin("");
+    setShaking(false);
+    setSuppressErrorUI(true); // sembunyikan merah + pesan
+    hiddenRef.current?.focus();
+  };
+
+  const onBack = () => {
+    if (loading) return;
+    setStep("confirm");
+    navigate("/app/transfer");
+  };
+
+  const setErrorAndShake = (msg) => {
+    setError(msg);
+    setSuppressErrorUI(false);
+    triggerShake();
+  };
 
   const submitPinAndTransfer = async () => {
-    setError(null);
-
     if (pin.length !== 6) {
-      setError("PIN must be 6 digits");
+      setErrorAndShake("PIN must be 6 digits");
       return;
     }
-
     if (!data || !data.phone || !data.amount) {
-      setError("Recipient or amount missing");
+      setErrorAndShake("Recipient or amount missing");
       return;
     }
 
@@ -51,7 +131,6 @@ export default function StepPin() {
     }
 
     setLoading(true);
-
     try {
       // ✅ pass transactionId to execute endpoint
       const res = await executeTransfer({ transactionId: data.transactionId, pin });
@@ -61,7 +140,6 @@ export default function StepPin() {
         setError("Unknown error from server");
         return;
       }
-
       if (res.status === "error") {
         setError(res.message || "Transfer failed");
         return;
@@ -84,64 +162,38 @@ export default function StepPin() {
         err?.message;
       setError(apiMsg || "Transfer error");
     } finally {
-      setPinLocal("");
-      setLoading(false);
+      setLoading(false); // efek transisi loading akan retrigger shake bila error masih ada
     }
   };
 
+  const showError = !!error && !suppressErrorUI;
+
   return (
-    <div className="text-center">
-      <div className="mb-3 text-sm text-gray-500">Enter your 6-digit PIN to confirm transfer</div>
+    <TemplatePin
+      title="Enter your PIN"
+      dots={{
+        length: 6,
+        filled: pin.length,
+        danger: showError,      // merah hanya saat error aktif & tidak disuppress
+        shaking,
+      }}
+      onBack={onBack}
+      onForgot={() => {}}
+      onDigit={onDigit}
+      onConfirm={submitPinAndTransfer}
+      onDelete={onDelete}
+      canConfirm={!loading && pin.length === 6}
+      canDelete={!loading && pin.length > 0}
+      errorText={showError ? error : ""}
+      zIndex={10050}
 
-      <div className="mb-4 flex justify-center">
-        <div className="flex gap-2">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <div
-              key={i}
-              className="w-4 h-4 rounded-full border"
-              style={{ background: i < pin.length ? "#111827" : "transparent" }}
-            />
-          ))}
-        </div>
-      </div>
-
-      {error && <div className="mb-2 text-sm text-red-600">{error}</div>}
-
-      <div className="grid grid-cols-3 gap-3 justify-center mb-4">
-        {["1","2","3","4","5","6","7","8","9","clear","0","⌫"].map((k) => (
-          <div key={k} className="flex justify-center">
-            {k === "clear" ? (
-              <Key onClick={clear} className="bg-gray-100">C</Key>
-            ) : k === "⌫" ? (
-              <Key onClick={backspace} className="bg-gray-100">{k}</Key>
-            ) : (
-              <Key onClick={() => addDigit(k)} className="bg-gray-50">{k}</Key>
-            )}
-          </div>
-        ))}
-      </div>
-
-      <div className="flex gap-3">
-        <button
-          type="button"
-          onClick={() => {
-            setStep("confirm");
-            navigate("/app/transfer");
-          }}
-          className="flex-1 py-3 rounded-lg border"
-        >
-          Back
-        </button>
-
-        <button
-          type="button"
-          onClick={submitPinAndTransfer}
-          disabled={loading}
-          className="flex-1 py-3 rounded-lg bg-orange-500 text-white"
-        >
-          {loading ? "Processing..." : "Confirm & Send"}
-        </button>
-      </div>
-    </div>
+      /* keyboard hosting by TemplatePin */
+      enableKeyboard
+      hiddenRef={hiddenRef}
+      hiddenValue={pin}
+      onHiddenChange={onHiddenChange}
+      onHiddenKeyDown={onHiddenKeyDown}
+      autoFocusHidden
+    />
   );
 }

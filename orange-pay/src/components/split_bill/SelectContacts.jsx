@@ -14,7 +14,7 @@ function maskPhoneLast4(p = "") {
 
 /* ================= Main Component ================= */
 export default function SelectContacts({
-  currentUser = { id: "me", name: "Kamu", phoneMasked: "*7195", avatarText: "K" },
+  currentUser = { id: "me", name: "Kamu", phoneMasked: "*7198", avatarText: "K" },
   contacts = [],
   recommendedIds = [],
   initialSelectedIds = [],
@@ -159,7 +159,7 @@ export default function SelectContacts({
                         {currentUser?.name || "Kamu"}
                       </div>
                       <div className="text-xs text-gray-500 truncate">
-                        {currentUser?.phoneMasked || "*7195"}
+                        {currentUser?.phoneMasked || "*7198"}
                       </div>
                     </div>
                   </div>
