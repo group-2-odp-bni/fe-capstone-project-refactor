@@ -5,7 +5,7 @@ import SplitBillConfirmed from "./SplitBillConfirmed";
 
 export default function SplitBillConfirmation({
   splitName = "Rincian Split Bill",
-  currentUser = { id: "me", name: "Kamu", phoneMasked: "*7195" },
+  currentUser = { id: "me", name: "Kamu", phoneMasked: "*7198" },
   members = [],
   items = [],
   subtotal = 0,
@@ -1113,7 +1113,6 @@ export default function SplitBillConfirmation({
   );
 }
 
-/* ================= KOMPONEN: Animasi Success dengan Checkmark ================= */
 /* ================= KOMPONEN: Animasi Success dengan Checkmark ================= */
 function HighFiveAnimation({ members = [] }) {  // ← TAMBAHAN: Terima props members
   const [stage, setStage] = useState(0);

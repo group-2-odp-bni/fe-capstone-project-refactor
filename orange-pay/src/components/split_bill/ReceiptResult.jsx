@@ -195,7 +195,7 @@ export default function ReceiptResult({
   }
 
   if (showContacts) {
-    const currentUserForContacts = { id: "me", name: "Kamu", phoneMasked: "*7195", avatarText: "K" };
+    const currentUserForContacts = { id: "me", name: "Kamu", phoneMasked: "*7199", avatarText: "K" };
     
     // ✅ PERBAIKAN: Ambil semua contacts dari MAIN_CONTACTS (satu source)
     const mainContacts = transferApi.getAllAccounts();

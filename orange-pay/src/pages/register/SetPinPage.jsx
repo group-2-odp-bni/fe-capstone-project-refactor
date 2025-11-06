@@ -28,30 +28,29 @@ export default function SetPinPage() {
 function SetPinContent() {
   const navigate = useNavigate();
   const { userData } = useRegistrationContext();
-  console.log(userData.stateToken);
 
   const [pin, setPin] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [attempt, setAttempt] = useState(0);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError("");
-    setLoading(true);
+  const submitPin = async () => {
+    setAttempt((x) => x + 1);
+
+    if (pin.length !== 6) { setError("PIN harus 6 digit"); return; }
+    if (!userData?.stateToken) { setError("Sesi registrasi tidak valid. Silakan ulangi."); return; }
+
+    setError(""); setLoading(true);
 
     try {
-      const pinRes = await api.post(
-        "/api/v1/auth/pin",
-        { pin },
-        {
-          headers: { Authorization: `Bearer ${userData.stateToken}` },
-        }
-      );
+      const pinRes = await api.post("/api/v1/auth/pin", { pin }, {
+        headers: { Authorization: `Bearer ${userData.stateToken}`, "Content-Type": "application/json" },
+      });
 
-      const accessToken = pinRes.data?.data?.accessToken;
-      const refreshToken = pinRes.data?.data?.refreshToken;
+      const { accessToken, refreshToken } = pinRes.data?.data || {};
       if (!accessToken) throw new Error("Access token tidak ditemukan");
       saveTokens(accessToken, refreshToken);
+
       const idemKey = `wallet-create-${uuidv4()}`;
       const createWalletRes = await api.post(
         "/api/v1/wallets",
@@ -68,19 +67,40 @@ function SetPinContent() {
           },
         }
       );
+
       navigate("/app/dashboard");
-    } catch {
-      console.error(err);
-      setError(err.message || "Something went wrong.");
+    } catch (err) {
+      console.error("Set PIN failed:", err);
+      setError(err?.response?.data?.message || err?.message || "Something went wrong.");
     } finally {
       setLoading(false);
     }
   };
 
+  const onFormSubmit = (e) => { e.preventDefault(); submitPin(); };
+
+  const goBack = () => {
+    if (window.history.length > 1) navigate(-1);
+    else navigate("/register", { replace: true });
+  };
+
   return (
-    <form onSubmit={handleSubmit} className="pb-10">
-      <CenteredNumberInputPad value={pin} onChange={setPin} />
-      <FullSubmitButton disabled={loading}>
+    <form onSubmit={onFormSubmit} className="pb-10">
+      <CenteredNumberInputPad
+        value={pin}
+        onChange={setPin}
+        onConfirm={submitPin}
+        errorText={error}
+        loading={loading}
+        title="Buat PIN Anda"
+        attemptKey={attempt}
+        onClearError={() => setError("")}
+        onBack={goBack}
+      />
+
+      {error && <p className="text-red-500 text-xs text-center mb-4">{error}</p>}
+
+      <FullSubmitButton disabled={loading || pin.length !== 6}>
         {loading ? "Menyimpan..." : "Simpan"}
       </FullSubmitButton>
     </form>
