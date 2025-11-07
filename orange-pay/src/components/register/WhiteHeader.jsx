@@ -2,7 +2,7 @@ import BackButton from "../common/BackButton";
 
 export default function WhiteHeader({ title = "Title" }) {
     return (
-        <div className="h-20 w-full rounded-t-[28px] bg-white flex items-center">
+        <div className="h-20 w-full rounded-t-[28px] bg-white flex items-center mt-3">
             <div className="w-full pt-[env(safe-area-inset-top)] px-4">
                 <div className="flex items-center justify-between">
                     <BackButton />

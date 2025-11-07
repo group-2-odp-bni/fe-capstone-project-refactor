@@ -1,15 +1,11 @@
 import { useNavigate } from "react-router-dom";
-import MobileShell from "../../components/layout/MobileShell";
-import PhoneLayoutBackground from "../../components/PhoneLayoutBackground";
-import OrangeHeader from "../../components/register/OrangeHeader";
-import WhiteCardContainer from "../../components/register/WhiteCardContainer";
 import WhiteHeader from "../../components/register/WhiteHeader";
 import ContentBox from "../../components/common/ContentBox";
 import { FullActionButton } from "../../components/button/FullActionButton";
 import { clearTokens } from "../../services/auth/authService";
 import AccountButtonLink from "../../components/button/AccountButtonLink";
 import MobileView from "../../components/view/MobileView";
-import DynamicShell from "../../components/layout/dynamicShell";
+import H2Medium from "../../components/text/H2Medium";
 
 
 export default function AccountLandingPage() {
@@ -28,9 +24,7 @@ export default function AccountLandingPage() {
 
 
                     <div className="space-y-6">
-                        <h2 className="m-1 font-medium">Akun Saya</h2>
-
-
+                        <H2Medium>Akun Saya</H2Medium>
                         <AccountButtonLink
                             onClick={() => navigate("/app/profile")}
                         >
@@ -39,7 +33,7 @@ export default function AccountLandingPage() {
 
 
 
-                        <h2 className="m-1">Kelola Batas</h2>
+                        <H2Medium>Kelola Batas</H2Medium>
                         <AccountButtonLink
                             onClick={() => navigate("/app/transactionLimit")}
                         >
