@@ -2,8 +2,6 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import CenteredNumberInputPad from "../../components/register/CenteredNumberInputPad";
-import PhoneLayoutBackground from "../../components/PhoneLayoutBackground";
-import MobileShell from "../../components/layout/MobileShell";
 import PageHeader from "../../components/page_header/PageHeader";
 import { FullSubmitButton } from "../../components/button/FullSubmitButton";
 import { useRegistrationContext } from "../../context/RegistrationContext";
@@ -11,17 +9,16 @@ import WhiteCardContainer from "../../components/register/WhiteCardContainer";
 import { saveTokens } from "../../services/auth/authService";
 import api from "../../lib/api";
 import { v4 as uuidv4 } from "uuid";
+import MobileView from "../../components/view/MobileView";
 
 export default function SetPinPage() {
   return (
-    <PhoneLayoutBackground>
-      <MobileShell>
-        <PageHeader className="mt-5 mb-5">Input Pin</PageHeader>
-        <WhiteCardContainer>
-          <SetPinContent />
-        </WhiteCardContainer>
-      </MobileShell>
-    </PhoneLayoutBackground>
+    <MobileView>
+      <PageHeader className="mt-5 mb-5">Input Pin</PageHeader>
+      <WhiteCardContainer>
+        <SetPinContent />
+      </WhiteCardContainer>
+    </MobileView >
   );
 }
 
