@@ -13,7 +13,7 @@ export default function SplitBillConfirmedPage() {
     const loadBillData = async () => {
       setLoading(true);
       try {
-        console.log("🔍 Loading data untuk ID:", id);
+        console.log("Loading data untuk ID:", id);
         const localData = localStorage.getItem(`splitbill_${id}`);
         if (localData) {
           const parsed = JSON.parse(localData);
@@ -21,12 +21,10 @@ export default function SplitBillConfirmedPage() {
           const isExpired = parsed.ttl && now - parsed.timestamp > parsed.ttl;
 
           if (!isExpired && parsed.data) {
-            console.log("✅ Data ditemukan di localStorage (cache)");
             setData(parsed.data);
             setLoading(false);
             return;
           } else if (isExpired) {
-            console.warn("⏰ Data cache kedaluwarsa, akan ambil dari API");
             localStorage.removeItem(`splitbill_${id}`);
           }
         }
@@ -35,7 +33,6 @@ export default function SplitBillConfirmedPage() {
 
         if (response.data && !response.data.error) {
           const apiData = response.data.data;
-          console.log("✅ Data berhasil diambil dari API", apiData);
           setData(apiData);
           const cacheEntry = {
             data: apiData,

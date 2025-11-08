@@ -9,7 +9,7 @@ import useQuickTransfer from "../../hooks/api/useQuickTransfer";
 
 import { useNavigate } from "react-router-dom";
 import api from "../../lib/api";
-
+import { useRegistrationContext } from "../../context/RegistrationContext";
 const formatIDR = (n) =>
   new Intl.NumberFormat("id-ID", {
     style: "currency",
@@ -24,7 +24,7 @@ export default function ReceiptResult({ receiptData, onBack, onConfirm }) {
   const [showContacts, setShowContacts] = useState(false);
   const [showImagePopup, setShowImagePopup] = useState(false);
   const [imageAspect, setImageAspect] = useState(9 / 16);
-
+  const [authInfo, setAuthInfo] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [editableData, setEditableData] = useState(receiptData);
@@ -40,10 +40,41 @@ export default function ReceiptResult({ receiptData, onBack, onConfirm }) {
 
   const transferApi = useTransferApi();
   const { contacts: quickContacts } = useQuickTransfer({ limit: 4 });
-
+  const [wallets, setWallets] = useState([]);
+  const [selectedWalletId, setSelectedWalletId] = useState(null);
+  const [isWalletsLoading, setIsWalletsLoading] = useState(true);
+  const [walletsError, setWalletsError] = useState(null);
   const receiptImage =
     editableData?.receipt_url || receiptData?.receipt_url || null;
+  useEffect(() => {
+    const fetchWallets = async () => {
+      try {
+        setIsWalletsLoading(true);
+        setWalletsError(null);
 
+        const response = await api.get("/api/v1/wallets");
+
+        const userWallets =
+          response?.data?.data || response?.data?.wallets || [];
+
+        if (userWallets.length > 0) {
+          setWallets(userWallets);
+          setSelectedWalletId(userWallets[0].id);
+        } else {
+          setWalletsError(
+            "Anda tidak memiliki wallet. Silakan buat wallet terlebih dahulu."
+          );
+        }
+      } catch (err) {
+        console.error("Failed to fetch wallets:", err);
+        setWalletsError(err.message || "Gagal memuat daftar wallet.");
+      } finally {
+        setIsWalletsLoading(false);
+      }
+    };
+
+    fetchWallets();
+  }, []);
   useEffect(() => {
     if (!receiptImage) return;
     const img = new Image();
@@ -119,27 +150,66 @@ export default function ReceiptResult({ receiptData, onBack, onConfirm }) {
     setShowAlert(false);
 
     try {
-      const finalPayload = {
-        title: splitName,
-        destinationWalletId: "wallet_creator_123", // TODO: Ganti
-        imageUrl: receiptImage,
+      if (!selectedWalletId) {
+        throw new Error("Silakan pilih wallet tujuan terlebih dahulu.");
+      }
+      // const finalPayload = {
+      //   title: splitName,
+      //   destinationWalletId: selectedWalletId,
+      //   imageUrl: receiptImage,
 
-        items: editableData.items,
-        fees: {
-          tax: pajak,
-          service: service,
-          tip: other,
-          total: total,
+      //   items: editableData.items,
+      //   fees: {
+      //     tax: pajak,
+      //     service: service,
+      //     tip: other,
+      //     total: total,
+      //   },
+
+      //   assignments: payloadFromConfirmation.assignments,
+      //   tax_strategy: "proportional",
+      // };
+
+      // if (!finalPayload.assignments || finalPayload.assignments.length === 0) {
+      //   throw new Error("Data 'assignments' (pembagian) tidak ada.");
+      // }
+      // const response = await api.post("/api/v1/split-bill/bills", finalPayload);
+      const normalizedAssignments = (
+        payloadFromConfirmation.assignments || []
+      ).map((a) => ({
+        memberRef: {
+          userId: a?.memberRef?.userId ?? undefined,
+          phone: a?.memberRef?.phone ?? a?.memberRef?.phoneE164 ?? undefined,
+          name: a?.memberRef?.name ?? undefined,
+          email: a?.memberRef?.email ?? undefined,
         },
-
-        assignments: payloadFromConfirmation.assignments,
-        tax_strategy: "proportional",
-      };
-
-      if (!finalPayload.assignments || finalPayload.assignments.length === 0) {
+        amount: Number.isFinite(a?.amount) ? Math.round(a.amount) : undefined,
+        items: Array.isArray(a?.items) ? a.items : undefined,
+      }));
+      if (!normalizedAssignments.length) {
         throw new Error("Data 'assignments' (pembagian) tidak ada.");
       }
-
+      const invalid = normalizedAssignments.find((a) => {
+        const r = a.memberRef || {};
+        return !r.userId && !r.phone;
+      });
+      if (invalid) {
+        throw new Error("Setiap anggota harus punya 'userId' atau 'phone'.");
+      }
+      const finalPayload = {
+        title: splitName,
+        destinationWalletId: selectedWalletId,
+        imageUrl: receiptImage,
+        items: editableData.items,
+        fees: {
+          tax: Number(pajak || 0),
+          service: Number(service || 0),
+          tip: Number(other || 0),
+          total: Number(total || 0),
+        },
+        assignments: normalizedAssignments,
+        tax_strategy: "proportional",
+      };
       const response = await api.post("/api/v1/split-bill/bills", finalPayload);
 
       if (response.data && !response.data.error) {
@@ -175,7 +245,11 @@ export default function ReceiptResult({ receiptData, onBack, onConfirm }) {
   }
 
   if (showConfirmation) {
-    const currentUserForConf = { id: "me", name: "Kamu", phoneMasked: "*7196" };
+    const currentUserForConf = {
+      id: "me",
+      name: "Kamu",
+      phoneMasked: "*XXXX",
+    };
     return (
       <SplitBillConfirmation
         splitName={splitName}
@@ -200,12 +274,14 @@ export default function ReceiptResult({ receiptData, onBack, onConfirm }) {
     const currentUserForContacts = {
       id: "me",
       name: "Kamu",
-      phoneMasked: "*7195",
-      avatarText: "K",
+      phoneMasked: "082210472710",
+      avatarText: "K".charAt(0),
     };
+
     const mainContacts = transferApi.getAllAccounts();
     const allContacts = mainContacts.map((contact) => ({
       id: contact.accountId,
+      userId: contact.accountId,
       name: contact.name,
       phone: contact.phone,
       isOrangePayUser: true,
@@ -341,7 +417,73 @@ export default function ReceiptResult({ receiptData, onBack, onConfirm }) {
                 </button>
               </div>
             </div>
+            <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+              <label className="text-[13px] font-semibold text-gray-800 block mb-3">
+                Pilih Wallet Tujuan
+              </label>
 
+              {isWalletsLoading && (
+                <div className="text-sm text-gray-500 text-center py-2">
+                  Memuat daftar wallet...
+                </div>
+              )}
+
+              {walletsError && !isWalletsLoading && (
+                <div className="text-sm text-red-600 text-center py-2 bg-red-50 rounded-lg">
+                  {walletsError}
+                </div>
+              )}
+
+              {!isWalletsLoading && !walletsError && wallets.length > 0 && (
+                <div className="space-y-2">
+                  {wallets.map((wallet) => (
+                    <button
+                      key={wallet.id}
+                      onClick={() => setSelectedWalletId(wallet.id)}
+                      className={`w-full flex items-center p-3 rounded-lg border-2 text-left transition-all
+                        ${
+                          selectedWalletId === wallet.id
+                            ? "border-orange-500 bg-orange-50 shadow-sm"
+                            : "border-gray-200 hover:bg-gray-50"
+                        }`}
+                    >
+                      <div className="w-8 h-8 rounded-full bg-orange-500 flex items-center justify-center text-white text-sm font-bold mr-3">
+                        $
+                      </div>
+                      <div className="flex-1">
+                        <div className="font-semibold text-sm text-gray-900">
+                          {wallet.name || "Wallet"}
+                        </div>
+                        <div className="text-xs text-gray-600">{wallet.id}</div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-sm font-bold text-gray-900">
+                          {formatIDR(wallet.balance)}
+                        </div>
+                        <div className="text-xs text-gray-500">Saldo</div>
+                      </div>
+                      {selectedWalletId === wallet.id && (
+                        <div className="w-5 h-5 rounded-full bg-orange-500 flex items-center justify-center ml-3">
+                          <svg
+                            className="w-3 h-3 text-white"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth="3"
+                              d="M5 13l4 4L19 7"
+                            />
+                          </svg>
+                        </div>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
             <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
               <div className="space-y-3 mb-4">
                 {items.map((it, idx) => (
@@ -350,7 +492,7 @@ export default function ReceiptResult({ receiptData, onBack, onConfirm }) {
                       {it.name}
                     </p>
                     <span className="w-12 shrink-0 text-right text-gray-700 font-medium tabular-nums text-[13px]">
-                      x{it.qty} {/* <-- Ganti 'quantity' ke 'qty' */}
+                      x{it.qty}
                     </span>
                     <span className="w-24 shrink-0 text-right text-gray-800 font-semibold tabular-nums text-[13px]">
                       {formatIDR(it.line_subtotal_rp)}{" "}

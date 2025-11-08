@@ -17,6 +17,22 @@ function parseJsonSafe(v, fb = {}) {
     return fb;
   }
 }
+function mapQTtoContact(qt) {
+  return {
+    id: qt.recipientUserId,
+    name: qt.recipientName,
+    phone: qt.recipientPhone,
+    avatarInitial:
+      qt.recipientAvatarInitial || (qt.recipientName?.[0] ?? "?").toUpperCase(),
+    _meta: {
+      quickTransferId: qt.id,
+      usageCount: qt.usageCount,
+      lastUsedAt: qt.lastUsedAt,
+      displayOrder: qt.displayOrder,
+      createdAt: qt.createdAt,
+    },
+  };
+}
 
 function mapWalletToCard(wallet) {
   const meta = parseJsonSafe(wallet.metadata, {});
@@ -53,6 +69,11 @@ const MOCK_CONTACTS_RESPONSE = {
     message: "OK",
     data: [
       {
+        id: "b5a4e739-8c2f-4a43-999b-714bb98b9f13",
+        name: "Gabriel Gamalia",
+        phone: "+6281312202022",
+      },
+      {
         id: "62742634-1029-432e-bcab-b6161b73f93b",
         name: "Ahong (Owner)",
         phone: "+6281234567891",
@@ -63,11 +84,6 @@ const MOCK_CONTACTS_RESPONSE = {
         phone: "+628412345671",
       },
       {
-        id: "b5a4e739-8c2f-4a43-999b-714bb98b9f13",
-        name: "Gabriel Gamalia",
-        phone: "+628132221111",
-      },
-      {
         id: "c-02",
         name: "Firdaus Muhammad Azri",
         phone: "+628129991111",
@@ -75,7 +91,6 @@ const MOCK_CONTACTS_RESPONSE = {
     ],
   },
 };
-// ---------------------------------------------
 
 export default function AssignMemberPage({ walletIdOverride }) {
   const { walletId: walletIdFromParam } = useParams();
@@ -111,27 +126,34 @@ export default function AssignMemberPage({ walletIdOverride }) {
     (async () => {
       setLoading(true);
       try {
-        const mockContactsPromise = Promise.resolve(MOCK_CONTACTS_RESPONSE);
+        // const mockContactsPromise = Promise.resolve(MOCK_CONTACTS_RESPONSE);
         const [memberRes, balanceRes, contactsRes, roleRes, detailRes] =
           await Promise.all([
-            api.get(`/api/v1/wallets/${walletId}/members?page=0&size=20`),
+            api.get(
+              `/api/v1/wallets/${walletId}/members?page=0&size=20&&includePending=true`
+            ),
             api.get(`/api/v1/wallets/${walletId}/balance`),
-            mockContactsPromise,
+            // mockContactsPromise,
+            api.get(`/api/v1/contacts?page=0&size=100`),
+
             api.get(`/api/v1/wallets/${walletId}/me/role`),
             api.get(`/api/v1/wallets/${walletId}`),
           ]);
 
         const balanceData = balanceRes.data.data;
         const membersFromApi = memberRes.data.data;
-        const allContacts = contactsRes.data.data;
+        const allContacts = (contactsRes.data?.data?.content ?? []).map(
+          mapQTtoContact
+        );
+        // const allContacts = contactsRes.data.data;
         const myRoleData = roleRes.data.data;
 
         const walletData = detailRes.data.data;
         const mappedWallet = mapWalletToCard(walletData);
-
-        const contactsMap = new Map(
-          allContacts.map((contact) => [contact.id, contact])
-        );
+        const contactsMap = new Map(allContacts.map((c) => [c.id, c]));
+        // const contactsMap = new Map(
+        //   allContacts.map((contact) => [contact.id, contact])
+        // );
         const combinedMembers = membersFromApi.map((member) => {
           const contactDetails = contactsMap.get(member.userId);
           const name = contactDetails ? contactDetails.name : "Unknown User";
@@ -172,7 +194,30 @@ export default function AssignMemberPage({ walletIdOverride }) {
       cancel = true;
     };
   }, [walletId]);
+  useEffect(() => {
+    const q = (search || "").trim();
+    if (q.length < 2) return;
 
+    let cancel = false;
+    const run = async () => {
+      try {
+        const resp = await api.get(`/api/v1/contacts/search`, {
+          params: { q, page: 0, size: 50 },
+        });
+        const content = (resp.data?.data?.content ?? []).map(mapQTtoContact);
+        if (!cancel) {
+          setContacts(content);
+        }
+      } catch (err) {
+        console.error("Gagal mencari kontak:", err);
+      }
+    };
+    const timer = setTimeout(run, 300);
+    return () => {
+      cancel = true;
+      clearTimeout(timer);
+    };
+  }, [search]);
   const filteredContacts = useMemo(() => {
     const q = (search || "").toLowerCase();
     if (!q) return contacts;

@@ -180,15 +180,6 @@ export default function CameraPage({ onBack, onDone }) {
       />
     );
   }
-  // if (capturedImage) {
-  //   return (
-  //     <NextStep
-  //       image={capturedImage}
-  //       onRetake={handleRetakeFromNextStep}
-  //       onDone={handleNextStepDone}
-  //     />
-  //   );
-  // }
 
   if (showHelp) {
     return <HelpScreen onClose={handleCloseHelp} />;

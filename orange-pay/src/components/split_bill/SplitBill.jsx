@@ -42,7 +42,6 @@ function ProgressBar({ total, paid }) {
   );
 }
 
-// ... (Komponen OwnedItem dan AssignedItem Anda SAMA, tidak perlu diubah) ...
 function OwnedItem({ item, onRemind, onCopy }) {
   const created = new Date(item.createdAt).toLocaleString("id-ID", {
     dateStyle: "medium",
@@ -86,12 +85,6 @@ function OwnedItem({ item, onRemind, onCopy }) {
           Buka
         </Link>
         <button
-          onClick={() => onCopy(item.ownerShortLink)}
-          className="px-3 py-2 rounded-lg bg-gray-100 text-gray-900 text-sm hover:bg-gray-200"
-        >
-          Copy link owner
-        </button>
-        <button
           onClick={() => onRemind(item.billId)}
           disabled={!canRemind || item.unpaidCount === 0}
           className={`px-3 py-2 rounded-lg text-sm ${
@@ -111,7 +104,44 @@ function OwnedItem({ item, onRemind, onCopy }) {
     </div>
   );
 }
+function ConfirmationModal({ onConfirm, onCancel }) {
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const handleConfirm = () => {
+    setIsSubmitting(true);
+    onConfirm();
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-in fade-in-0 duration-200">
+      <div className="bg-white rounded-2xl shadow-2xl p-6 max-w-sm w-full m-4 animate-in zoom-in-95 duration-200">
+        <h3 className="text-lg font-semibold text-gray-900">
+          Kirim Pengingat?
+        </h3>
+        <p className="text-sm text-gray-600 mt-2">
+          Anda akan mengirim pengingat ke semua anggota yang belum bayar untuk
+          tagihan ini. Yakin?
+        </p>
+        <div className="flex justify-end gap-3 mt-6">
+          <button
+            onClick={onCancel}
+            disabled={isSubmitting}
+            className="px-4 py-2 rounded-lg bg-gray-100 text-gray-800 text-sm font-semibold hover:bg-gray-200 disabled:opacity-50"
+          >
+            Batal
+          </button>
+          <button
+            onClick={handleConfirm}
+            disabled={isSubmitting}
+            className="px-4 py-2 rounded-lg bg-amber-500 text-white text-sm font-semibold hover:bg-amber-600 disabled:opacity-50 disabled:bg-amber-400"
+          >
+            {isSubmitting ? "Mengirim..." : "Ya, Kirim"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 function AssignedItem({ item, onCopy }) {
   const created = new Date(item.createdAt).toLocaleString("id-ID", {
     dateStyle: "medium",
@@ -165,6 +195,7 @@ export default function ReceiptUploadCard() {
   const [owned, setOwned] = useState([]);
   const [assigned, setAssigned] = useState([]);
   const navigate = useNavigate();
+  const [confirmingBillId, setConfirmingBillId] = useState(null);
 
   useEffect(() => {
     const fetchHistory = async () => {
@@ -187,7 +218,6 @@ export default function ReceiptUploadCard() {
           setAssigned([]);
         }
       } catch (err) {
-        console.error("Gagal mengambil history:", err);
         setOwned([]);
         setAssigned([]);
       } finally {
@@ -217,9 +247,9 @@ export default function ReceiptUploadCard() {
       await navigator.clipboard.writeText(text);
     } catch {}
   };
+  const executeRemind = useCallback(async (billId) => {
+    if (!billId) return;
 
-  const handleRemind = useCallback(async (billId) => {
-    console.log("Mengirim pengingat untuk bill:", billId);
     try {
       await api.post(
         `/api/v1/split-bill/bills/${billId}/remind`,
@@ -233,11 +263,17 @@ export default function ReceiptUploadCard() {
       console.log("Pengingat sukses terkirim untuk bill:", billId);
     } catch (err) {
       console.error("Gagal mengirim pengingat:", err);
+    } finally {
+      setConfirmingBillId(null);
     }
   }, []);
-
+  const handleRemindClick = (billId) => {
+    setConfirmingBillId(billId);
+  };
+  const cancelRemind = () => {
+    setConfirmingBillId(null);
+  };
   const handleCameraDone = (ocrResult) => {
-    console.log("Data OCR diterima, navigasi ke halaman review:", ocrResult);
     navigate("/app/splitbill/review", { state: ocrResult });
   };
   if (next) {
@@ -245,112 +281,122 @@ export default function ReceiptUploadCard() {
   }
 
   return (
-    <div className="flex flex-col items-center justify-start py-6 space-y-6">
-      <h2 className="text-1xl font-semibold text-center text-gray-900 leading-snug">
-        Mau patungan? Cukup foto bon, <br /> langsung kelar!
-      </h2>
-      <button
-        onClick={() => setNext(true)}
-        className="w-full flex items-center p-4 bg-[#FAFAFA] rounded-[5px]
+    <>
+      <div className="flex flex-col items-center justify-start py-6 space-y-6">
+        <h2 className="text-1xl font-semibold text-center text-gray-900 leading-snug">
+          Mau patungan? Cukup foto bon, <br /> langsung kelar!
+        </h2>
+        <button
+          onClick={() => setNext(true)}
+          className="w-full flex items-center p-4 bg-[#FAFAFA] rounded-[5px]
                    shadow-[0_4px_4px_rgba(0,0,0,0.25)]
                    transition-all duration-300 ease-out
                    hover:shadow-[0_6px_8px_rgba(0,0,0,0.3)] hover:-translate-y-[2px]
                    active:scale-[0.98] focus:outline-none mx-auto"
-      >
-        <div
-          className="flex items-center justify-center w-9 h-9 bg-[#FAFAFA] rounded-full 
+        >
+          <div
+            className="flex items-center justify-center w-9 h-9 bg-[#FAFAFA] rounded-full 
                      shadow-[0_3px_6px_rgba(0,0,0,0.15)] mr-3 shrink-0
                      transition-transform duration-300 ease-out hover:scale-105"
-          style={{ filter: "drop-shadow(0px 3px 3px rgba(0, 0, 0, 0.25))" }}
-        >
-          <img src="/camera-icon.svg" alt="Camera icon" className="w-5 h-5" />
-        </div>
-        <div className="flex flex-col text-left">
-          <h3 className="text-sm font-semibold text-gray-900 mb-2">
-            Hitung cepat pakai struk
-          </h3>
-          <p className="text-xs italic text-gray-600 leading-snug">
-            Foto struk belanjamu, kami bantu hitung patungannya.
-          </p>
-        </div>
-      </button>
+            style={{ filter: "drop-shadow(0px 3px 3px rgba(0, 0, 0, 0.25))" }}
+          >
+            <img src="/camera-icon.svg" alt="Camera icon" className="w-5 h-5" />
+          </div>
+          <div className="flex flex-col text-left">
+            <h3 className="text-sm font-semibold text-gray-900 mb-2">
+              Hitung cepat pakai struk
+            </h3>
+            <p className="text-xs italic text-gray-600 leading-snug">
+              Foto struk belanjamu, kami bantu hitung patungannya.
+            </p>
+          </div>
+        </button>
 
-      <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-3">
-        <div className="p-3 rounded-xl bg-white border border-gray-100 shadow-sm">
-          <div className="text-xs text-gray-500 mb-1">
-            Outstanding yang kamu tagih
-          </div>
-          <div className="text-lg font-semibold">
-            {formatIDR(totals.outstanding)}
-          </div>
-        </div>
-        <div className="p-3 rounded-xl bg-white border border-gray-100 shadow-sm">
-          <div className="text-xs text-gray-500 mb-1">Tagihan untuk kamu</div>
-          <div className="text-lg font-semibold">{formatIDR(totals.forMe)}</div>
-        </div>
-      </div>
-      <div className="w-full">
-        <div className="inline-flex bg-gray-100 rounded-lg p-1">
-          <button
-            onClick={() => setTab("owned")}
-            className={`px-4 py-2 text-sm rounded-md ${
-              tab === "owned"
-                ? "bg-white shadow text-gray-900"
-                : "text-gray-600"
-            }`}
-          >
-            Dibuat oleh saya
-          </button>
-          <button
-            onClick={() => setTab("assigned")}
-            className={`px-4 py-2 text-sm rounded-md ${
-              tab === "assigned"
-                ? "bg-white shadow text-gray-900"
-                : "text-gray-600"
-            }`}
-          >
-            Untuk saya
-          </button>
-        </div>
-      </div>
-      <div className="w-full space-y-3">
-        {loading ? (
-          [...Array(3)].map((_, i) => (
-            <div
-              key={i}
-              className="p-4 rounded-xl bg-white shadow-sm border border-gray-100 animate-pulse"
-            >
-              <div className="h-4 bg-gray-200 rounded w-1/3 mb-3" />
-              <div className="h-2 bg-gray-200 rounded w-full mb-2" />
-              <div className="h-2 bg-gray-200 rounded w-2/3" />
+        <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="p-3 rounded-xl bg-white border border-gray-100 shadow-sm">
+            <div className="text-xs text-gray-500 mb-1">
+              Outstanding yang kamu tagih
             </div>
-          ))
-        ) : tab === "owned" ? (
-          owned.length ? (
-            owned.map((it) => (
-              <OwnedItem
-                key={it.billId}
+            <div className="text-lg font-semibold">
+              {formatIDR(totals.outstanding)}
+            </div>
+          </div>
+          <div className="p-3 rounded-xl bg-white border border-gray-100 shadow-sm">
+            <div className="text-xs text-gray-500 mb-1">Tagihan untuk kamu</div>
+            <div className="text-lg font-semibold">
+              {formatIDR(totals.forMe)}
+            </div>
+          </div>
+        </div>
+        <div className="w-full">
+          <div className="inline-flex bg-gray-100 rounded-lg p-1">
+            <button
+              onClick={() => setTab("owned")}
+              className={`px-4 py-2 text-sm rounded-md ${
+                tab === "owned"
+                  ? "bg-white shadow text-gray-900"
+                  : "text-gray-600"
+              }`}
+            >
+              Dibuat oleh saya
+            </button>
+            <button
+              onClick={() => setTab("assigned")}
+              className={`px-4 py-2 text-sm rounded-md ${
+                tab === "assigned"
+                  ? "bg-white shadow text-gray-900"
+                  : "text-gray-600"
+              }`}
+            >
+              Untuk saya
+            </button>
+          </div>
+        </div>
+        <div className="w-full space-y-3">
+          {loading ? (
+            [...Array(3)].map((_, i) => (
+              <div
+                key={i}
+                className="p-4 rounded-xl bg-white shadow-sm border border-gray-100 animate-pulse"
+              >
+                <div className="h-4 bg-gray-200 rounded w-1/3 mb-3" />
+                <div className="h-2 bg-gray-200 rounded w-full mb-2" />
+                <div className="h-2 bg-gray-200 rounded w-2/3" />
+              </div>
+            ))
+          ) : tab === "owned" ? (
+            owned.length ? (
+              owned.map((it) => (
+                <OwnedItem
+                  key={it.billId}
+                  item={it}
+                  onRemind={handleRemindClick}
+                  onCopy={handleCopy}
+                />
+              ))
+            ) : (
+              <EmptyStateOwned />
+            )
+          ) : assigned.length ? (
+            assigned.map((it) => (
+              <AssignedItem
+                key={it.billId + it.memberId}
                 item={it}
-                onRemind={handleRemind}
                 onCopy={handleCopy}
               />
             ))
           ) : (
-            <EmptyStateOwned />
-          )
-        ) : assigned.length ? (
-          assigned.map((it) => (
-            <AssignedItem
-              key={it.billId + it.memberId}
-              item={it}
-              onCopy={handleCopy}
-            />
-          ))
-        ) : (
-          <EmptyStateAssigned />
-        )}
+            <EmptyStateAssigned />
+          )}
+        </div>
       </div>
-    </div>
+      {confirmingBillId && (
+        <ConfirmationModal
+          onConfirm={() => executeRemind(confirmingBillId)}
+          onCancel={cancelRemind}
+        />
+      )}
+    </>
   );
 }
 

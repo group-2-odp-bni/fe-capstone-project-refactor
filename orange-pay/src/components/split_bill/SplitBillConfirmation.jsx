@@ -2,6 +2,7 @@
 import { useMemo, useState, useEffect, useRef } from "react";
 const fmt = (n) => Number(n || 0).toLocaleString("id-ID");
 const currency = (n) => `Rp ${fmt(n)}`;
+const roundIDR = (n) => Math.round(Number(n || 0));
 
 export default function SplitBillConfirmation({
   splitName = "Rincian Split Bill",
@@ -420,31 +421,134 @@ export default function SplitBillConfirmation({
   };
 
   const proceedConfirm = () => {
-    const assignments = perMemberArray.map((m) => ({
-      memberRef: {
-        userId: m.id,
-        name: m.member?.name,
-      },
-      amount: Math.round(m.total), // Kirim integer
-    }));
+    const memberIds = members.map((m) => m.id ?? m.name ?? m.phone);
 
-    // Buat payload untuk dikirim ke 'ReceiptResult.js'
+    const memberDetailsMap = {};
+    memberIds.forEach((id) => {
+      memberDetailsMap[id] = {
+        detail_items: [],
+        total_fees: { tax: 0, service: 0, discount: 0, other: 0 },
+      };
+    });
+    const perMemberItem = Object.fromEntries(memberIds.map((id) => [id, 0]));
+    expandedItems.forEach((item) => {
+      Object.entries(item.assignedQuantities || {}).forEach(
+        ([memberId, qty]) => {
+          if (memberIds.includes(memberId)) {
+            perMemberItem[memberId] += qty * item.pricePerUnit;
+          }
+        }
+      );
+    });
+    const totalItemPortion = Object.values(perMemberItem).reduce(
+      (a, b) => a + b,
+      0
+    );
+    const normalizationFactor =
+      totalItemPortion > Number(subtotal || 0)
+        ? Number(subtotal || 0) / totalItemPortion
+        : 1;
+    expandedItems.forEach((item) => {
+      const totalItemQuantity = item.quantity;
+      const pricePerUnit = item.pricePerUnit;
+
+      Object.entries(item.assignedQuantities || {}).forEach(
+        ([memberId, memberQty]) => {
+          if (memberQty > 0 && memberDetailsMap[memberId]) {
+            const normalized_member_amount = roundIDR(
+              pricePerUnit * memberQty * normalizationFactor
+            );
+            memberDetailsMap[memberId].detail_items.push({
+              name: item.name,
+              price_per_unit: roundIDR(pricePerUnit),
+              total_item_quantity: totalItemQuantity,
+              member_quantity: memberQty,
+              member_amount: normalized_member_amount,
+            });
+          }
+        }
+      );
+      const itemSubtotal = pricePerUnit * totalItemQuantity;
+      const itemPortionOfTotal = subtotal > 0 ? itemSubtotal / subtotal : 0;
+
+      const itemTax = (pajak || 0) * itemPortionOfTotal;
+      const itemService = (service || 0) * itemPortionOfTotal;
+      const itemDiscount = (discount || 0) * itemPortionOfTotal;
+      const itemOther = (other || 0) * itemPortionOfTotal;
+
+      Object.entries(item.assignedQuantities || {}).forEach(
+        ([memberId, memberQty]) => {
+          if (memberQty > 0 && memberDetailsMap[memberId]) {
+            const memberPortionOfItem =
+              totalItemQuantity > 0 ? memberQty / totalItemQuantity : 0;
+            memberDetailsMap[memberId].total_fees.tax +=
+              itemTax * memberPortionOfItem;
+            memberDetailsMap[memberId].total_fees.service +=
+              itemService * memberPortionOfItem;
+            memberDetailsMap[memberId].total_fees.discount +=
+              itemDiscount * memberPortionOfItem;
+            memberDetailsMap[memberId].total_fees.other +=
+              itemOther * memberPortionOfItem;
+          }
+        }
+      );
+    });
+    const assignmentsWithDetails = perMemberArray.map((m) => {
+      const memberId = m.id;
+      const details = memberDetailsMap[memberId];
+      const final_detail_items = [...(details?.detail_items || [])];
+      if (Math.abs(rawAdjustSum) > 0.01) {
+        const normalized_tax = (pajak / rawAdjustSum) * m.feePortion;
+        const normalized_service = (service / rawAdjustSum) * m.feePortion;
+        const normalized_discount = (discount / rawAdjustSum) * m.feePortion;
+        const normalized_other = (other / rawAdjustSum) * m.feePortion;
+
+        if (normalized_tax > 0.01) {
+          final_detail_items.push({
+            name: "Pajak (pro-rata)",
+            member_amount: roundIDR(normalized_tax),
+          });
+        }
+        if (normalized_service > 0.01) {
+          final_detail_items.push({
+            name: "Servis (pro-rata)",
+            member_amount: roundIDR(normalized_service),
+          });
+        }
+        if (normalized_discount < -0.01) {
+          final_detail_items.push({
+            name: "Diskon (pro-rata)",
+            member_amount: roundIDR(normalized_discount),
+          });
+        }
+        if (Math.abs(normalized_other) > 0.01) {
+          final_detail_items.push({
+            name: "Biaya Lainnya (pro-rata)",
+            member_amount: roundIDR(normalized_other),
+          });
+        }
+      }
+
+      return {
+        memberRef: {
+          userId: m.member?.id ?? m.id,
+          name: m.member?.name,
+          phone: m.member?.phone,
+          email: m.member?.email,
+        },
+        amount: Math.round(m.total),
+        items: final_detail_items.map((it) => ({
+          name: it.name,
+          price: it.member_amount,
+        })),
+      };
+    });
     const payload = {
-      assignments: assignments,
-      // Anda bisa tambahkan data lain jika 'ReceiptResult' butuh
-      // expandedItems: expandedItems.filter((item) => item.assignedTo.length > 0),
-      // total: grandTotalComputed,
+      assignments: assignmentsWithDetails,
     };
 
-    // Panggil 'onConfirm' (dari ReceiptResult) dengan payload API
     onConfirm?.(payload);
-
-    // Hapus logika 'setShowHighFive' dan 'setIsConfirmed'
   };
-
-  // Hapus 'if (showHighFive)' dan 'if (isConfirmed)'
-
-  // (Sisa perhitungan SAMA)
   const fullyAssignedCount = expandedItems.filter((item) => {
     const totalAssigned = Object.values(item.assignedQuantities || {}).reduce(
       (sum, q) => sum + q,
@@ -463,30 +567,110 @@ export default function SplitBillConfirmation({
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
+      {/* --- MODAL QUANTITY (DIPERBAIKI) --- */}
       {showQuantitySelector && quantitySelectorItem && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
-          {" "}
-          <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 animate-in zoom-in-95 duration-200"></div>{" "}
-        </div>
-      )}{" "}
+        <QuantitySelectorModal
+          item={quantitySelectorItem}
+          onClose={() => setShowQuantitySelector(false)}
+          onConfirm={(qty) => {
+            assignItemWithQuantity(
+              quantitySelectorItem.expandedIdx,
+              selectedMemberId,
+              qty
+            );
+            setShowQuantitySelector(false);
+          }}
+        />
+      )}
+
       {showMemberAlert && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
-          {" "}
-          <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 animate-in zoom-in-95 duration-200"></div>{" "}
-        </div>
-      )}{" "}
-      {showItemAlert && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
-          {" "}
-          <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 animate-in zoom-in-95 duration-200"></div>{" "}
-        </div>
-      )}{" "}
-      {showEqualAlert && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
-          {" "}
-          <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 animate-in zoom-in-95 duration-200"></div>{" "}
+          <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 animate-in zoom-in-95 duration-200">
+            <h3 className="text-lg font-bold text-gray-900">Anggota Kosong</h3>
+            <p className="text-sm text-gray-600 mt-2 mb-4">
+              Anggota berikut belum memiliki pesanan sama sekali. Harap tetapkan
+              pesanan untuk mereka:
+            </p>
+            <ul className="space-y-2 max-h-32 overflow-auto">
+              {unassignedMembers.map((m) => (
+                <li key={m.id} className="text-sm font-semibold text-gray-800">
+                  - {m.name}
+                </li>
+              ))}
+            </ul>
+            <button
+              onClick={() => setShowMemberAlert(false)}
+              className="w-full mt-6 px-4 py-2.5 rounded-lg bg-orange-500 text-white font-semibold text-sm"
+            >
+              Mengerti
+            </button>
+          </div>
         </div>
       )}
+
+      {showItemAlert && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 animate-in zoom-in-95 duration-200">
+            <h3 className="text-lg font-bold text-gray-900">
+              Pesanan Belum Lengkap
+            </h3>
+            <p className="text-sm text-gray-600 mt-2 mb-4">
+              Pesanan berikut belum ditugaskan (assign) sepenuhnya ke anggota:
+            </p>
+            <ul className="space-y-2 max-h-32 overflow-auto">
+              {unassignedItems.map((item, idx) => (
+                <li key={idx} className="text-sm font-semibold text-gray-800">
+                  - {item.name} (Sisa{" "}
+                  {item.quantity -
+                    Object.values(item.assignedQuantities || {}).reduce(
+                      (s, q) => s + q,
+                      0
+                    )}
+                  x)
+                </li>
+              ))}
+            </ul>
+            <button
+              onClick={() => setShowItemAlert(false)}
+              className="w-full mt-6 px-4 py-2.5 rounded-lg bg-orange-500 text-white font-semibold text-sm"
+            >
+              Mengerti
+            </button>
+          </div>
+        </div>
+      )}
+
+      {showEqualAlert && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 animate-in zoom-in-95 duration-200">
+            <h3 className="text-lg font-bold text-gray-900">
+              Bagi Rata Semuanya?
+            </h3>
+            <p className="text-sm text-gray-600 mt-2 mb-6">
+              Ini akan menetapkan semua pesanan untuk dibagi rata ke semua
+              anggota. Pilihan yang sudah Anda buat akan di-reset.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowEqualAlert(false)}
+                className="w-full px-4 py-2.5 rounded-lg bg-gray-100 text-gray-800 font-semibold text-sm"
+              >
+                Batal
+              </button>
+              <button
+                onClick={() => {
+                  includeAll();
+                  setShowEqualAlert(false);
+                }}
+                className="w-full px-4 py-2.5 rounded-lg bg-orange-500 text-white font-semibold text-sm"
+              >
+                Ya, Bagi Rata
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="bg-white border-b border-gray-200 px-4 py-3 sticky top-0 z-10">
         <div className="max-w-3xl mx-auto flex items-center gap-2">
           <button
@@ -553,7 +737,6 @@ export default function SplitBillConfirmation({
         >
           <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
             <div className="p-4">
-              {/* Member Avatars */}
               <div className="flex items-start gap-3 overflow-x-auto scrollbar-hide pb-2 px-1">
                 {members.map((m, idx) => {
                   const initial = (m.name || m.phone || "?")
@@ -599,7 +782,6 @@ export default function SplitBillConfirmation({
                 })}
               </div>
 
-              {/* Centered chip */}
               <div className="mt-5 flex justify-center">
                 {selectedMemberId ? (
                   <div className="inline-flex items-center gap-2 px-4 h-10 rounded-full bg-gradient-to-r from-[#FFF3E6] to-[#FFEDD5] border-2 border-[#FF9A25] text-xs font-semibold text-[#B45309] shadow-md">
@@ -662,7 +844,6 @@ export default function SplitBillConfirmation({
               aria-hidden
             />
 
-            {/* Items list */}
             <div className="relative">
               {showBlurWarning && (
                 <div
@@ -895,6 +1076,78 @@ export default function SplitBillConfirmation({
                        disabled:opacity-60 disabled:cursor-not-allowed"
           >
             {isSubmitting ? "Mengirim..." : "Kirim ke Anggota"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function QuantitySelectorModal({ item, onClose, onConfirm }) {
+  const [qty, setQty] = useState(1);
+  const maxQty = item.maxQty;
+
+  useEffect(() => {
+    setQty(1); 
+  }, [item]);
+
+  const increment = () => setQty((q) => Math.min(q + 1, maxQty));
+  const decrement = () => setQty((q) => Math.max(1, q - 1));
+
+  const handleManualChange = (e) => {
+    const val = e.target.value.replace(/\D/g, ""); 
+    if (val === "") {
+      setQty(1); 
+    } else {
+      setQty(Math.max(1, Math.min(Number(val), maxQty)));
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 animate-in zoom-in-95 duration-200">
+        <h3 className="text-lg font-bold text-gray-900">Pilih Kuantitas</h3>
+        <p className="text-sm text-gray-600 mt-2 mb-6">
+          Berapa banyak <span className="font-bold">{item.itemName}</span> yang
+          ingin Anda ambil? (Maks: {maxQty})
+        </p>
+
+        <div className="flex items-center justify-center gap-4 my-4">
+          <button
+            onClick={decrement}
+            disabled={qty <= 1}
+            className="w-12 h-12 rounded-full bg-gray-100 text-gray-800 text-3xl font-light disabled:opacity-50"
+          >
+            -
+          </button>
+          <input
+            type="text"
+            inputMode="numeric"
+            value={qty}
+            onChange={handleManualChange}
+            className="w-24 h-20 text-center text-5xl font-bold text-orange-600 border-b-2 border-orange-500 focus:outline-none"
+          />
+          <button
+            onClick={increment}
+            disabled={qty >= maxQty}
+            className="w-12 h-12 rounded-full bg-gray-100 text-gray-800 text-3xl font-light disabled:opacity-50"
+          >
+            +
+          </button>
+        </div>
+
+        <div className="flex gap-3 mt-8">
+          <button
+            onClick={onClose}
+            className="w-full px-4 py-2.5 rounded-lg bg-gray-100 text-gray-800 font-semibold text-sm"
+          >
+            Batal
+          </button>
+          <button
+            onClick={() => onConfirm(qty)}
+            className="w-full px-4 py-2.5 rounded-lg bg-orange-500 text-white font-semibold text-sm"
+          >
+            Konfirmasi
           </button>
         </div>
       </div>

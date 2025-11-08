@@ -360,12 +360,11 @@ export default function Scanning({
               }
             : resultRef.current || { success: true };
 
-          // ✅ FIXED: Add imageUrl to receiptData
           setTimeout(() => {
             if (payload.success && payload.items) {
               setReceiptData({
                 ...payload,
-                imageUrl: image, // ✅ CRITICAL FIX
+                imageUrl: image,
               });
               setShowResult(true);
             } else {

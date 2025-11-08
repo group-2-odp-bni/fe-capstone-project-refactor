@@ -3,7 +3,6 @@ import { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import html2canvas from "html2canvas";
 import AturPembayaran from "./AturPembayaran";
 
-// ✅ GUNAKAN localStorage supaya data TIDAK HILANG saat navigasi
 const SAVED_IDS_KEY = "__splitbill_saved_ids__";
 
 const getSavedIds = () => {
@@ -36,12 +35,11 @@ export default function SplitBillConfirmed({
   onBackToHome,
   receiptImage,
 }) {
-  // ✅ Generate ID STABLE (tidak berubah saat re-render)
   const splitIdRef = useRef(null);
 
   if (!splitIdRef.current) {
-    if (data?.id) {
-      splitIdRef.current = data.id;
+    if (data?.billId) {
+      splitIdRef.current = data.billId;
     } else {
       const timestamp = Date.now().toString(36);
       const random = Math.random().toString(36).substr(2, 8);
@@ -54,7 +52,6 @@ export default function SplitBillConfirmed({
   const [initialData, setInitialData] = useState(data);
   const [isInitialized, setIsInitialized] = useState(!!data);
 
-  // ✅ Cleanup data kedaluwarsa (>7 hari)
   const cleanupOldLocalData = useCallback(() => {
     if (typeof window === "undefined") return;
 
@@ -97,7 +94,6 @@ export default function SplitBillConfirmed({
     cleanupOldLocalData();
   }, []);
 
-  // ✅ Load data dari localStorage
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (!splitId) return;
@@ -221,10 +217,10 @@ export default function SplitBillConfirmed({
 
             try {
               localStorage.setItem(existingKey, JSON.stringify(cacheData));
-              console.log(`✅ Saved after cleanup`);
+              console.log(`Saved after cleanup`);
               addSavedId(splitId);
             } catch (finalError) {
-              console.error("❌ Failed:", finalError);
+              console.error("Failed:", finalError);
             }
           }
         }
@@ -337,7 +333,7 @@ export default function SplitBillConfirmed({
       if (originalItems.length === 0 || originalItemsSubtotal === 0) {
         const memberSubtotal = calculateMemberItemSubtotal(memberId);
         const allMembersSubtotal = (displayData.members || []).reduce(
-          (sum, member) => sum + calculateMemberItemSubtotal(member.id),
+          (sum, member) => sum + calculateMemberItemSubtotal(member.memberId),
           0
         );
         if (allMembersSubtotal === 0)
@@ -418,21 +414,18 @@ export default function SplitBillConfirmed({
     },
     [displayData, calculateMemberItemSubtotal, calculateFeeBreakdownPerItem]
   );
-
   const perMemberVerifiedMap = useMemo(() => {
     const map = {};
     (displayData?.members || []).forEach((m) => {
-      const basis = displayData?.perMember?.find((p) => p.id === m.id) || {
-        id: m.id,
+      // Gunakan 'memberId' sebagai kunci dan 'amount' sebagai total
+      map[m.memberId] = {
+        id: m.memberId,
         name: m.name,
-      };
-      map[m.id] = {
-        ...basis,
-        total: roundIDR(calculateVerifiedTotal(m.id)),
+        total: roundIDR(m.amount), // <-- Ambil 'amount' dari API
       };
     });
     return map;
-  }, [displayData, calculateVerifiedTotal]);
+  }, [displayData]);
 
   const perMemberVerified = useMemo(
     () => Object.values(perMemberVerifiedMap),
@@ -440,9 +433,8 @@ export default function SplitBillConfirmed({
   );
 
   const grandTotalVerified = useMemo(() => {
-    return perMemberVerified.reduce((sum, m) => sum + (m.total || 0), 0);
-  }, [perMemberVerified]);
-
+    return displayData?.totals?.total || 0;
+  }, [displayData]);
   const belumBayar = useMemo(() => {
     return perMemberVerified
       .filter((m) => m.id !== currentUserId && !paymentStatus[m.id])
@@ -690,10 +682,7 @@ Silakan bayar sesuai nominal ya! 🙏
           </button>
           <div className="flex-1 text-center">
             <div className="text-sm text-gray-900 font-semibold">
-              {displayData.splitName || "Split Bill"}
-            </div>
-            <div className="text-xs text-gray-500 mt-0.5">
-              ID: {splitId.substring(0, 12)}...
+              {displayData.title}
             </div>
           </div>
           <div className="w-10" />
@@ -732,7 +721,7 @@ Silakan bayar sesuai nominal ya! 🙏
 
                         <div className="text-center mb-4">
                           <h2 className="text-lg font-bold text-gray-900">
-                            {displayData.splitName || "Indomaret"}
+                            {displayData.title}
                           </h2>
                           <p className="text-xs text-gray-500 mt-1">
                             {dateStr} - {timeStr}
@@ -756,13 +745,15 @@ Silakan bayar sesuai nominal ya! 🙏
                             Bayar ke
                           </h3>
                           {(displayData.members || [])
-                            .filter((member) => member.id === currentUserId)
+                            .filter(
+                              (member) => member.memberId === currentUserId
+                            )
                             .map((member, idx) => {
                               const initial = (member.name || "?")
                                 .charAt(0)
                                 .toUpperCase();
                               const memberData =
-                                perMemberVerifiedMap[member.id];
+                                perMemberVerifiedMap[member.memberId];
                               const phoneDisplay =
                                 member.phone || member.phoneMasked;
                               return (
@@ -801,7 +792,7 @@ Silakan bayar sesuai nominal ya! 🙏
                                   <div className="mt-2 mb-4">
                                     <button
                                       onClick={() =>
-                                        toggleMemberDetail(member.id)
+                                        toggleMemberDetail(member.memberId)
                                       }
                                       className="w-full flex items-center justify-between py-2 px-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition ignore-screenshot"
                                     >
@@ -838,17 +829,19 @@ Silakan bayar sesuai nominal ya! 🙏
                               Anggota
                             </h3>
                             {(displayData.members || [])
-                              .filter((member) => member.id !== currentUserId)
+                              .filter(
+                                (member) => member.memberId !== currentUserId
+                              )
                               .map((member, idx) => {
                                 const initial = (member.name || "?")
                                   .charAt(0)
                                   .toUpperCase();
                                 const memberData =
-                                  perMemberVerifiedMap[member.id];
+                                  perMemberVerifiedMap[member.memberId];
                                 const phoneDisplay =
                                   member.phone || member.phoneMasked;
                                 const isPaid =
-                                  paymentStatus[member.id] || false;
+                                  paymentStatus[member.memberId] || false;
                                 return (
                                   <div
                                     key={idx}
@@ -888,7 +881,7 @@ Silakan bayar sesuai nominal ya! 🙏
                                     <div className="mt-2">
                                       <button
                                         onClick={() =>
-                                          toggleMemberDetail(member.id)
+                                          toggleMemberDetail(member.memberId)
                                         }
                                         className="w-full flex items-center justify-between py-2 px-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition ignore-screenshot"
                                       >
@@ -914,7 +907,7 @@ Silakan bayar sesuai nominal ya! 🙏
                                       {/* ✅ TAMBAHAN: Button Link Invoice Member */}
                                       <button
                                         onClick={() => {
-                                          const memberUrl = `${window.location.origin}/app/splitbill/${splitId}/member/${member.id}`; // ✅ TAMBAH /app/
+                                          const memberUrl = `${window.location.origin}/app/splitbill/${splitId}/member/${member.memberId}`;
                                           navigator.clipboard.writeText(
                                             memberUrl
                                           );
@@ -954,10 +947,8 @@ Silakan bayar sesuai nominal ya! 🙏
                                   </div>
                                 );
                               })}
-
-                            {/* BUTTON ATUR PEMBAYARAN */}
                             <div className="border-t-2 border-dashed border-gray-400 pt-4 mt-4 -mx-6 px-6">
-                              {/* <button
+                              <button
                                 onClick={() => {
                                   setClickedButton("aturPembayaran");
                                   setTimeout(
@@ -995,7 +986,7 @@ Silakan bayar sesuai nominal ya! 🙏
                                     Update Manual Status Pembayaran
                                   </span>
                                 </span>
-                              </button> */}
+                              </button>
                             </div>
                           </div>
                         )}
@@ -1106,7 +1097,7 @@ Silakan bayar sesuai nominal ya! 🙏
                       letterSpacing: -0.3,
                     }}
                   >
-                    {displayData.splitName || "Indomaret"}
+                    {displayData.title}
                   </div>
                 </div>
 
@@ -1263,59 +1254,6 @@ Silakan bayar sesuai nominal ya! 🙏
           </div>
 
           <div className="px-4 pb-6 space-y-3 max-w-md mx-auto w-full mt-5">
-            {/* <button
-              onClick={handleShareSplit}
-              disabled={isDownloading}
-              className={`w-full py-3.5 rounded-xl text-white font-bold text-sm bg-gradient-to-r from-[#FF9A25] to-[#FF7A25] active:scale-[0.98] transition-all flex items-center justify-center gap-2 ${
-                isDownloading ? "opacity-50 cursor-not-allowed" : ""
-              }`}
-            >
-              {isDownloading ? (
-                <>
-                  <svg
-                    className="animate-spin h-5 w-5"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    />
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    />
-                  </svg>
-                  <span>{downloadMessage}</span>
-                </>
-              ) : (
-                <>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                    <path
-                      d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                    <path
-                      d="M16 6l-4-4-4 4M12 2v13"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                  Kirim ke Semua
-                </>
-              )}
-            </button> */}
-
             <button
               onClick={handleDownloadReceipt}
               disabled={isDownloading}
