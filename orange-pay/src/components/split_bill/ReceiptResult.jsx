@@ -4,13 +4,8 @@ import EditRincian from "./EditRincian";
 import CameraPage from "./CameraPage";
 import SelectContacts from "./SelectContacts";
 import SplitBillConfirmation from "./SplitBillConfirmation";
-import useTransferApi from "../../hooks/api/useTransferApi";
-import useQuickTransfer from "../../hooks/api/useQuickTransfer";
-import SplitBillConfirmed from "./SplitBillConfirmed";
-
-import { useNavigate } from "react-router-dom";
+import UseContactApi from "../../hooks/api/useContactApi";
 import api from "../../lib/api";
-import { useRegistrationContext } from "../../context/RegistrationContext";
 const formatIDR = (n) =>
   new Intl.NumberFormat("id-ID", {
     style: "currency",
@@ -39,8 +34,7 @@ export default function ReceiptResult({ receiptData, onBack, onConfirm }) {
   const [showAlert, setShowAlert] = useState(false);
   const [alertMessage, setAlertMessage] = useState("");
 
-  const transferApi = useTransferApi();
-  const { contacts: quickContacts } = useQuickTransfer({ limit: 4 });
+  const transferApi = UseContactApi();
   const [wallets, setWallets] = useState([]);
   const [selectedWalletId, setSelectedWalletId] = useState(null);
   const [isWalletsLoading, setIsWalletsLoading] = useState(true);
@@ -154,27 +148,6 @@ export default function ReceiptResult({ receiptData, onBack, onConfirm }) {
       if (!selectedWalletId) {
         throw new Error("Silakan pilih wallet tujuan terlebih dahulu.");
       }
-      // const finalPayload = {
-      //   title: splitName,
-      //   destinationWalletId: selectedWalletId,
-      //   imageUrl: receiptImage,
-
-      //   items: editableData.items,
-      //   fees: {
-      //     tax: pajak,
-      //     service: service,
-      //     tip: other,
-      //     total: total,
-      //   },
-
-      //   assignments: payloadFromConfirmation.assignments,
-      //   tax_strategy: "proportional",
-      // };
-
-      // if (!finalPayload.assignments || finalPayload.assignments.length === 0) {
-      //   throw new Error("Data 'assignments' (pembagian) tidak ada.");
-      // }
-      // const response = await api.post("/api/v1/split-bill/bills", finalPayload);
       const normalizedAssignments = (
         payloadFromConfirmation.assignments || []
       ).map((a) => ({
@@ -272,21 +245,33 @@ export default function ReceiptResult({ receiptData, onBack, onConfirm }) {
   }
 
   if (showContacts) {
+    const [mainContacts, setMainContacts] = useState([]);
+    const [isLoadingContacts, setIsLoadingContacts] = useState(true);
+
+    useEffect(() => {
+      const loadContacts = async () => {
+        setIsLoadingContacts(true);
+        const contactsData = await transferApi.getAllAccounts(); // Ini adalah async call
+        setMainContacts(contactsData);
+        setIsLoadingContacts(false);
+      };
+
+      loadContacts();
+    }, [transferApi]);
     const currentUserForContacts = {
       id: "me",
       name: "Kamu",
       phoneMasked: "082210472710",
       avatarText: "K".charAt(0),
     };
-
-    const mainContacts = transferApi.getAllAccounts();
     const allContacts = mainContacts.map((contact) => ({
-      id: contact.accountId,
-      userId: contact.accountId,
-      name: contact.name,
-      phone: contact.phone,
+      id: contact.recipientUserId,
+      userId: contact.recipientUserId,
+      name: contact.recipientName,
+      phone: contact.recipientPhone,
       isOrangePayUser: true,
     }));
+
     const recommendedIds = mainContacts
       .slice(0, 4)
       .map((c) => c.accountId)

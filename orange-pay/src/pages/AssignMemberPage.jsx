@@ -63,34 +63,6 @@ function mapWalletToCard(wallet) {
     balance: Number(wallet.balanceSnapshot ?? 0),
   };
 }
-const MOCK_CONTACTS_RESPONSE = {
-  data: {
-    error: false,
-    message: "OK",
-    data: [
-      {
-        id: "b5a4e739-8c2f-4a43-999b-714bb98b9f13",
-        name: "Gabriel Gamalia",
-        phone: "+6281312202022",
-      },
-      {
-        id: "62742634-1029-432e-bcab-b6161b73f93b",
-        name: "Ahong (Owner)",
-        phone: "+6281234567891",
-      },
-      {
-        id: "b5a4e739-8c2f-4a43-999b-714bb98b9f33",
-        name: "Amal Mahar Rosadi",
-        phone: "+628412345671",
-      },
-      {
-        id: "c-02",
-        name: "Firdaus Muhammad Azri",
-        phone: "+628129991111",
-      },
-    ],
-  },
-};
 
 export default function AssignMemberPage({ walletIdOverride }) {
   const { walletId: walletIdFromParam } = useParams();
@@ -126,14 +98,12 @@ export default function AssignMemberPage({ walletIdOverride }) {
     (async () => {
       setLoading(true);
       try {
-        // const mockContactsPromise = Promise.resolve(MOCK_CONTACTS_RESPONSE);
         const [memberRes, balanceRes, contactsRes, roleRes, detailRes] =
           await Promise.all([
             api.get(
               `/api/v1/wallets/${walletId}/members?page=0&size=20&&includePending=true`
             ),
             api.get(`/api/v1/wallets/${walletId}/balance`),
-            // mockContactsPromise,
             api.get(`/api/v1/contacts?page=0&size=100`),
 
             api.get(`/api/v1/wallets/${walletId}/me/role`),

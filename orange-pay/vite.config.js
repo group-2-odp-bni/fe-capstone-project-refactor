@@ -17,6 +17,16 @@ export default defineConfig({
       //   secure: false,
       // },
       // uncomment this for local testing and adjust manually the port on each services
+      "/api/v1/contacts": {
+        target: "http://localhost:8084",
+        changeOrigin: true,
+        secure: false,
+      },
+      "/api/v1/user/me": {
+        target: "http://localhost:8083",
+        changeOrigin: true,
+        secure: false,
+      },
       "/api/v1/auth": {
         target: "http://localhost:8081",
         changeOrigin: true,

@@ -28,7 +28,11 @@ export const PillBadge = ({ label, active, style, onClick }) => (
 );
 
 export const IconToggle = ({ on, onToggle }) => (
-  <button onClick={onToggle} className="active:scale-95" style={{ transform: "translateZ(35px)" }}>
+  <button
+    onClick={onToggle}
+    className="active:scale-95"
+    style={{ transform: "translateZ(35px)" }}
+  >
     {on ? (
       <EyeSlashIcon className="w-5 h-4 md:w-6 md:h-4 text-white/85" />
     ) : (
@@ -41,22 +45,42 @@ export const IconToggle = ({ on, onToggle }) => (
  * ActionIcon
  * - renders a button when `onClick` or `asButton` is truthy.
  */
-export const ActionIcon = ({ label, children, to, onClick, asButton = false }) => {
-  const commonClass = "flex flex-col items-center hover:text-white/90 transition-all cursor-pointer active:scale-[.98]";
+export const ActionIcon = ({
+  label,
+  children,
+  to,
+  onClick,
+  asButton = false,
+}) => {
+  const commonClass =
+    "flex flex-col items-center hover:text-white/90 transition-all cursor-pointer active:scale-[.98]";
   if (asButton || onClick) {
     return (
-      <button onClick={onClick} type="button" className={commonClass} style={{ background: "transparent", border: 0 }}>
+      <button
+        onClick={onClick}
+        type="button"
+        className={commonClass}
+        style={{ background: "transparent", border: 0 }}
+      >
         <div className="w-6 md:w-7 h-auto mb-[2px]">{children}</div>
-        <span className="text-white text-[9.5px] md:text-[10px] leading-3">{label}</span>
+        <span className="text-white text-[9.5px] md:text-[10px] leading-3">
+          {label}
+        </span>
       </button>
     );
   }
 
   // keep fallback to anchor if someone passes `to` without handler
   return (
-    <a href={to || "#"} className={commonClass} onClick={(e) => !to && e.preventDefault()}>
+    <a
+      href={to || "#"}
+      className={commonClass}
+      onClick={(e) => !to && e.preventDefault()}
+    >
       <div className="w-6 md:w-7 h-auto mb-[2px]">{children}</div>
-      <span className="text-white text-[9.5px] md:text-[10px] leading-3">{label}</span>
+      <span className="text-white text-[9.5px] md:text-[10px] leading-3">
+        {label}
+      </span>
     </a>
   );
 };
@@ -90,13 +114,23 @@ export const AmountText = ({ amount, isHidden, onMeasured }) => {
 
   return (
     <div className="relative h-8 md:h-9">
-      <span ref={shownRef} className="absolute left-0 top-0 text-2xl md:text-3xl font-bold font-[Poppins] drop-shadow transition-opacity duration-500" style={{ opacity: isHidden ? 0 : 1 }}>
+      <span
+        ref={shownRef}
+        className="absolute left-0 top-0 text-2xl md:text-3xl font-bold font-[Poppins] drop-shadow transition-opacity duration-500"
+        style={{ opacity: isHidden ? 0 : 1 }}
+      >
         {formatted}
       </span>
-      <span ref={hiddenRef} className="absolute left-0 top-0 text-2xl md:text-3xl font-bold font-[Poppins] drop-shadow transition-opacity duration-500" style={{ opacity: isHidden ? 1 : 0 }}>
+      <span
+        ref={hiddenRef}
+        className="absolute left-0 top-0 text-2xl md:text-3xl font-bold font-[Poppins] drop-shadow transition-opacity duration-500"
+        style={{ opacity: isHidden ? 1 : 0 }}
+      >
         Rp{stars}
       </span>
-      <span className="invisible text-2xl md:text-3xl font-bold font-[Poppins]">{formatted}</span>
+      <span className="invisible text-2xl md:text-3xl font-bold font-[Poppins]">
+        {formatted}
+      </span>
     </div>
   );
 };
@@ -154,8 +188,17 @@ export const GradientCardShell = ({
 export const CardTopBar = ({ title, type, isMain, onBadgeClick }) => (
   <div className="relative z-10 flex justify-between items-start mb-5 md:mb-10">
     <div className="flex items-center space-x-3 mt-1 mb-2">
-      <img src="/orangepay_card.svg" alt="RangePay Logo" className="h-5 md:h-6 w-auto drop-shadow" />
-      <PillBadge label={type} active={isMain} style={{ transform: "translateZ(35px)" }} onClick={onBadgeClick} />
+      <img
+        src="/orangepay_card.svg"
+        alt="RangePay Logo"
+        className="h-5 md:h-6 w-auto drop-shadow"
+      />
+      <PillBadge
+        label={type}
+        active={isMain}
+        style={{ transform: "translateZ(35px)" }}
+        onClick={onBadgeClick}
+      />
     </div>
   </div>
 );
@@ -169,7 +212,13 @@ export const CardTopBar = ({ title, type, isMain, onBadgeClick }) => (
  * - type: string, card.type (defaults to "utama")
  * - isDraggingRef: optional ref to block navigation when dragging
  */
-export const CTASection = ({ links = {}, walletId, type = "PERSONAL", defaultForUser = true, isDraggingRef }) => {
+export const CTASection = ({
+  links = {},
+  walletId,
+  type = "PERSONAL",
+  defaultForUser = true,
+  isDraggingRef,
+}) => {
   const navigate = useNavigate();
 
   const appendWalletQuery = (basePath) => {
@@ -181,17 +230,35 @@ export const CTASection = ({ links = {}, walletId, type = "PERSONAL", defaultFor
     if (isDraggingRef && isDraggingRef.current) return;
     navigate(appendWalletQuery(links.transfer));
   };
-
+  const handleSplitBillClick = () => {
+    if (isDraggingRef && isDraggingRef.current) return;
+    navigate("/app/splitbill");
+  };
   const renderActionsForUtama = () => (
     <>
-      <ActionIcon to={links.split} label="Split Bill">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="currentColor" className="w-7 md:w-7 h-auto mb-[2px]">
+      <ActionIcon
+        to={links.split}
+        onClick={handleSplitBillClick}
+        asButton
+        label="Split Bill"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 512 512"
+          fill="currentColor"
+          className="w-7 md:w-7 h-auto mb-[2px]"
+        >
           <path d="M416 32H96a48 48 0 0 0-48 48v368a16 16 0 0 0 25.6 12.8L128 416l54.4 44.8a16 16 0 0 0 20.8 0L256 416l54.4 44.8a16 16 0 0 0 20.8 0L384 416l54.4 44.8A16 16 0 0 0 464 448V80a48 48 0 0 0-48-48ZM160 144h192a16 16 0 0 1 0 32H160a16 16 0 0 1 0-32Zm0 96h192a16 16 0 0 1 0 32H160a16 16 0 0 1 0-32Zm0 96h96a16 16 0 0 1 0 32h-96a16 16 0 0 1 0-32Z" />
         </svg>
       </ActionIcon>
 
       <ActionIcon to={links.topup} label="Top-Up">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" className="w-7 md:w-7 h-auto mb-[2px]">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          fill="currentColor"
+          viewBox="0 0 24 24"
+          className="w-7 md:w-7 h-auto mb-[2px]"
+        >
           <path d="M19 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2ZM12 8a1 1 0 0 1 1 1v2h2a1 1 0 0 1 0 2h-2v2a1 1 0 0 1-2 0v-2h-2a1 1 0 0 1 0-2h2V9a1 1 0 0 1 1-1Z" />
         </svg>
       </ActionIcon>
@@ -204,7 +271,8 @@ export const CTASection = ({ links = {}, walletId, type = "PERSONAL", defaultFor
       style={{ transform: "translateZ(25px)" }}
     >
       <div className="flex space-x-6 md:space-x-8 text-white">
-        {String(type || "").toLowerCase() === "utama" && renderActionsForUtama()}
+        {String(type || "").toLowerCase() === "utama" &&
+          renderActionsForUtama()}
 
         {/* Transfer: always shown, uses button to attach walletId and respect dragging */}
         <ActionIcon onClick={handleTransferClick} asButton label="Transfer">
@@ -226,17 +294,31 @@ export const CTASection = ({ links = {}, walletId, type = "PERSONAL", defaultFor
 
 /* ========== BalanceRow ========== */
 
-export const BalanceRow = ({ amount, isHidden, onToggleHidden, loading, active }) => {
+export const BalanceRow = ({
+  amount,
+  isHidden,
+  onToggleHidden,
+  loading,
+  active,
+}) => {
   const [sizes, setSizes] = useState({ maxWidth: 0, currentWidth: 0 });
 
   if (loading && active) {
-    return <div className="h-8 md:h-9 w-28 md:w-32 bg-white/20 rounded animate-pulse" />;
+    return (
+      <div className="h-8 md:h-9 w-28 md:w-32 bg-white/20 rounded animate-pulse" />
+    );
   }
 
   return (
-    <div className="relative z-10 mb-2 md:mb-3" style={{ width: sizes.maxWidth ? sizes.maxWidth + 28 : undefined }}>
+    <div
+      className="relative z-10 mb-2 md:mb-3"
+      style={{ width: sizes.maxWidth ? sizes.maxWidth + 28 : undefined }}
+    >
       <AmountText amount={amount} isHidden={isHidden} onMeasured={setSizes} />
-      <div className="absolute top-1/2 -translate-y-1/2 will-change-transform" style={{ left: sizes.currentWidth + 6, transform: "translateZ(35px)" }}>
+      <div
+        className="absolute top-1/2 -translate-y-1/2 will-change-transform"
+        style={{ left: sizes.currentWidth + 6, transform: "translateZ(35px)" }}
+      >
         <IconToggle on={isHidden} onToggle={onToggleHidden} />
       </div>
     </div>
@@ -262,11 +344,12 @@ export const CarouselViewport = forwardRef(function CarouselViewport(
 
   const isInteractiveTarget = (el) => {
     if (!el || !el.closest) return false;
-     // If the target (or its parents) explicitly allow drag, don't treat it as interactive
+    // If the target (or its parents) explicitly allow drag, don't treat it as interactive
     if (el.closest("[data-allow-drag='true']")) return false;
-    return !!el.closest("button, a, [role='button'], input, textarea, select, label");
-    };
-    
+    return !!el.closest(
+      "button, a, [role='button'], input, textarea, select, label"
+    );
+  };
 
   const updateActiveIndexFromScroll = () => {
     const el = viewportRef.current;
@@ -377,9 +460,16 @@ export const CarouselViewport = forwardRef(function CarouselViewport(
       onPointerUp={onPointerUp}
       onPointerCancel={onPointerUp}
     >
-      <div className="flex" style={{ width: "100%", gap: `${GAP}px`, padding: 0 }}>
+      <div
+        className="flex"
+        style={{ width: "100%", gap: `${GAP}px`, padding: 0 }}
+      >
         {items.map((item, idx) => (
-          <div key={item.id ?? idx} className="snap-center shrink-0 p-0" style={{ width: `calc(100% - ${PEEK}px)` }}>
+          <div
+            key={item.id ?? idx}
+            className="snap-center shrink-0 p-0"
+            style={{ width: `calc(100% - ${PEEK}px)` }}
+          >
             {renderItem(item, idx)}
           </div>
         ))}
