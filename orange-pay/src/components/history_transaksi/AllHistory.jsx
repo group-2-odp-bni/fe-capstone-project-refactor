@@ -1,15 +1,19 @@
 import React, { useMemo } from "react";
-import { useHistoryTrx } from "../../hooks/api/useHistoryTrx";
+import useRecentTransfer from "../../hooks/api/useHistory"; // <-- use your hook
 
 export default function TransactionList({ walletId = null, onTransactionClick = null }) {
-  // use the new hook (returns { data, loading, error, refetch })
-  const { data = [], loading, error, refetch } = useHistoryTrx({ walletId });
+  // useRecentTransfer returns { users, loading, error }
+  const { users = [], loading, error } = useRecentTransfer({
+    // you can pass filters here if needed
+    // page: 0, size: 20, startDate, endDate, sortBy, direction, status
+    // walletId isn't part of this hook's params, so we ignore it here
+  });
 
   const formatRupiah = (v) => (v ?? 0).toLocaleString("id-ID");
 
-  // normalize data -> create items with createdAt Date, dateLabel, timeLabel, id
+  // normalize -> match the fields your component expects downstream
   const normalized = useMemo(() => {
-    if (!Array.isArray(data) || data.length === 0) return [];
+    if (!Array.isArray(users) || users.length === 0) return [];
 
     const fmtDate = (d) =>
       new Intl.DateTimeFormat("id-ID", {
@@ -29,29 +33,40 @@ export default function TransactionList({ walletId = null, onTransactionClick = 
         .format(d)
         .replace(".", ":");
 
-    return data
-      .map((t, idx) => {
-        const d = t.createdAt ? new Date(t.createdAt) : new Date();
-        return {
-          // keep compatibility with previous `t.id` usage
-          id: t.trxId ?? t.id ?? `trx-${idx}-${d.getTime()}`,
-          trxId: t.trxId,
-          walletId: t.walletId,
-          walletName: t.walletName,
-          walletType: t.walletType,
-          name: t.receiver ?? t.name ?? "-",
-          receiverPhone: t.receiverPhone ?? null,
-          amount: Number(t.amount) || 0,
-          type: t.type ?? null,
-          status: t.status ?? null,
-          notes: t.notes ?? "",
-          createdAt: d,
-          dateLabel: fmtDate(d),
-          timeLabel: fmtTime(d),
-        };
-      })
-      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-  }, [data]);
+    // The hook already returns dateLabel/timeLabel, so we use those directly.
+    // createdAt may not exist in hook items; we keep order as-is.
+    return users.map((t, idx) => {
+      // Try to build a Date if present; else keep a synthetic to avoid NaN sort
+      const synthetic = new Date(Date.now() - idx * 1000); // preserve original order
+      const d = t.createdAt ? new Date(t.createdAt) : synthetic;
+
+      return {
+        // Keep compatibility
+        id: t.trxId ?? t.id ?? `trx-${idx}-${d.getTime()}`,
+        trxId: t.trxId ?? t.id ?? null,
+
+        // The hook doesn’t provide wallet info, so keep nulls
+        walletId: t.walletId ?? null,
+        walletName: t.walletName ?? null,
+        walletType: t.walletType ?? null,
+
+        // Names/phones from hook
+        name: t.receiver ?? t.name ?? "-",
+        receiverPhone: t.receiverPhone ?? t.phone ?? null,
+
+        amount: Number(t.amount) || 0,
+        type: t.type ?? null,       // "kirim" | "terima" from hook
+        status: t.status ?? null,   // not provided by hook; stays null if missing
+        notes: t.notes ?? "",       // not provided by hook; stays ""
+
+        createdAt: d,
+        // Prefer labels from hook; fallback to formatting d
+        dateLabel: t.dateLabel ?? fmtDate(d),
+        timeLabel: t.timeLabel ?? fmtTime(d),
+      };
+    });
+    // no sort here: keep API order (already DESC by createdAt)
+  }, [users]);
 
   // group by dateLabel into sections
   const sections = useMemo(() => {
@@ -89,7 +104,7 @@ export default function TransactionList({ walletId = null, onTransactionClick = 
     return (
       <div className="p-4 text-sm text-red-600">
         Gagal memuat transaksi.{" "}
-        <button onClick={refetch} className="underline">
+        <button onClick={() => window.location.reload()} className="underline">
           Coba lagi
         </button>
       </div>
@@ -118,18 +133,12 @@ export default function TransactionList({ walletId = null, onTransactionClick = 
               const isIncome = String(t.type ?? "").toLowerCase() === "terima";
               const sign = isIncome ? "+" : "−";
               const amountColor = isIncome ? "text-emerald-500" : "text-black-400";
-              const subtitle =
-                isIncome
-                  ? "Transfer Masuk"
-                  : String(t.type).toLowerCase() === "kirim"
-                  ? "Transfer"
-                  : t.type ?? "-";
 
               return (
                 <li key={t.id}>
                   <button
                     onClick={() => onTransactionClick?.(t)}
-                    className="w-full flex  justify-between py-2 bg-white border-b border-gray-200"
+                    className="w-full flex justify-between py-2 bg-white border-b border-gray-200"
                     aria-label={`Open receipt for ${t.name}`}
                   >
                     {/* Left info */}
@@ -145,7 +154,9 @@ export default function TransactionList({ walletId = null, onTransactionClick = 
                       <p className={`text-l font-semibold ${amountColor}`}>
                         {sign} Rp{formatRupiah(t.amount)}
                       </p>
-                      <p className="text-sm text-gray-400">{t.dateLabel} {t.timeLabel} </p>
+                      <p className="text-sm text-gray-400">
+                        {t.dateLabel} {t.timeLabel}
+                      </p>
                     </div>
                   </button>
                 </li>

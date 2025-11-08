@@ -32,7 +32,7 @@ import AddBalanceFromWalletPage from "../pages/AddBalanceFromWalletPageNew";
 import AllHistoryPage from "../pages/AllHistory";
 import ConfirmAddBalancePage from "../pages/ConfirmAddBalancePage";
 // import ReceiptPage from "../pages/ReceiptPage";
-import ReceiptPage from "../pages/ReceiptAddBalanceFromWalletPage";
+import ReceiptPage from "../pages/ReceiptPage";
 import InviteClaimPage from "../pages/InviteClaimsPage";
 import AddBalancePinPage from "../pages/AddBalancePinPage";
 /* login flow context & step guard */
@@ -60,9 +60,14 @@ import AccountLandingPage from "../pages/account/AccountLandingPage";
 
 /* transaction limit */
 import TransactionLimitPage from "../pages/transactionLimit/TransactionLimitPage";
+import { TransactionLimitProvider } from "../context/TransactionLimitContext";
+import TransactionLimitEditPage from "../pages/transactionLimit/TransactionLimitEditPage";
 
 /* topup */
 import { TopupProvider } from "../context/TopupContext";
+import SetAmountPage from "../pages/topup/SetAmountPage";
+import TopUpConfirmationPage from "../pages/topup/TopupConfirmationPage";
+import TopupResultPage from "../pages/topup/TopupResultPage";
 import TopUpPage from "../pages/topup/TopUpPage";
 
 export function PublicRoute({ children, redirectTo = "/app/dashboard" }) {
@@ -124,6 +129,14 @@ function TopupLayout() {
     <TopupProvider>
       <Outlet />
     </TopupProvider>
+  );
+}
+
+function TransactionLimitLayout() {
+  return (
+    <TransactionLimitProvider>
+      <Outlet />
+    </TransactionLimitProvider>
   );
 }
 
@@ -214,9 +227,14 @@ export default function AppRoutes() {
           {/* account page */}
           <Route path="account" element={<AccountLandingPage />} />
           {/* topup page */}
-          <Route element={<TopupLayout />}>
-            <Route path="topup" element={<TopUpPage />} />
+          <Route path="topup" element={<TopupLayout />}>
+            <Route index element={<TopUpPage />} />
+            <Route path="setAmount" element={<SetAmountPage />} />
+            <Route path="confirm" element={<TopUpConfirmationPage />} />
+            <Route path="result" element={<TopupResultPage />} />
           </Route>
+
+
           {/* user profile page */}
           <Route element={<ProfileLayout />}>
             <Route path="profile" element={<ProfilePage />} />
@@ -225,7 +243,12 @@ export default function AppRoutes() {
             <Route path="verifyPhone" element={<VerifyPhonePage />} />
           </Route>
           {/* user transaction limit page */}
-          <Route path="transactionLimit" element={<TransactionLimitPage />} />
+          <Route element={<TransactionLimitLayout />}>
+            <Route path="transactionLimit" element={<TransactionLimitPage />} />
+            <Route path="edittransactionLimit" element={<TransactionLimitEditPage />} />
+          </Route>
+
+
           <Route path="wallets">
             <Route path="new" element={<AddWalletPage />} />
             <Route path=":walletId" element={<HistoryTransactionPage />} />{" "}
@@ -266,6 +289,6 @@ export default function AppRoutes() {
 
         <Route path="*" element={<NotFound />} />
       </Routes>
-    </BrowserRouter>
+    </BrowserRouter >
   );
 }

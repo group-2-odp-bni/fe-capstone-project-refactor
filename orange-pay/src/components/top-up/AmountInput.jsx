@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 
 export default function AmountInput({
-  label = "Amount",
+  label = "",
   prefix = "Rp",
   value,
   onChange,       // Parent gets raw numeric value (e.g. 10000)

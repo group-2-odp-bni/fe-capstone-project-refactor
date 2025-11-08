@@ -6,6 +6,7 @@ import SelectContacts from "./SelectContacts";
 import SplitBillConfirmation from "./SplitBillConfirmation";
 import useTransferApi from "../../hooks/api/useTransferApi";
 import useQuickTransfer from "../../hooks/api/useQuickTransfer";
+import SplitBillConfirmed from "./SplitBillConfirmed";
 
 import { useNavigate } from "react-router-dom";
 import api from "../../lib/api";

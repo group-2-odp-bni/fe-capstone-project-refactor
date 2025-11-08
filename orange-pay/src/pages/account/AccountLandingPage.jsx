@@ -1,47 +1,55 @@
 import { useNavigate } from "react-router-dom";
-import ButtonLink from "../../components/button/ButtonLink";
-import MobileShell from "../../components/layout/MobileShell";
-import PhoneLayoutBackground from "../../components/PhoneLayoutBackground";
-import OrangeHeader from "../../components/register/OrangeHeader";
-import WhiteCardContainer from "../../components/register/WhiteCardContainer";
+import WhiteHeader from "../../components/register/WhiteHeader";
+import ContentBox from "../../components/common/ContentBox";
+import { FullActionButton } from "../../components/button/FullActionButton";
+import { clearTokens } from "../../services/auth/authService";
+import AccountButtonLink from "../../components/button/AccountButtonLink";
+import MobileView from "../../components/view/MobileView";
+import H2Medium from "../../components/text/H2Medium";
+
 
 export default function AccountLandingPage() {
     const navigate = useNavigate();
+    const handleLogout = () => {
+        clearTokens();
+        navigate("/login", { replace: true });
+    };
 
     return (
-        <PhoneLayoutBackground>
-            <MobileShell>
-                <OrangeHeader />
-                <WhiteCardContainer>
-                    <div className="text-center">
-                        <h2 className="text-2xl font-semibold text-gray-800 mb-6">
-                            Akun Saya
-                        </h2>
-
-                        <div className="space-y-6">
-
-                            <div className="border border-gray-200 rounded-xl p-3 shadow-sm hover:shadow-md transition-all duration-200">
-                                <ButtonLink
-                                    onClick={() => navigate("/app/profile")}
-                                    className="text-[#1C6C79]"
-                                >
-                                    Lihat Profil
-                                </ButtonLink>
-                            </div>
+        <MobileView>
+            <WhiteHeader title="Account" />
+            <ContentBox className="border border-gray-300">
+                <div className="">
 
 
-                            <div className="border border-gray-200 rounded-xl p-3 shadow-sm hover:shadow-md transition-all duration-200">
-                                <ButtonLink
-                                    onClick={() => navigate("/app/transactionLimit")}
-                                    className="text-[#1C6C79] hover:no-underline"
-                                >
-                                    Kelola Batas
-                                </ButtonLink>
-                            </div>
+
+                    <div className="space-y-6">
+                        <H2Medium>Akun Saya</H2Medium>
+                        <AccountButtonLink
+                            onClick={() => navigate("/app/profile")}
+                        >
+                            Lihat Profil
+                        </AccountButtonLink>
+
+
+
+                        <H2Medium>Kelola Batas</H2Medium>
+                        <AccountButtonLink
+                            onClick={() => navigate("/app/transactionLimit")}
+                        >
+                            Kelola Batas
+                        </AccountButtonLink>
+
+                        <div className="mt-auto mb-6 flex justify-center">
+                            <FullActionButton onClick={handleLogout}>Keluar</FullActionButton>
                         </div>
+
                     </div>
-                </WhiteCardContainer>
-            </MobileShell>
-        </PhoneLayoutBackground>
+                </div>
+
+
+            </ContentBox>
+        </MobileView>
+
     );
 }

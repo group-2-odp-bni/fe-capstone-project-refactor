@@ -7,7 +7,7 @@ import MemberRow from "../components/members/MemberRow.jsx";
 import PendingRow from "../components/members/PendingRow.jsx";
 import ContactSearch from "../components/members/ContactSearch.jsx";
 import ConfirmDialog from "../components/members/ConfirmDialog.jsx";
-import api from "../lib/api.jsx";
+import api from "../lib/api.js";
 function parseJsonSafe(v, fb = {}) {
   if (v == null) return fb;
   if (typeof v === "object") return v;

@@ -7,9 +7,6 @@ export default function UserInfoCard({ name, email, phone, phoneVerified, emailV
 
   return (
     <div className="max-w-md mx-auto bg-white rounded-2xl font-sans">
-      <h2 className="text-2xl font-semibold text-center text-gray-800 mb-6">
-        Akun Saya
-      </h2>
 
       <div className="space-y-5">
         {/* Name */}

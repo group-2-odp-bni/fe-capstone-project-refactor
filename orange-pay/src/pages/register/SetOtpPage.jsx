@@ -1,11 +1,7 @@
 import React, { useState } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
-
-import PhoneLayoutBackground from "../../components/PhoneLayoutBackground";
-import MobileShell from "../../components/layout/MobileShell";
+import { useNavigate } from "react-router-dom";
 import WhiteCardContainer from "../../components/register/WhiteCardContainer";
 import OrangeHeader from "../../components/register/OrangeHeader";
-import InputField from "../../components/register/RegisterGeneralInput";
 import { FullSubmitButton } from "../../components/button/FullSubmitButton";
 import { useRegistrationContext } from "../../context/RegistrationContext";
 import OrangePayLogo from "../../components/register/OrangePayLogo";
@@ -14,22 +10,21 @@ import api from "../../lib/api";
 import OtpInputField from "../../components/input/OtpInputField";
 import CountdownTimer from "../../components/dashboard/CountdownTimer";
 import ButtonLink from "../../components/button/ButtonLink";
+import MobileView from "../../components/view/MobileView";
 
 export default function OtpRegisterPage() {
   return (
-    <PhoneLayoutBackground>
-      <MobileShell>
-        <OrangeHeader />
-        <WhiteCardContainer>
-          <OrangePayLogo />
-          <RegisterTextContainer>
-            Kode OTP telah dikirim ke WhatsApp Anda. Masukkan kode di bawah
-            untuk melanjutkan.
-          </RegisterTextContainer>
-          <SetOtpContent />
-        </WhiteCardContainer>
-      </MobileShell>
-    </PhoneLayoutBackground>
+    <MobileView>
+      <OrangeHeader />
+      <WhiteCardContainer>
+        <OrangePayLogo />
+        <RegisterTextContainer>
+          Kode OTP telah dikirim ke WhatsApp Anda. Masukkan kode di bawah
+          untuk melanjutkan.
+        </RegisterTextContainer>
+        <SetOtpContent />
+      </WhiteCardContainer>
+    </MobileView>
   );
 }
 
@@ -41,7 +36,7 @@ function SetOtpContent() {
   const [otp, setOtp] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [timer, setTimer] = useState(300); // 5 minutes in seconds
+  const [timer, setTimer] = useState(60); // 5 minutes in seconds
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -75,7 +70,7 @@ function SetOtpContent() {
 
       setLoginData({ stateToken: response.data.data.stateToken });
       setOtp("");
-      setTimer(300); // Reset 5-minute timer
+      setTimer(60); // Reset 5-minute timer
     } catch (err) {
       console.error(err);
       setError(
@@ -99,7 +94,7 @@ function SetOtpContent() {
           value={otp}
           onChange={(e) => setOtp(e.target.value)}
         />
-        <CountdownTimer initialSeconds={300} />
+        <CountdownTimer initialSeconds={60} />
 
         {error && <p className="text-red-500 text-xs">{error}</p>}
 
@@ -109,7 +104,7 @@ function SetOtpContent() {
       </form>
 
       <div className="text-center mt-4 text-xs md:text-sm text-gray-600 pb-6">
-        
+
         <ButtonLink onClick={handleResendOtp} disabled={loading || timer > 0}>
           {timer > 0 ? "" : "Resend OTP"}
         </ButtonLink>

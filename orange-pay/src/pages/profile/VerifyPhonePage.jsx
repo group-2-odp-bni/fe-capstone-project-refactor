@@ -3,33 +3,31 @@ import PhoneLayoutBackground from "../../components/PhoneLayoutBackground";
 import MobileShell from "../../components/layout/MobileShell";
 import WhiteCardContainer from "../../components/register/WhiteCardContainer";
 import OrangeHeader from "../../components/register/OrangeHeader";
-import InputField from "../../components/register/RegisterGeneralInput";
 import { FullSubmitButton } from "../../components/button/FullSubmitButton";
 import RegisterTextContainer from "../../components/register/RegisterTextContainer";
 import OtpInputField from "../../components/input/OtpInputField";
+import MobileView from "../../components/view/MobileView";
 
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import ButtonLink from "../../components/button/ButtonLink";
+
 
 
 export default function VerifyPhonePage() {
     return (
-        <PhoneLayoutBackground>
-            <MobileShell>
-                <OrangeHeader />
-                <WhiteCardContainer>
-                    <h2 className="text-2xl font-semibold text-center text-gray-800 mb-6">
-                        Verify Profile
-                    </h2>
-                    <RegisterTextContainer>
-                        Kode OTP telah dikirim ke WhatsApp Anda. Masukkan kode di bawah untuk verifikasi data profile.
-                    </RegisterTextContainer>
+        <MobileView>
+            <OrangeHeader />
+            <WhiteCardContainer>
+                <h2 className="text-2xl font-semibold text-center text-gray-800 mb-6">
+                    Verify Profile
+                </h2>
+                <RegisterTextContainer>
+                    Kode OTP telah dikirim ke WhatsApp Anda. Masukkan kode di bawah untuk verifikasi data profile.
+                </RegisterTextContainer>
 
-                    <VerifyProfileContent />
-                </WhiteCardContainer>
-            </MobileShell>
-        </PhoneLayoutBackground>
+                <VerifyProfileContent />
+            </WhiteCardContainer>
+        </MobileView>
     );
 }
 

@@ -2,8 +2,6 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
-import PhoneLayoutBackground from "../../components/PhoneLayoutBackground";
-import MobileShell from "../../components/layout/MobileShell";
 import WhiteCardContainer from "../../components/register/WhiteCardContainer";
 import OrangeHeader from "../../components/register/OrangeHeader";
 import { FullSubmitButton } from "../../components/button/FullSubmitButton";
@@ -13,22 +11,21 @@ import { useLoginContext } from "../../context/LoginContext";
 import OtpInputField from "../../components/input/OtpInputField";
 import ButtonLink from "../../components/button/ButtonLink";
 import CountdownTimer from "../../components/dashboard/CountdownTimer";
+import MobileView from "../../components/view/MobileView";
 
 export default function OtpLoginPage() {
     return (
-        <PhoneLayoutBackground>
-            <MobileShell>
-                <OrangeHeader />
-                <WhiteCardContainer>
-                    <OrangePayLogo />
-                    <RegisterTextContainer>
-                        Kode OTP telah dikirim ke WhatsApp Anda. Masukkan kode di bawah untuk
-                        melanjutkan.
-                    </RegisterTextContainer>
-                    <SetOtpContent />
-                </WhiteCardContainer>
-            </MobileShell>
-        </PhoneLayoutBackground>
+        <MobileView>
+            <OrangeHeader />
+            <WhiteCardContainer>
+                <OrangePayLogo />
+                <RegisterTextContainer>
+                    Kode OTP telah dikirim ke WhatsApp Anda. Masukkan kode di bawah untuk
+                    melanjutkan.
+                </RegisterTextContainer>
+                <SetOtpContent />
+            </WhiteCardContainer>
+        </MobileView>
     );
 }
 
@@ -39,7 +36,7 @@ function SetOtpContent() {
     const [otp, setOtp] = useState("");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
-    const [timer, setTimer] = useState(300); // 5 minutes in seconds
+    const [timer, setTimer] = useState(60); // 5 minutes in seconds
 
     /** Countdown timer effect */
     useEffect(() => {
@@ -82,7 +79,7 @@ function SetOtpContent() {
 
             setLoginData({ stateToken: response.data.data.stateToken });
             setOtp("");
-            setTimer(300); // Reset 5-minute timer
+            setTimer(60); // Reset 5-minute timer
         } catch (err) {
             console.error(err);
             setError(
@@ -108,7 +105,7 @@ function SetOtpContent() {
                 />
 
                 {/* Countdown Timer */}
-                <CountdownTimer initialSeconds={300} />
+                <CountdownTimer initialSeconds={60} />
 
                 {error && <p className="text-red-500 text-xs">{error}</p>}
 
