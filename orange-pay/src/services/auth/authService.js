@@ -15,7 +15,7 @@ export const clearTokens = () => {
   localStorage.removeItem(REFRESH_TOKEN_KEY);
 };
 
-function decodeJwtPayload(token) {
+export function decodeJwtPayload(token) {
   const parts = token.split(".");
   if (parts.length !== 3) throw new Error("Invalid JWT");
   const payloadBase64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");

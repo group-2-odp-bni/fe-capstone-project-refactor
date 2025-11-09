@@ -11,7 +11,7 @@ function Root() {
   const hasConsent = true;
 
   useEffect(() => {
-    if (import.meta.env.PROD && hasConsent) {
+    if (hasConsent) {
       loadClarity(CLARITY_ID);
     }
   }, [hasConsent]);

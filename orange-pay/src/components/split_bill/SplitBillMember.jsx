@@ -1,20 +1,12 @@
-import { useEffect, useMemo, useState, useCallback } from "react";
-import { useParams, useNavigate, useLocation } from "react-router-dom";
-import { createPortal } from "react-dom"; // ✅ DITAMBAH
-import MemberPayment from "./MemberPayment";
+import { useEffect, useState, useMemo } from "react";
+import { useParams, useNavigate } from "react-router-dom"; // ✅ React Router!
 
-// ✅ Helper Portal TANPA menghapus kode yang ada
-const Portal = ({ children }) => {
-  if (typeof document === "undefined") return null;
-  return createPortal(children, document.body);
-};
-
-export default function SplitBillMember() {
-  const { id: splitId, memberId } = useParams();
+export default function SplitBillMemberPage() {
+  const params = useParams();
   const navigate = useNavigate();
-  const location = useLocation();
+  const splitId = params.id;
+  const memberId = params.memberId;
 
-  // ====== STATE ======
   const [data, setData] = useState(null);
   const [member, setMember] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -26,23 +18,18 @@ export default function SplitBillMember() {
 const [showPay, setShowPay] = useState(false);
 const [payCtx, setPayCtx] = useState(null);
 
-  // ====== HELPERS ======
-  const fmt = useCallback((n) => {
+  const fmt = (n) => {
     const num = Number(n || 0);
     return new Intl.NumberFormat("id-ID", {
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
-    }).format(num);
-  }, []);
-  const currency = useCallback((n) => `Rp${fmt(n ?? 0)}`, [fmt]);
+    });
+  };
+  const currency = (n) => `Rp${fmt(n)}`;
   const roundIDR = (n) => Math.round(Number(n || 0));
 
-  const maskPhone = (p) => {
-    if (!p) return "";
-    const str = String(p);
-    if (str.length <= 6) return str;
-    return str.replace(/(\d{4})\d+(\d{2,4})$/, "$1**$2");
-  };
+  useEffect(() => {
+    if (typeof window === "undefined") return;
 
   // ====== RECEIPT IMAGE (location.state / localStorage) ======
   useEffect(() => {
@@ -52,15 +39,34 @@ const [payCtx, setPayCtx] = useState(null);
       return;
     }
     try {
-      let stored =
-        localStorage.getItem(`splitbill_${splitId}`) ||
-        localStorage.getItem(`splitbill_data_${splitId}`);
+      console.log(
+        "🔍 Loading split bill data for:",
+        splitId,
+        "Member:",
+        memberId
+      );
+
+      const stored = localStorage.getItem(`splitbill_${splitId}`);
       if (stored) {
         const parsed = JSON.parse(stored);
-        if (parsed?.receiptImage) return setReceiptImage(parsed.receiptImage);
-        if (parsed?.data?.receiptImage)
-          return setReceiptImage(parsed.data.receiptImage);
-        if (parsed?.data?.imageUrl) return setReceiptImage(parsed.data.imageUrl);
+        const splitData = parsed.data || parsed;
+
+        console.log("✅ Data loaded:", splitData);
+        setData(splitData);
+
+        const foundMember = splitData.members?.find((m) => m.id === memberId);
+        console.log("👤 Member found:", foundMember);
+        setMember(foundMember);
+      } else {
+        const legacyStored = localStorage.getItem(`splitbill_data_${splitId}`);
+        if (legacyStored) {
+          const parsed = JSON.parse(legacyStored);
+          console.log("✅ Data loaded (legacy):", parsed);
+          setData(parsed);
+
+          const foundMember = parsed.members?.find((m) => m.id === memberId);
+          setMember(foundMember);
+        }
       }
     } catch {}
   }, [location.state, splitId]);
@@ -94,67 +100,66 @@ const [payCtx, setPayCtx] = useState(null);
       if (!foundMember) setError("Member tidak ditemukan");
       else setMember(foundMember);
     } catch (e) {
-      setError(`Gagal memuat data: ${e?.message || e}`);
+      console.error("❌ Load error:", e);
     } finally {
       setLoading(false);
     }
   }, [splitId, memberId]);
+  const calculateMemberItemSubtotal = useMemo(() => {
+    if (!data || !data.expandedItems || !memberId) return 0;
 
-  // ====== CALC: subtotal item milik member ======
-  const getMemberItemSubtotal = useCallback(
-    (mId) => {
-      if (!data?.expandedItems) return 0;
-      return data.expandedItems.reduce((subtotal, item) => {
-        if (!item.assignedTo?.includes(mId)) return subtotal;
-        const qty = item.assignedQuantities?.[mId] ?? 0;
-        const totalPeopleForItem = item.assignedTo?.length ?? 1;
-        const pricePerPerson = item.pricePerUnit / totalPeopleForItem;
-        return subtotal + pricePerPerson * qty;
-      }, 0);
-    },
-    [data?.expandedItems]
-  );
+    const memberItems = data.expandedItems.filter(
+      (item) => item.assignedTo && item.assignedTo.includes(memberId)
+    );
 
-  // ====== CALC: fee breakdown per member ======
-  // DIPINDAHKAN KE ATAS untuk menghindari TDZ (dipakai oleh popupFees)
-  const getFeeBreakdown = useCallback(
-    (mId) => {
-      if (!data?.expandedItems)
-        return { tax: 0, discount: 0, service: 0, other: 0 };
+    let subtotal = 0;
+    memberItems.forEach((item) => {
+      const qty = item.assignedQuantities?.[memberId] || 0;
+      const totalPeopleForItem = item.assignedTo?.length || 1;
+      const pricePerPerson = item.pricePerUnit / totalPeopleForItem;
+      const totalForThisPerson = pricePerPerson * qty;
+      subtotal += totalForThisPerson;
+    });
+    return subtotal;
+  }, [data, memberId]);
 
-      const originalItems = data.items ?? [];
-      const originalItemsSubtotal = originalItems.reduce(
-        (sum, it) => sum + (it.total ?? 0),
-        0
-      );
-      const memberSubtotal = getMemberItemSubtotal(mId);
+  const calculateFeeBreakdown = useMemo(() => {
+    if (!data || !data.expandedItems || !memberId) {
+      return { tax: 0, discount: 0, service: 0, other: 0 };
+    }
 
-      const allMembersSubtotal = (data.members ?? []).reduce((sum, m) => {
+    const originalItems = data.items || [];
+    const originalItemsSubtotal = originalItems.reduce(
+      (sum, item) => sum + (item.total || 0),
+      0
+    );
+
+    if (originalItems.length === 0 || originalItemsSubtotal === 0) {
+      const memberSubtotal = calculateMemberItemSubtotal;
+      const allMembersSubtotal = (data.members || []).reduce((sum, m) => {
         const mItems = data.expandedItems.filter((i) =>
           i.assignedTo?.includes(m.id)
         );
-        const mSub = mItems.reduce((acc, item) => {
-          const qty = item.assignedQuantities?.[m.id] ?? 0;
-          const totalPeople = item.assignedTo?.length ?? 1;
-          const pricePer = item.pricePerUnit / totalPeople;
-          return acc + pricePer * qty;
-        }, 0);
+        let mSub = 0;
+        mItems.forEach((item) => {
+          const qty = item.assignedQuantities?.[m.id] || 0;
+          const totalPeople = item.assignedTo?.length || 1;
+          const pricePerPerson = item.pricePerUnit / totalPeople;
+          mSub += pricePerPerson * qty;
+        });
         return sum + mSub;
       }, 0);
 
       if (allMembersSubtotal === 0)
         return { tax: 0, discount: 0, service: 0, other: 0 };
-
-      // Tidak ada original items -> pro-rata subtotal member
-      if (originalItems.length === 0 || originalItemsSubtotal === 0) {
-        const memberShare = memberSubtotal / allMembersSubtotal;
-        return {
-          tax: (data.pajak ?? 0) * memberShare,
-          discount: Math.abs(data.discount ?? 0) * memberShare,
-          service: (data.service ?? 0) * memberShare,
-          other: Math.abs(data.other ?? 0) * memberShare,
-        };
-      }
+      const memberShare = memberSubtotal / allMembersSubtotal;
+      return {
+        tax: (data.pajak || 0) * memberShare,
+        discount: Math.abs(data.discount || 0) * memberShare,
+        service: (data.service || 0) * memberShare,
+        other: Math.abs(data.other || 0) * memberShare,
+      };
+    }
 
       // Ada original items -> pro-rata per item
       return data.expandedItems
@@ -210,123 +215,76 @@ const [payCtx, setPayCtx] = useState(null);
     [data, getMemberItemSubtotal]
   );
 
-  // ====== POPUP STATE & HELPERS ======
-  const [showingDetailFor, setShowingDetailFor] = useState(null);
-
-  const openPopup = (mId) => setShowingDetailFor(mId);
-  const closePopup = () => setShowingDetailFor(null);
-
-  const popupMemberInfo = useMemo(() => {
-    if (!showingDetailFor || !data) return null;
-    return (data.members || []).find((m) => m.id === showingDetailFor) || null;
-  }, [showingDetailFor, data]);
-
-  const popupMemberItems = useMemo(() => {
-    if (!showingDetailFor || !data?.expandedItems) return [];
-    return data.expandedItems.filter((it) => it.assignedTo?.includes(showingDetailFor));
-  }, [showingDetailFor, data?.expandedItems]);
-
-  const popupCalculatedSubtotal = useMemo(() => {
-    if (!showingDetailFor) return 0;
-    return roundIDR(
-      popupMemberItems.reduce((acc, item) => {
-        const qty = item.assignedQuantities?.[showingDetailFor] || 0;
-        const ppl = item.assignedTo?.length || 1;
-        return acc + (item.pricePerUnit / ppl) * qty;
-      }, 0)
-    );
-  }, [popupMemberItems, showingDetailFor]);
+    let totalTax = 0,
+      totalDiscount = 0,
+      totalService = 0,
+      totalOther = 0;
 
   const popupFees = useMemo(() => {
     if (!showingDetailFor) return { tax: 0, discount: 0, service: 0, other: 0 };
     return getFeeBreakdown(showingDetailFor);
   }, [showingDetailFor, getFeeBreakdown]);
 
-  const popupCalculatedTotal = useMemo(() => {
-    if (!showingDetailFor) return 0;
-    const adjustedOther = (data?.other ?? 0) >= 0 ? popupFees.other : -popupFees.other;
-    const total = popupCalculatedSubtotal + popupFees.tax - popupFees.discount + popupFees.service + adjustedOther;
+      let originalItem = originalItems.find(
+        (origItem) =>
+          origItem.name?.toLowerCase().trim() ===
+          item.name?.toLowerCase().trim()
+      );
+      if (!originalItem) {
+        originalItem = originalItems[item.originalIdx] || null;
+      }
+      if (!originalItem) return;
+
+      const originalItemTotal = originalItem.total || 0;
+      if (originalItemTotal === 0) return;
+
+      const itemProportionOfTotal = originalItemTotal / originalItemsSubtotal;
+      const itemTax = (data.pajak || 0) * itemProportionOfTotal;
+      const itemDiscount = Math.abs(data.discount || 0) * itemProportionOfTotal;
+      const itemService = (data.service || 0) * itemProportionOfTotal;
+      const itemOther = Math.abs(data.other || 0) * itemProportionOfTotal;
+
+      const memberProportionOfItem = memberItemTotal / originalItemTotal;
+      totalTax += itemTax * memberProportionOfItem;
+      totalDiscount += itemDiscount * memberProportionOfItem;
+      totalService += itemService * memberProportionOfItem;
+      totalOther += itemOther * memberProportionOfItem;
+    });
+
+    return {
+      tax: totalTax,
+      discount: totalDiscount,
+      service: totalService,
+      other: totalOther,
+    };
+  }, [data, memberId, calculateMemberItemSubtotal]);
+
+  const memberTotal = useMemo(() => {
+    const subtotal = calculateMemberItemSubtotal;
+    const fees = calculateFeeBreakdown;
+    const total =
+      subtotal +
+      fees.tax -
+      fees.discount +
+      fees.service +
+      (data?.other >= 0 ? fees.other : -fees.other);
     return roundIDR(total);
-  }, [showingDetailFor, popupCalculatedSubtotal, popupFees, data?.other]);
+  }, [calculateMemberItemSubtotal, calculateFeeBreakdown, data]);
 
-  const currentUserId = data?.currentUser?.id;
+  const memberItems = useMemo(() => {
+    if (!data || !data.expandedItems) return [];
+    return data.expandedItems.filter((item) =>
+      item.assignedTo?.includes(memberId)
+    );
+  }, [data, memberId]);
 
-  // ========== (SALINAN ASLI getFeeBreakdown DISIMPAN DI SINI, DIKOMENTARI—TIDAK DIHAPUS) ==========
-  /*
-  // ====== CALC: fee breakdown per member ======
-  const getFeeBreakdown = useCallback(
-    (mId) => {
-      if (!data?.expandedItems)
-        return { tax: 0, discount: 0, service: 0, other: 0 };
-      // ... (isi sama persis seperti versi di atas, dipindahkan) ...
-    },
-    [data, getMemberItemSubtotal]
-  );
-  */
-  // ==============================================================================================
-
-  // di atas (dalam komponen), boleh bikin helper kecil:
-  const isYou = (mId) => mId === memberId;
-  const isOpen = (mId) => !!openRows[mId];
-
-  const buttonClasses = (mId) =>
-    `w-full flex items-center justify-between py-2 px-3 rounded-lg transition touch-manipulation active:scale-[0.98]
-   ${isYou(mId)
-     ? "bg-orange-100 hover:bg-orange-100"
-     : "bg-gray-50 hover:bg-gray-100 focus:ring-2 focus:ring-gray-300"
-   }`;
-  const labelClasses = (mId) =>
-    `text-xs font-semibold ${isYou(mId) ? "text-orange-700" : "text-gray-700"}`;
-  const chevronClasses = (mId) =>
-    `flex-shrink-0 transform transition-transform
-   ${isOpen(mId) ? "rotate-90" : ""}
-   ${isYou(mId) ? "text-orange-500" : "text-gray-400"}`;
-
-  // ====== CALC: total per member + total split ======
-  const getMemberTotal = useCallback(
-    (mId) => {
-      const subtotal = getMemberItemSubtotal(mId);
-      const fees = getFeeBreakdown(mId);
-      const adjustedOther = (data?.other ?? 0) >= 0 ? fees.other : -fees.other;
-      const total =
-        subtotal + fees.tax - fees.discount + fees.service + adjustedOther;
-      return roundIDR(total);
-    },
-    [data?.other, getMemberItemSubtotal, getFeeBreakdown]
-  );
-
-  const memberTotal = useMemo(
-    () => (memberId ? getMemberTotal(memberId) : 0),
-    [getMemberTotal, memberId]
-  );
-
-  const totalSplitBill = useMemo(() => {
-    if (!data?.members) return 0;
-    return data.members.reduce((sum, m) => sum + getMemberTotal(m.id), 0);
-  }, [data?.members, getMemberTotal]);
-
-  // ====== DERIVED DISPLAY DATA ======
-  const paymentReceiver =
-    data?.members?.find((m) => m.id === data?.currentUser?.id) ||
-    data?.members?.[0];
-  const merchantName =
-    data?.merchantName || data?.storeName || data?.splitName || "Merchant";
-  const createdAt = data?.createdAt || data?.date || Date.now();
-  const dateObj = new Date(createdAt);
-  const dateStr = dateObj.toLocaleDateString("id-ID", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-  const timeStr = dateObj.toLocaleTimeString("id-ID", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-
-  const toggleRow = (mId) =>
-    setOpenRows((s) => ({ ...s, [mId]: !s[mId] }));
-
-  // ====== LOADING / ERROR ======
+  const copyToClipboard = () => {
+    const url = `${window.location.origin}/app/splitbill/${splitId}/member/${memberId}`; // ✅ Fix URL path
+    navigator.clipboard.writeText(url).then(() => {
+      setCopySuccess(true);
+      setTimeout(() => setCopySuccess(false), 2000);
+    });
+  };
   if (loading) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
@@ -338,13 +296,13 @@ const [payCtx, setPayCtx] = useState(null);
     );
   }
 
-  if (error || !data || !member) {
+  if (!data || !member) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center flex-col gap-4 px-4">
         <div className="text-center">
           <div className="text-6xl mb-4">📋</div>
           <p className="text-gray-700 font-semibold mb-2 text-lg">
-            {error ? "Terjadi Kesalahan" : "Invoice tidak ditemukan"}
+            Invoice tidak ditemukan
           </p>
           <p className="text-gray-500 text-sm mb-4">
             {error || "Data split bill mungkin sudah kedaluwarsa atau link tidak valid"}
@@ -354,8 +312,8 @@ const [payCtx, setPayCtx] = useState(null);
           </p>
         </div>
         <button
-          onClick={() => navigate("/app/splitbill")}
-          className="px-6 py-3 bg-gradient-to-r from-[#FF9A25] to-[#FF7A25] text-white rounded-xl font-semibold hover:shadow-lg active:scale-95 transition-all"
+          onClick={() => navigate("/")}
+          className="px-6 py-3 bg-gradient-to-r from-[#FF9A25] to-[#FF7A25] text-white rounded-xl font-semibold active:scale-95 transition-all"
         >
           Kembali ke Split Bill
         </button>
@@ -363,28 +321,24 @@ const [payCtx, setPayCtx] = useState(null);
     );
   }
 
-// ====== FULLSCREEN: hanya tampilkan MemberPayment ======
-if (showPay) {
-  return (
-    <MemberPayment
-      open={true}
-      onClose={() => {
-        setShowPay(false);
-        // optional: setPayCtx(null);
-      }}
-      ctx={payCtx}
-    />
+  const initial = (member.name || "?").charAt(0).toUpperCase();
+  const paymentReceiver = data.members?.find(
+    (m) => m.id === data.currentUser?.id
   );
-}
-
+  const now = new Date();
+  const dateStr = now.toLocaleDateString("id-ID", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
 
   // ====== RENDER ======
   return (
-    <div className="min-h-screen bg-white flex flex-col relative">
+    <div className="min-h-screen bg-gradient-to-b from-orange-50 to-white flex flex-col">
       <div className="bg-white border-b border-gray-200 px-4 py-3 sticky top-0 z-10 shadow-sm">
         <div className="max-w-md mx-auto flex items-center gap-2">
           <button
-            onClick={() => navigate(-1)}
+            onClick={() => navigate(-1)} // ✅ React Router navigate back
             className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-gray-100 active:scale-95 transition"
           >
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
@@ -400,10 +354,7 @@ if (showPay) {
 
           <div className="flex-1 text-center">
             <div className="text-sm text-gray-900 font-semibold">
-              {data.splitName || "Split Bill"}
-            </div>
-            <div className="text-xs text-gray-500 mt-0.5">
-              ID: {String(splitId).substring(0, 12)}...
+              Invoice Pembayaran
             </div>
           </div>
 
@@ -411,580 +362,203 @@ if (showPay) {
         </div>
       </div>
 
-      {/* BODY */}
-      <div className="flex-1 overflow-hidden bg-white py">
-        <div className="max-w-md mx-auto transition-all duration-500 opacity-100 translate-y-0">
-          <div className="mt-2 px-4 pb-10">
-            <div className="mx-0">
-              {/* KERTAS STRUK */}
-              <div className="relative">
-                <div className="border-l border-r border-gray-300 relative">
-                  {/* zigzag atas */}
-                  <div
-                    className="absolute top-0 left-0 right-0 pointer-events-none"
-                    style={{ height: "30px", overflow: "visible" }}
-                  >
-                    <svg
-                      className="w-full"
-                      style={{ height: "30px" }}
-                      viewBox="1.5 1 99.5 24"
-                      preserveAspectRatio="none"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <polyline
-                        points="0,3 1.25,3 11.25,20 21.25,3 31.25,20 41.25,3 51.25,20 61.25,3 71.25,20 81.25,3 91.25,20 101.25,3 105.5,3"
-                        fill="none"
-                        stroke="#d1d5db"
-                        strokeWidth="1.5"
-                      />
-                    </svg>
-                  </div>
+      <div className="flex-1 flex items-center justify-center px-4 py-6">
+        <div className="max-w-md w-full">
+          <div className="bg-red-100 border-l-4 border-red-500 rounded-r-lg p-4 mb-6 animate-pulse">
+            <div className="flex items-start gap-3">
+              <div className="text-red-500 text-2xl">⚠️</div>
+              <div>
+                <div className="font-bold text-red-900 text-sm">
+                  Belum Dibayar
+                </div>
+                <div className="text-red-700 text-xs mt-1">
+                  Anda masih memiliki tagihan untuk split bill ini
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
+            <div className="flex items-center gap-4 mb-6 pb-6 border-b border-gray-200">
+              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#FF9A25] to-[#FF7A25] flex items-center justify-center text-white text-2xl font-bold shadow-lg">
+                {initial}
+              </div>
+              <div>
+                <div className="text-lg font-bold text-gray-900">
+                  {member.name}
+                </div>
+                <div className="text-sm text-gray-600">
+                  {member.phone || member.phoneMasked}
+                </div>
+              </div>
+            </div>
+            <div className="bg-gradient-to-br from-orange-50 to-yellow-50 rounded-xl p-5 mb-6 border-2 border-orange-200">
+              <div className="text-center">
+                <div className="text-sm text-gray-600 font-medium mb-2">
+                  Jumlah Pembayaran
+                </div>
+                <div className="text-4xl font-black text-orange-600 mb-1">
+                  {currency(memberTotal)}
+                </div>
+                <div className="text-xs text-gray-500">
+                  Termasuk pajak dan biaya lainnya
+                </div>
+              </div>
+            </div>
 
-                  {/* zigzag bawah */}
-                  <div
-                    className="absolute bottom-0 left-0 right-0 pointer-events-none"
-                    style={{ height: "24.1px", overflow: "visible" }}
-                  >
-                    <svg
-                      className="w-full"
-                      style={{ height: "30px" }}
-                      viewBox="1.5 1 99.5 24"
-                      preserveAspectRatio="none"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <polyline
-                        points="0,20 1.25,20 11.25,3 21.25,20 31.25,3 41.25,20 51.25,3 61.25,20 71.25,3 81.25,20 91.25,3 101.25,20 105.5,20"
-                        fill="none"
-                        stroke="#d1d5db"
-                        strokeWidth="1.5"
-                      />
-                    </svg>
-                  </div>
-
-                  {/* ===== kartu dengan zigzag (clipPath) ===== */}
-                  <div style={{ paddingTop: "18px", paddingBottom: "18px" }}>
-                    <div
-                      className="bg-white relative"
-                      style={{
-                        clipPath:
-                          "polygon(0 0, 8.33% 14px, 16.66% 0, 25% 14px, 33.33% 0, 41.66% 14px, 50% 0, 58.33% 14px, 66.66% 0, 75% 14px, 83.33% 0, 91.66% 14px, 100% 0, 100% calc(100% - 14px), 91.66% 100%, 83.33% calc(100% - 14px), 75% 100%, 66.66% calc(100% - 14px), 58.33% 100%, 50% calc(100% - 14px), 41.66% 100%, 33.33% calc(100% - 14px), 25% 100%, 16.66% calc(100% - 14px), 8.33% 100%, 0 calc(100% - 14px))",
-                      }}
-                    >
-                      <div className="px-6 py-6 w-full">
-                        {/* RECEIPT THUMBNAIL (kecil & rapi) */}
-                        {receiptImage && (
-                          <div className="text-center mb-4 w-full">
-                            <img
-                              src={receiptImage}
-                              alt="Foto Struk"
-                              className="w-full h-auto object-contain max-h-80 rounded-lg"
-                              crossOrigin="anonymous"
-                            />
-                          </div>
-                        )}
-
-                        {/* merchant + date */}
-                        <div className="text-center mb-4">
-                          <h2 className="text-lg font-bold text-gray-900 break-words">
-                            {merchantName}
-                          </h2>
-                          <p className="text-xs text-gray-500 mt-1">
-                            {dateStr} • {timeStr}
-                          </p>
-                        </div>
-
-                        {/* KAMU PERLU BAYAR */}
-                        <div className="border-t-2 border-dashed border-gray-400 pt-4 pb-2 text-center -mx-6 px-6">
-                          <div className="text-[18px] text-gray-900">Kamu perlu bayar</div>
-                          <div className="mt-0.5 text-[17px] font-extrabold text-gray-900 lowercase break-words">
-                            {paymentReceiver?.name || "-"}
-                          </div>
-                          {(paymentReceiver?.phone || paymentReceiver?.phoneMasked) && (
-                            <div className="mt-0.5 text-[13px] text-gray-500 break-all">
-                              ({maskPhone(paymentReceiver.phone || paymentReceiver.phoneMasked)})
-                            </div>
-                          )}
-                          <div className="mt-3 text-[24px] font-extrabold text-gray-900 tracking-tight">
-                            {currency(memberTotal)}
-                          </div>
-                          <div className="mt-3 text-[13px] text-gray-700">
-                            Total split bill{" "}
-                            <span className="font-semibold">{currency(totalSplitBill)}</span>
-                          </div>
-                        </div>
-
-                        {/* BAYAR KE (current user) */}
-                        <div className="border-t-2 border-dashed border-gray-400 pt-4 mt-4 -mx-6 px-6">
-                          {paymentReceiver && (
-                            <div>
-                              <div className="flex items-center justify-between py-3 gap-3">
-                                <div className="flex items-center gap-3 min-w-0 flex-1">
-                                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#FF9A25] to-[#FF7A25] flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
-                                    {(paymentReceiver.name || "?").charAt(0).toUpperCase()}
-                                  </div>
-                                  <div className="min-w-0 flex-1">
-                                    <div className="text-sm font-bold text-gray-900 truncate">
-                                      {paymentReceiver.id === data?.currentUser?.id ? "Kamu" : paymentReceiver.name}
-                                    </div>
-                                    <div className="text-xs text-gray-500 break-all">
-                                      {paymentReceiver.phone || paymentReceiver.phoneMasked}
-                                    </div>
-                                  </div>
-                                </div>
-                                <div className="text-right flex-shrink-0">
-                                  <div className="text-base font-bold text-gray-900 whitespace-nowrap">
-                                    {currency(getMemberTotal(paymentReceiver.id))}
-                                  </div>
-                                </div>
-                              </div>
-
-                              <div className="mt-2 mb-1">
-                                <button
-                                  onClick={() => openPopup(paymentReceiver.id)}  // ← buka popup
-                                  className="w-full flex items-center justify-between py-2 px-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition active:scale-[0.98]"
-                                >
-                                  <span className="text-xs font-semibold text-gray-700">Rincian pesanan</span>
-                                  <svg width="16" height="16" viewBox="0 0 24 24" className="text-gray-400 flex-shrink-0">
-                                    <path
-                                      d="M9 5l7 7-7 7"
-                                      stroke="currentColor"
-                                      strokeWidth="2"
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                      fill="none"
-                                    />
-                                  </svg>
-                                </button>
-                              </div>
-
-                              {/* DETAIL INLINE ASLI — TIDAK DIHAPUS, HANYA DINONAKTIFKAN */}
-                              {/*
-                              {openRows[paymentReceiver.id] && (
-                                <div className="mt-2 rounded-lg border border-gray-200 bg-gray-50 overflow-hidden">
-                                  {data.expandedItems.filter((it) => it.assignedTo?.includes(paymentReceiver.id)).length === 0 ? (
-                                    <div className="text-xs text-gray-500 px-3 py-2">Tidak ada item</div>
-                                  ) : (
-                                    <ul className="divide-y divide-gray-200">
-                                      {data.expandedItems
-                                        .filter((it) => it.assignedTo?.includes(paymentReceiver.id))
-                                        .map((item, idx) => {
-                                          const qty = item.assignedQuantities?.[paymentReceiver.id] ?? 0;
-                                          const people = item.assignedTo?.length ?? 1;
-                                          const pricePer = item.pricePerUnit / people;
-                                          const itemTotal = roundIDR(pricePer * qty);
-                                          return (
-                                            <li key={idx} className="px-3 py-2 text-xs flex items-center gap-2">
-                                              <div className="flex-1 text-gray-700 min-w-0 break-words">
-                                                {item.name} <span className="text-gray-500 whitespace-nowrap">x{qty}</span>
-                                              </div>
-                                              <div className="font-semibold text-gray-900 tabular-nums whitespace-nowrap flex-shrink-0">
-                                                {currency(itemTotal)}
-                                              </div>
-                                            </li>
-                                          );
-                                        })}
-                                    </ul>
-                                  )}
-                                </div>
-                              )}
-                              */}
-                            </div>
-                          )}
-                        </div>
-
-                        {/* ANGGOTA LAIN */}
-                        {(data.members || []).filter((m) => m.id !== (paymentReceiver?.id || "")).length > 0 && (
-                          <div className="border-gray-400 pt-4 mt-4 -mx-6 px-6">
-                            {(data.members || [])
-                              .filter((m) => m.id !== (paymentReceiver?.id || ""))
-                              .map((m, idx) => {
-                                const initial = (m.name || "?").charAt(0).toUpperCase();
-                                const phone = m.phone || m.phoneMasked;
-                                const amount = getMemberTotal(m.id);
-                                const mItems = data.expandedItems?.filter((it) => it.assignedTo?.includes(m.id)) || [];
-
-                                return (
-                                  <div key={m.id || idx} className="mb-4 pb-4 last:mb-0 last:pb-0">
-                                    <div className="flex items-center justify-between py-3 gap-3">
-                                      <div className="flex items-center gap-3 min-w-0 flex-1">
-                                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#FF9A25] to-[#FF7A25] flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
-                                          {initial}
-                                        </div>
-                                        <div className="min-w-0 flex-1">
-                                          <div className="text-sm font-bold text-gray-900 flex items-center flex-wrap gap-1">
-                                            <span
-                                              className={`break-words ${m.id === memberId ? "text-orange-700" : ""}`}
-                                            >
-                                              {m.name}
-                                            </span>
-                                            {m.id === memberId && (
-                                              <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full font-semibold whitespace-nowrap">
-                                                kamu
-                                              </span>
-                                            )}
-                                          </div>
-
-                                          <div
-                                            className={`text-xs break-all ${
-                                              m.id === memberId ? "text-orange-700" : "text-gray-500"
-                                            }`}
-                                          >
-                                            {phone}
-                                          </div>
-                                        </div>
-                                      </div>
-                                      <div className="text-right flex-shrink-0">
-                                        <div
-                                          className={`text-base font-bold whitespace-nowrap tabular-nums ${
-                                            m.id === memberId ? "text-orange-700" : "text-gray-900"
-                                          }`}
-                                        >
-                                          {currency(amount)}
-                                        </div>
-                                      </div>
-                                    </div>
-
-                                    <div className="mt-2 space-y-2">
-                                      <button
-                                        onClick={() => openPopup(m.id)}  // ← buka popup
-                                        aria-expanded={isOpen(m.id)}
-                                        aria-controls={`detail-${m.id}`}
-                                        className={buttonClasses(m.id)}
-                                      >
-                                        <span className={labelClasses(m.id)}>Rincian pesanan</span>
-                                        <svg width="16" height="16" viewBox="0 0 24 24" className={chevronClasses(m.id)}>
-                                          <path
-                                            d="M9 5l7 7-7 7"
-                                            stroke="currentColor"
-                                            strokeWidth="2"
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            fill="none"
-                                          />
-                                        </svg>
-                                      </button>
-
-                                      {/* DETAIL INLINE ASLI — TIDAK DIHAPUS, HANYA DINONAKTIFKAN */}
-                                      {/*
-                                      {openRows[m.id] && (
-                                        <div className="rounded-lg border border-gray-200 bg-gray-50 overflow-hidden">
-                                          {mItems.length === 0 ? (
-                                            <div className="text-xs text-gray-500 px-3 py-2">Tidak ada item</div>
-                                          ) : (
-                                            <ul className="divide-y divide-gray-200">
-                                              {mItems.map((item, idx2) => {
-                                                const qty = item.assignedQuantities?.[m.id] ?? 0;
-                                                const totalPeople = item.assignedTo?.length ?? 1;
-                                                const pricePerPerson = item.pricePerUnit / totalPeople;
-                                                const itemTotal = roundIDR(pricePerPerson * qty);
-                                                return (
-                                                  <li key={idx2} className="px-3 py-2 text-xs flex items-center gap-2">
-                                                    <div className="flex-1 text-gray-700 min-w-0 break-words">
-                                                      {item.name} <span className="text-gray-500 whitespace-nowrap">x{qty}</span>
-                                                    </div>
-                                                    <div className="font-semibold text-gray-900 tabular-nums whitespace-nowrap flex-shrink-0">
-                                                      {currency(itemTotal)}
-                                                    </div>
-                                                  </li>
-                                                );
-                                              })}
-                                            </ul>
-                                          )}
-                                        </div>
-                                      )}
-                                      */}
-                                    </div>
-                                  </div>
-                                );
-                              })}
-                          </div>
-                        )}
-
-                        {/* CTA: Atur Pembayaran (di bawah anggota) */}
-                        <div className="mt-10 mb-12">
-                          <button
-                            // di onClick tombol:
-onClick={() => {
-  setPayCtx({
-    amount: memberTotal,
-    receiver: paymentReceiver,
-    splitName: data?.splitName || merchantName,
-    splitId,
-    memberId,
-    currency, // formatter dari file ini
-  });
-  setShowPay(true);
-}}
-                            className="w-full px-6 py-3 rounded-full bg-[#EFA757] hover:bg-[#E5963A] text-white font-semibold
-                                       flex items-center justify-center gap-2 shadow-sm active:scale-95 transition"
-                          >
-                            <svg
-                              width="18" height="18" viewBox="0 0 24 24" fill="none"
-                              className="text-white" aria-hidden="true"
-                            >
-                              <path
-                                d="M21 12.75V8.25A2.25 2.25 0 0 0 18.75 6h-12A2.25 2.25 0 0 0 4.5 8.25v7.5A2.25 2.25 0 0 0 6.75 18h12A2.25 2.25 0 0 0 21 15.75v-3Z"
-                                stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-                              />
-                              <path
-                                d="M17.625 12.75h3.375v2.25h-3.375a1.125 1.125 0 1 1 0-2.25Z"
-                                stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-                              />
-                            </svg>
-                            <span>Bayar Bagianmu</span>
-                          </button>
-                          
-<MemberPayment
-  open={showPay}
-  onClose={() => setShowPay(false)}
-  ctx={payCtx}
-/>
-                        </div>
+            <div className="mb-6">
+              <div className="text-sm font-bold text-gray-900 mb-3">
+                💳 Bayar ke
+              </div>
+              {paymentReceiver && (
+                <div className="bg-blue-50 rounded-lg p-4 border-2 border-blue-200">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white text-sm font-bold">
+                      {(paymentReceiver.name || "?").charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                      <div className="text-sm font-semibold text-gray-900">
+                        {paymentReceiver.name}
+                      </div>
+                      <div className="text-xs text-gray-600">
+                        {paymentReceiver.phone || paymentReceiver.phoneMasked}
                       </div>
                     </div>
-
-                    {/* ===== POPUP DETAIL (SATU KALI, DI LUAR MAP) ===== */}
-                    {/* VERSI LAMA (TETAP ADA, DIKOMENTARI — JANGAN DIHAPUS)
-                    {showingDetailFor && popupMemberInfo && (
-                      <div
-                        className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4"
-                        onClick={closePopup}
-                      >
-                        <div
-                          className="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[80vh] overflow-auto"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <div className="p-5">
-                            <div className="flex items-center justify-between mb-4">
-                              <h3 className="text-base font-bold text-gray-900">Rincian Pesanan</h3>
-                              <button onClick={closePopup} className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-gray-100">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                                  <path d="M6 6l12 12M6 18L18 6" stroke="#6B7280" strokeWidth="2" strokeLinecap="round" />
-                                </svg>
-                              </button>
-                            </div>
-
-                            <div className="flex items-center gap-3 mb-4 pb-4 border-b border-gray-200">
-                              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#FF9A25] to-[#FF7A25] flex items-center justify-center text-white text-base font-bold">
-                                {(popupMemberInfo.name || "?").charAt(0).toUpperCase()}
-                              </div>
-                              <div>
-                                <div className="text-sm font-bold text-gray-900">
-                                  {popupMemberInfo.name}
-                                  {popupMemberInfo.id === currentUserId && (
-                                    <span className="ml-2 text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full font-semibold">kamu</span>
-                                  )}
-                                </div>
-                                <div className="text-xs text-gray-500">{popupMemberInfo.phone || popupMemberInfo.phoneMasked}</div>
-                              </div>
-                            </div>
-
-                            <div className="space-y-2 mb-4">
-                              {popupMemberItems.map((item, itemIdx) => {
-                                const qty = item.assignedQuantities?.[showingDetailFor] || 0;
-                                const totalPeopleForItem = item.assignedTo?.length || 1;
-                                const pricePerPerson = item.pricePerUnit / totalPeopleForItem;
-                                const totalForThisPerson = pricePerPerson * qty;
-                                return (
-                                  <div key={itemIdx} className="flex justify-between text-sm py-2 border-b border-gray-100 last:border-b-0">
-                                    <span className="text-gray-700">
-                                      {item.name} <span className="text-gray-500">x{qty}</span>
-                                    </span>
-                                    <span className="font-semibold text-gray-900">{currency(roundIDR(totalForThisPerson))}</span>
-                                  </div>
-                                );
-                              })}
-                            </div>
-
-                            <div className="border-t-2 border-gray-200 pt-3 space-y-2">
-                              <div className="flex justify-between text-sm">
-                                <span className="text-gray-600">Subtotal</span>
-                                <span className="font-semibold text-gray-900">{currency(popupCalculatedSubtotal)}</span>
-                              </div>
-
-                              <div className="flex justify-between text-sm">
-                                <span className="text-gray-600">Pajak</span>
-                                <span className="font-semibold text-gray-900">{currency(roundIDR(popupFees.tax || 0))}</span>
-                              </div>
-
-                              <div className="flex justify-between text-sm">
-                                <span className="text-gray-600">Diskon</span>
-                                <span className={`font-semibold ${(popupFees.discount || 0) > 0 ? "text-green-600" : "text-gray-900"}`}>
-                                  {(popupFees.discount || 0) > 0 ? `-${currency(roundIDR(popupFees.discount))}` : currency(0)}
-                                </span>
-                              </div>
-
-                              <div className="flex justify-between text-sm">
-                                <span className="text-gray-600">Service</span>
-                                <span className="font-semibold text-gray-900">{currency(roundIDR(popupFees.service || 0))}</span>
-                              </div>
-
-                              <div className="flex justify-between text-sm">
-                                <span className="text-gray-600">Lainnya</span>
-                                <span className={`font-semibold ${(data?.other || 0) < 0 ? "text-red-600" : "text-gray-900"}`}>
-                                  {(data?.other || 0) < 0 ? `-${currency(roundIDR(popupFees.other))}` : currency(roundIDR(popupFees.other || 0))}
-                                </span>
-                              </div>
-
-                              <div className="flex justify-between text-base pt-2 border-t border-gray-200">
-                                <span className="font-bold text-gray-900">Total</span>
-                                <span className="font-bold text-[#FF9A25]">{currency(popupCalculatedTotal)}</span>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                    */}
-
-                    {/* ===== VERSI BARU: POPUP VIA PORTAL (FULLSCREEN & ANTI CLIP) ===== */}
-                    {showingDetailFor && popupMemberInfo && (
-                      <Portal>
-                        <div
-                          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm px-4"
-                          onClick={closePopup}
-                        >
-                          <div
-                            className="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[80vh] overflow-auto"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <div className="p-5">
-                              <div className="flex items-center justify-between mb-4">
-                                <h3 className="text-base font-bold text-gray-900">Rincian Pesanan</h3>
-                                <button onClick={closePopup} className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-gray-100">
-                                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                                    <path d="M6 6l12 12M6 18L18 6" stroke="#6B7280" strokeWidth="2" strokeLinecap="round" />
-                                  </svg>
-                                </button>
-                              </div>
-
-                              <div className="flex items-center gap-3 mb-4 pb-4 border-b border-gray-200">
-                                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#FF9A25] to-[#FF7A25] flex items-center justify-center text-white text-base font-bold">
-                                  {(popupMemberInfo.name || "?").charAt(0).toUpperCase()}
-                                </div>
-                                <div>
-                                  <div className="text-sm font-bold text-gray-900">
-                                    <span className={popupMemberInfo.id === memberId ? "text-orange-700" : "text-gray-900"}>
-  {popupMemberInfo.name || "—"}
-</span>
-                                    {popupMemberInfo.id === memberId && (
-                                      <span className="ml-2 text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full font-semibold">kamu</span>
-                                    )}
-                                  </div>
-                                  <div
-  className={`text-xs ${
-    popupMemberInfo.id === memberId ? "text-orange-700" : "text-gray-500"
-  }`}
->
-  {popupMemberInfo.phone || popupMemberInfo.phoneMasked}
-</div>
-                                </div>
-                              </div>
-
-                              <div className="space-y-2 mb-4">
-                                {popupMemberItems.map((item, itemIdx) => {
-                                  const qty = item.assignedQuantities?.[showingDetailFor] || 0;
-                                  const totalPeopleForItem = item.assignedTo?.length || 1;
-                                  const pricePerPerson = item.pricePerUnit / totalPeopleForItem;
-                                  const totalForThisPerson = pricePerPerson * qty;
-                                  return (
-                                    <div key={itemIdx} className="flex justify-between text-sm py-2 border-b border-gray-100 last:border-b-0">
-                                      <span className="text-gray-700">
-                                        {item.name} <span className="text-gray-500">x{qty}</span>
-                                      </span>
-                                      <span className="font-semibold text-gray-900">{currency(roundIDR(totalForThisPerson))}</span>
-                                    </div>
-                                  );
-                                })}
-                              </div>
-
-                              <div className="border-t-2 border-gray-200 pt-3 space-y-2">
-                                <div className="flex justify-between text-sm">
-                                  <span className="text-gray-600">Subtotal</span>
-                                  <span className="font-semibold text-gray-900">{currency(popupCalculatedSubtotal)}</span>
-                                </div>
-
-                                <div className="flex justify-between text-sm">
-                                  <span className="text-gray-600">Pajak</span>
-                                  <span className="font-semibold text-gray-900">{currency(roundIDR(popupFees.tax || 0))}</span>
-                                </div>
-
-                                <div className="flex justify-between text-sm">
-                                  <span className="text-gray-600">Diskon</span>
-                                  <span className={`font-semibold ${(popupFees.discount || 0) > 0 ? "text-green-600" : "text-gray-900"}`}>
-                                    {(popupFees.discount || 0) > 0 ? `-${currency(roundIDR(popupFees.discount))}` : currency(0)}
-                                  </span>
-                                </div>
-
-                                <div className="flex justify-between text-sm">
-                                  <span className="text-gray-600">Service</span>
-                                  <span className="font-semibold text-gray-900">{currency(roundIDR(popupFees.service || 0))}</span>
-                                </div>
-
-                                <div className="flex justify-between text-sm">
-                                  <span className="text-gray-600">Lainnya</span>
-                                  <span className={`font-semibold ${(data?.other || 0) < 0 ? "text-red-600" : "text-gray-900"}`}>
-                                    {(data?.other || 0) < 0 ? `-${currency(roundIDR(popupFees.other))}` : currency(roundIDR(popupFees.other || 0))}
-                                  </span>
-                                </div>
-
-                                <div className="flex justify-between text-base pt-2 border-t border-gray-200">
-                                  <span className="font-bold text-gray-900">Total</span>
-                                  <span className="font-bold text-[#FF9A25]">{currency(popupCalculatedTotal)}</span>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </Portal>
-                    )}
-
-                    {/* zigzag overlay lagi (posisi sama seperti referensi) */}
-                    <div
-                      className="absolute top-0 left-0 right-0 pointer-events-none"
-                      style={{ height: "30px", overflow: "visible" }}
-                    >
-                      <svg
-                        className="w-full"
-                        style={{ height: "30px" }}
-                        viewBox="1.5 1 99.5 24"
-                        preserveAspectRatio="none"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <polyline
-                          points="0,3 1.25,3 11.25,20 21.25,3 31.25,20 41.25,3 51.25,20 61.25,3 71.25,20 81.25,3 91.25,20 101.25,3 105.5,3"
-                          fill="none"
-                          stroke="#d1d5db"
-                          strokeWidth="1.5"
-                        />
-                      </svg>
-                    </div>
-
-                    <div
-                      className="absolute bottom-0 left-0 right-0 pointer-events-none"
-                      style={{ height: "24.1px", overflow: "visible" }}
-                    >
-                      <svg
-                        className="w-full"
-                        style={{ height: "30px" }}
-                        viewBox="1.5 1 99.5 24"
-                        preserveAspectRatio="none"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <polyline
-                          points="0,20 1.25,20 11.25,3 21.25,20 31.25,3 41.25,20 51.25,3 61.25,20 71.25,3 81.25,20 91.25,3 101.25,20 105.5,20"
-                          fill="none"
-                          stroke="#d1d5db"
-                          strokeWidth="1.5"
-                        />
-                      </svg>
-                    </div>
                   </div>
+                </div>
+              )}
+            </div>
+
+            {/* ITEMS */}
+            <div className="mb-6 pb-6 border-b border-gray-200">
+              <div className="text-sm font-bold text-gray-900 mb-3">
+                🛒 Item yang Dibeli
+              </div>
+              <div className="space-y-2">
+                {memberItems.map((item, idx) => {
+                  const qty = item.assignedQuantities?.[memberId] || 0;
+                  const totalPeople = item.assignedTo?.length || 1;
+                  const pricePerPerson = item.pricePerUnit / totalPeople;
+                  const itemTotal = pricePerPerson * qty;
+                  return (
+                    <div
+                      key={idx}
+                      className="flex justify-between text-sm py-2 border-b border-gray-100 last:border-b-0"
+                    >
+                      <span className="text-gray-700 font-medium">
+                        {item.name}{" "}
+                        <span className="text-gray-500">x{qty}</span>
+                      </span>
+                      <span className="font-semibold text-gray-900">
+                        {currency(roundIDR(itemTotal))}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+            <div className="mb-6 pb-6 border-b border-gray-200">
+              <div className="text-sm font-bold text-gray-900 mb-3">
+                📊 Rincian Biaya
+              </div>
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Subtotal Item</span>
+                  <span className="font-semibold text-gray-900">
+                    {currency(roundIDR(calculateMemberItemSubtotal))}
+                  </span>
+                </div>
+                {calculateFeeBreakdown.tax > 0 && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Pajak</span>
+                    <span className="font-semibold text-gray-900">
+                      {currency(roundIDR(calculateFeeBreakdown.tax))}
+                    </span>
+                  </div>
+                )}
+                {calculateFeeBreakdown.discount > 0 && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Diskon</span>
+                    <span className="font-semibold text-green-600">
+                      -{currency(roundIDR(calculateFeeBreakdown.discount))}
+                    </span>
+                  </div>
+                )}
+                {calculateFeeBreakdown.service > 0 && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Service</span>
+                    <span className="font-semibold text-gray-900">
+                      {currency(roundIDR(calculateFeeBreakdown.service))}
+                    </span>
+                  </div>
+                )}
+                <div className="flex justify-between text-base pt-2 border-t border-gray-200">
+                  <span className="font-bold text-gray-900">Total</span>
+                  <span className="font-bold text-orange-600">
+                    {currency(memberTotal)}
+                  </span>
                 </div>
                 {/* /kertas */}
               </div>
             </div>
 
+            {/* COPY LINK */}
+            <button
+              onClick={copyToClipboard}
+              className={`w-full py-3 px-4 rounded-lg flex items-center justify-center gap-2 transition active:scale-95 ${
+                copySuccess
+                  ? "bg-green-100 border-2 border-green-500"
+                  : "bg-gray-100 hover:bg-gray-200 border-2 border-gray-300"
+              }`}
+            >
+              {copySuccess ? (
+                <>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                    <path
+                      d="M20 6L9 17l-5-5"
+                      stroke="#10b981"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                  <span className="text-sm font-semibold text-green-700">
+                    Link Berhasil Disalin!
+                  </span>
+                </>
+              ) : (
+                <>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                    <path
+                      d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"
+                      stroke="#1f2937"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                    <path
+                      d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"
+                      stroke="#1f2937"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                  <span className="text-sm font-semibold text-gray-700">
+                    Copy Link Invoice
+                  </span>
+                </>
+              )}
+            </button>
+          </div>
+          <div className="text-center text-xs text-gray-500 space-y-1 bg-white rounded-xl p-4 shadow-sm">
+            <div className="font-semibold text-gray-700">
+              📄 {data.splitName}
+            </div>
+            <div>ID: {splitId.substring(0, 16)}...</div>
+            <div>{dateStr}</div>
+            <div className="text-[10px] text-gray-400 mt-2">
+              Invoice ini valid sampai pembayaran selesai
+            </div>
           </div>
         </div>
       </div>

@@ -39,7 +39,6 @@ Dengan begitu, proses berbagi biaya, pembayaran, dan tanpa perlu menghitung seca
 
   return (
     <div className="min-h-screen w-full bg-white flex flex-col relative overflow-hidden">
-      {/* Top bar - Responsive */}
       <div className="px-4 sm:px-6 pt-4 sm:pt-6 pb-3 sm:pb-4 bg-white sticky top-0 z-50">
         <div className="w-full max-w-2xl mx-auto flex items-center justify-between">
           <button
@@ -51,7 +50,13 @@ Dengan begitu, proses berbagi biaya, pembayaran, dan tanpa perlu menghitung seca
               active:scale-95 transition-all duration-300 ease-out group"
             onClick={onClose}
           >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" className="sm:w-5 sm:h-5 transition-transform group-hover:-translate-x-0.5">
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              className="sm:w-5 sm:h-5 transition-transform group-hover:-translate-x-0.5"
+            >
               <path
                 d="M15 6l-6 6 6 6"
                 stroke="#1F2937"
@@ -66,12 +71,10 @@ Dengan begitu, proses berbagi biaya, pembayaran, dan tanpa perlu menghitung seca
             Bantuan
           </h1>
 
-          {/* spacer */}
           <div className="w-10 h-10 sm:w-11 sm:h-11" />
         </div>
       </div>
 
-      {/* Content - Full width on mobile, max-width on desktop */}
       <div className="flex-1 overflow-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
         <div className="w-full max-w-2xl mx-auto space-y-3 sm:space-y-4">
           {faqs.map((faq, index) => (
@@ -80,13 +83,14 @@ Dengan begitu, proses berbagi biaya, pembayaran, dan tanpa perlu menghitung seca
               title={faq.title}
               content={faq.content}
               isExpanded={expandedId === faq.id}
-              onToggle={() => setExpandedId(expandedId === faq.id ? null : faq.id)}
+              onToggle={() =>
+                setExpandedId(expandedId === faq.id ? null : faq.id)
+              }
               index={index}
             />
           ))}
         </div>
 
-        {/* Bottom padding for last item */}
         <div className="h-4 sm:h-6" />
       </div>
     </div>
@@ -101,7 +105,6 @@ function QuestionCard({ title, content, isExpanded, onToggle, index }) {
         animation: `fadeInUp 0.6s ease-out ${index * 0.1}s both`,
       }}
     >
-      {/* Main Card Button - Full width, responsive padding */}
       <button
         onClick={onToggle}
         className="w-full bg-[#D9D9D9] rounded-lg sm:rounded-xl px-4 sm:px-5 py-3.5 sm:py-4 
@@ -120,13 +123,20 @@ function QuestionCard({ title, content, isExpanded, onToggle, index }) {
           {title}
         </span>
 
-        {/* Animated Chevron - Responsive size */}
         <div
           className={`flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gradient-to-br from-[#FF9A25] to-[#FF7A25] 
             flex items-center justify-center shadow-lg shadow-[#FF9A25]/30
-            transition-all duration-300 ${isExpanded ? "rotate-90 scale-110" : "rotate-0 scale-100"}`}
+            transition-all duration-300 ${
+              isExpanded ? "rotate-90 scale-110" : "rotate-0 scale-100"
+            }`}
         >
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" className="sm:w-[14px] sm:h-[14px]">
+          <svg
+            width="12"
+            height="12"
+            viewBox="0 0 24 24"
+            fill="none"
+            className="sm:w-[14px] sm:h-[14px]"
+          >
             <path
               d="M9 6l6 6-6 6"
               stroke="white"
@@ -138,7 +148,6 @@ function QuestionCard({ title, content, isExpanded, onToggle, index }) {
         </div>
       </button>
 
-      {/* Expanded Content - Responsive */}
       <div
         className="transition-all duration-500 ease-out overflow-hidden"
         style={{
@@ -151,12 +160,13 @@ function QuestionCard({ title, content, isExpanded, onToggle, index }) {
             border-2 border-gray-100 shadow-xl shadow-gray-300/30
             backdrop-blur-sm relative overflow-hidden"
           style={{
-            transform: isExpanded ? "translateY(0) scale(1)" : "translateY(-10px) scale(0.95)",
+            transform: isExpanded
+              ? "translateY(0) scale(1)"
+              : "translateY(-10px) scale(0.95)",
             opacity: isExpanded ? 1 : 0,
             transition: "all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)",
           }}
         >
-          {/* Content */}
           <div className="relative z-10">
             <h3 className="text-sm sm:text-base font-bold text-gray-800 mb-3 sm:mb-4 flex items-center gap-2">
               <span className="w-1.5 h-1.5 rounded-full bg-gradient-to-r from-[#FF9A25] to-[#FFCE52]" />
@@ -167,12 +177,10 @@ function QuestionCard({ title, content, isExpanded, onToggle, index }) {
             </p>
           </div>
 
-          {/* Bottom orange gradient bar */}
           <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-[#FF9A25]/40 to-transparent" />
         </div>
       </div>
 
-      {/* Global Animations */}
       <style jsx>{`
         @keyframes fadeInUp {
           from {

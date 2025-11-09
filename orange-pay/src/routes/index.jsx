@@ -17,7 +17,7 @@ import LoginPage from "../pages/login/LoginPage";
 import SplitBillPage from "../pages/SplitBillPage";
 import SplitBillConfirmedPage from "../pages/SplitBillConfirmedPage";
 import SplitBillMemberPage from "../pages/SplitBillMemberPage";
-
+import SplitBillReviewPage from "../pages/SplitBillReviewPage";
 import OtpStage from "../components/login/OtpStage";
 import PinStage from "../components/login/PinStage";
 import ResetSetPin from "../components/login/ResetSetPin";
@@ -217,17 +217,15 @@ export default function AppRoutes() {
             path="wallets/:walletId/members"
             element={<AssignMemberPage />}
           />
-
+          <Route path="splitbill/review" element={<SplitBillReviewPage />} />
           <Route path="splitbill" element={<SplitBillPage />} />
           <Route path="splitbill/:id" element={<SplitBillConfirmedPage />} />
           <Route
             path="splitbill/:id/member/:memberId"
             element={<SplitBillMemberPage />}
           />{" "}
-
           {/* account page */}
           <Route path="account" element={<AccountLandingPage />} />
-
           {/* topup page */}
           <Route path="topup" element={<TopupLayout />}>
             <Route index element={<TopUpPage />} />
@@ -244,7 +242,6 @@ export default function AppRoutes() {
             <Route path="verifyEmail" element={<VerifyEmailPage />} />
             <Route path="verifyPhone" element={<VerifyPhonePage />} />
           </Route>
-
           {/* user transaction limit page */}
           <Route element={<TransactionLimitLayout />}>
             <Route path="transactionLimit" element={<TransactionLimitPage />} />

@@ -2,64 +2,59 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import SplitBillConfirmed from "../components/split_bill/SplitBillConfirmed";
 
+import api from "../lib/api";
+
 export default function SplitBillConfirmedPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
-
   useEffect(() => {
-    try {
-      console.log('🔍 Loading data untuk ID:', id);
-      
-      // 1. ✅ Prioritas: Ambil dari localStorage (bukan sessionStorage)
-      const localData = localStorage.getItem(`splitbill_${id}`);
-      if (localData) {
-        console.log('✅ Data ditemukan di localStorage');
-        const parsed = JSON.parse(localData);
-        
-        // Cek apakah data masih valid (TTL check)
-        const now = Date.now();
-        const isExpired = parsed.ttl && (now - parsed.timestamp > parsed.ttl);
-        
-        if (!isExpired && parsed.data) {
-          setData(parsed.data);
-          setLoading(false);
-          return;
+    const loadBillData = async () => {
+      setLoading(true);
+      try {
+        console.log("Loading data untuk ID:", id);
+        const localData = localStorage.getItem(`splitbill_${id}`);
+        if (localData) {
+          const parsed = JSON.parse(localData);
+          const now = Date.now();
+          const isExpired = parsed.ttl && now - parsed.timestamp > parsed.ttl;
+
+          if (!isExpired && parsed.data) {
+            setData(parsed.data);
+            setLoading(false);
+            return;
+          } else if (isExpired) {
+            localStorage.removeItem(`splitbill_${id}`);
+          }
+        }
+        console.log("Cache miss. Mengambil dari API...");
+        const response = await api.get(`/api/v1/split-bill/bills/${id}`);
+
+        if (response.data && !response.data.error) {
+          const apiData = response.data.data;
+          setData(apiData);
+          const cacheEntry = {
+            data: apiData,
+            timestamp: Date.now(),
+            ttl: 60 * 60 * 1000,
+          };
+          localStorage.setItem(`splitbill_${id}`, JSON.stringify(cacheEntry));
         } else {
-          console.warn('⏰ Data kedaluwarsa (>7 hari)');
-          // Hapus data kedaluwarsa
-          localStorage.removeItem(`splitbill_${id}`);
+          throw new Error(
+            response.data.message || "Data tidak ditemukan di server"
+          );
         }
-      }
-
-      // 2. Fallback ke localStorage dengan key lama (legacy support)
-      const legacyData = localStorage.getItem(`splitbill_data_${id}`);
-      if (legacyData) {
-        console.log('✅ Data ditemukan di localStorage (legacy key)');
-        const parsed = JSON.parse(legacyData);
-        setData(parsed);
+      } catch (e) {
+        console.error("Gagal memuat data bill:", e);
+        setData(null);
+      } finally {
         setLoading(false);
-        return;
       }
+    };
 
-      // 3. Cek splitBillHistory di localStorage (minimal info)
-      const history = localStorage.getItem('splitBillHistory');
-      if (history) {
-        const allSplits = JSON.parse(history);
-        if (allSplits[id]) {
-          console.warn('📋 Data ditemukan di history, tapi detail tidak lengkap');
-          // History hanya punya info minimal, tidak bisa dipakai untuk render full page
-        }
-      }
-
-      console.warn('❌ Data tidak ditemukan di localStorage untuk ID:', id);
-      setData(null);
-    } catch (e) {
-      console.error('❌ Load error:', e);
-      setData(null);
-    } finally {
-      setLoading(false);
+    if (id) {
+      loadBillData();
     }
   }, [id]);
 
@@ -79,15 +74,14 @@ export default function SplitBillConfirmedPage() {
       <div className="min-h-screen bg-white flex items-center justify-center flex-col gap-4 px-4">
         <div className="text-center">
           <div className="text-6xl mb-4">📋</div>
-          <p className="text-gray-700 font-semibold mb-2 text-lg">Data tidak ditemukan</p>
+          <p className="text-gray-700 font-semibold mb-2 text-lg">
+            Data tidak ditemukan
+          </p>
           <p className="text-gray-500 text-sm mb-2">
-            Data mungkin sudah kedaluwarsa atau belum pernah disimpan
+            Gagal memuat data tagihan.
           </p>
           <p className="text-xs text-gray-400 mb-4 font-mono bg-gray-100 px-3 py-2 rounded">
             ID: {id}
-          </p>
-          <p className="text-xs text-gray-400 max-w-sm">
-            Data split bill disimpan selama 7 hari. Setelah itu akan terhapus otomatis.
           </p>
         </div>
         <button
@@ -111,7 +105,7 @@ export default function SplitBillConfirmedPage() {
       data={data}
       onBack={() => navigate("/splitbill")}
       onBackToHome={() => navigate("/")}
-      receiptImage={data.receiptImage}
+      receiptImage={data.imageUrl}
     />
   );
 }

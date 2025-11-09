@@ -1,16 +1,15 @@
 import React from "react";
 import { Link, useNavigate } from "react-router-dom";
-import MobileShell from "../components/layout/MobileShell";
 import BrandLogo from "../components/common/BrandLogo";
 import Button from "../components/common/Button";
-import PhoneLayoutBackground from "../components/PhoneLayoutBackground";
+import MobileView from "../components/view/MobileView";
 
 export default function WelcomePage() {
   const navigate = useNavigate();
 
   return (
-    <PhoneLayoutBackground>
-      <MobileShell className="bg-white flex items-center justify-center">
+    <MobileView>
+      <div className="bg-white flex items-center justify-center h-full">
         <div className="flex flex-col items-center justify-center w-full px-6">
           <div className="flex flex-col items-center">
             <BrandLogo size={12} />
@@ -44,7 +43,8 @@ export default function WelcomePage() {
             </Link>
           </p>
         </div>
-      </MobileShell>
-    </PhoneLayoutBackground>
+
+      </div>
+    </MobileView>
   );
 }

@@ -8,8 +8,9 @@ export default function NextStep({ image, onRetake, onConfirm }) {
   const [confirmed, setConfirmed] = useState(false);
   const [imageAspect, setImageAspect] = useState(9 / 16);
 
-  // OCR tetap dipanggil di background
-  const { processOCRAsync, ocrData, isSuccess } = useOCRImage();
+  // Ambil SEMUA state dari hook, termasuk 'isError'
+  const { processOCRAsync, ocrData, isSuccess, isError, ocrError } =
+    useOCRImage();
 
   useEffect(() => {
     const img = new Image();
@@ -25,32 +26,48 @@ export default function NextStep({ image, onRetake, onConfirm }) {
     else if (typeof window !== "undefined") window.history.back();
   };
 
+  // --- GANTI FUNGSI 'handleConfirm' DENGAN INI ---
   const handleConfirm = async () => {
-    try {
-      // fire-and-forget
-      processOCRAsync(image)
-        .then((result) => {
-          console.log("📦 OCR Result:", result);
-          if (typeof onConfirm === "function") onConfirm(result);
-        })
-        .catch((error) => {
-          console.error("OCR error:", error);
-        });
+    // 1. Tampilkan layar <Scanning /> SEKARANG
+    setConfirmed(true);
 
-      setConfirmed(true);
+    try {
+      // 2. TUNGGU (await) sampai API call selesai
+      const result = await processOCRAsync(image);
+
+      // 3. API Sukses. Log dan panggil onConfirm untuk navigasi
+      console.log("📦 OCR Result:", result);
+      if (typeof onConfirm === "function") {
+        onConfirm(result);
+      }
     } catch (error) {
-      console.error("Error:", error);
-      setConfirmed(true);
+      // 4. API Gagal.
+      console.error("OCR error:", error);
+      // (Opsional) Tampilkan alert dan kembali ke preview
+      alert(`Gagal memproses gambar: ${error.message}`);
+      setConfirmed(false); // Sembunyikan lagi layar <Scanning />
     }
   };
+  // --- AKHIR FUNGSI YANG DIGANTI ---
 
   if (confirmed) {
-    return <Scanning image={image} ocrData={isSuccess ? ocrData : null} />;
+    // 'Scanning' sekarang HANYA jadi loader.
+    // 'ocrData' dan 'isSuccess' akan di-pass, tapi komponen
+    // 'onConfirm' di atas yang akan memicu navigasi.
+    return (
+      <Scanning
+        image={image}
+        ocrData={isSuccess ? ocrData : null}
+        isError={isError}
+        error={ocrError}
+      />
+    );
   }
 
   return (
+    // ... sisa JSX Anda (<div>, <button>, <h1>, <img>, dll.)
+    // tidak perlu diubah ...
     <div className="min-h-screen w-full bg-white flex flex-col relative overflow-hidden">
-      {/* Top bar */}
       <div className="relative z-30 px-4 sm:px-6 pt-6 pb-4 bg-white">
         <div className="max-w-2xl mx-auto flex items-center justify-between">
           <button
@@ -90,12 +107,11 @@ export default function NextStep({ image, onRetake, onConfirm }) {
         </div>
       </div>
 
-      {/* Preview Image */}
       <div className="flex-1 flex items-center justify-center px-4 py-6 relative z-10">
         <div
           className="w-full max-w-md rounded-3xl overflow-hidden relative border-2 border-gray-200 shadow-2xl shadow-gray-400/30"
           style={{
-            aspectRatio: imageAspect, // boleh number/string; React mendukung keduanya
+            aspectRatio: imageAspect,
             animation:
               "zoomIn 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) 0.3s both",
           }}
@@ -105,8 +121,6 @@ export default function NextStep({ image, onRetake, onConfirm }) {
             alt="Hasil tangkapan kamera"
             className="absolute inset-0 w-full h-full object-contain"
           />
-
-          {/* Decorative corners */}
           <div className="absolute inset-0 pointer-events-none">
             <svg
               className="absolute inset-4 w-[calc(100%-32px)] h-[calc(100%-32px)]"
@@ -142,7 +156,13 @@ export default function NextStep({ image, onRetake, onConfirm }) {
                 strokeLinecap="round"
               />
               <defs>
-                <linearGradient id="gradient2" x1="0%" y1="0%" x2="100%" y2="0%">
+                <linearGradient
+                  id="gradient2"
+                  x1="0%"
+                  y1="0%"
+                  x2="100%"
+                  y2="0%"
+                >
                   <stop offset="0%" stopColor="#FF9A25" stopOpacity="0.6" />
                   <stop offset="100%" stopColor="#FFCE52" stopOpacity="0.6" />
                 </linearGradient>
@@ -152,7 +172,6 @@ export default function NextStep({ image, onRetake, onConfirm }) {
         </div>
       </div>
 
-      {/* Action Button */}
       <div
         className="px-4 pb-6 pt-4 relative z-10"
         style={{ animation: "fadeInUp 0.6s ease-out 0.5s both" }}
@@ -193,7 +212,6 @@ export default function NextStep({ image, onRetake, onConfirm }) {
         </div>
       </div>
 
-      {/* Ganti styled-jsx -> <style> biasa */}
       <style>{`
         @keyframes fadeInLeft {
           from { opacity: 0; transform: translateX(-20px); }

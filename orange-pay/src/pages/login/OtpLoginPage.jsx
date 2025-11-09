@@ -2,8 +2,6 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
-import PhoneLayoutBackground from "../../components/PhoneLayoutBackground";
-import MobileShell from "../../components/layout/MobileShell";
 import WhiteCardContainer from "../../components/register/WhiteCardContainer";
 import OrangeHeader from "../../components/register/OrangeHeader";
 import { FullSubmitButton } from "../../components/button/FullSubmitButton";
@@ -13,22 +11,21 @@ import { useLoginContext } from "../../context/LoginContext";
 import OtpInputField from "../../components/input/OtpInputField";
 import ButtonLink from "../../components/button/ButtonLink";
 import CountdownTimer from "../../components/dashboard/CountdownTimer";
+import MobileView from "../../components/view/MobileView";
 
 export default function OtpLoginPage() {
     return (
-        <PhoneLayoutBackground>
-            <MobileShell>
-                <OrangeHeader />
-                <WhiteCardContainer>
-                    <OrangePayLogo />
-                    <RegisterTextContainer>
-                        Kode OTP telah dikirim ke WhatsApp Anda. Masukkan kode di bawah untuk
-                        melanjutkan.
-                    </RegisterTextContainer>
-                    <SetOtpContent />
-                </WhiteCardContainer>
-            </MobileShell>
-        </PhoneLayoutBackground>
+        <MobileView>
+            <OrangeHeader />
+            <WhiteCardContainer>
+                <OrangePayLogo />
+                <RegisterTextContainer>
+                    Kode OTP telah dikirim ke WhatsApp Anda. Masukkan kode di bawah untuk
+                    melanjutkan.
+                </RegisterTextContainer>
+                <SetOtpContent />
+            </WhiteCardContainer>
+        </MobileView>
     );
 }
 
