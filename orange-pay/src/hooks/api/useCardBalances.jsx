@@ -41,10 +41,10 @@ function mapWalletToCard(wallet) {
     accent: color,
     balance: Number(wallet.balanceSnapshot ?? 0),
     links: {
-      history: `/app/wallets/history`,
-      split: `/app/wallets/split`,
+      history: `/app/wallets/:walletId`,
+      split: `/app/wallets/:walletId`,
       topup: `/app/topup`,
-      addbalancefromwallet: `/app/wallets/add`,
+      addbalancefromwallet: `/app/wallet/:walletIds`,
       transfer: `/app/transfer`,
     },
   };

@@ -51,7 +51,7 @@ export default function RecentList() {
             <div className="max-h-[300px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
               <ul className="mt-2.5 divide-y divide-gray-200">
                 {users.map((user) => {
-                  const isIncome = user.type?.toLowerCase() === "terima";
+                  const isIncome = user.type === "terima";
                   const sign = isIncome ? "+" : "−";
                   const amountColor = isIncome ? "text-emerald-500" : "text-black-600";
                   const rightSub = `${user.dateLabel} · ${user.timeLabel}`;
@@ -68,9 +68,9 @@ export default function RecentList() {
                           </p>
                           <p className="text-xs text-gray-500 truncate">
                             {isIncome
-                              ? "Transfer Masuk"
-                              : user.type?.toLowerCase() === "kirim"
-                              ? "Transfer"
+                              ? "Income"
+                              : user.type?.toLowerCase() === "terima" 
+                              ? "Expense"
                               : user.type ?? "-"}
                           </p>
                         </div>

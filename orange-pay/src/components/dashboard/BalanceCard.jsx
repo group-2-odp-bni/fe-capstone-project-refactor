@@ -34,7 +34,6 @@ export default function AtomicBalanceCard({ initialWalletId = null }) {
       const raw = String(x?.serverType ?? x?.type ?? "").toUpperCase();
       return raw === "PERSONAL" && x?.defaultForUser === true;
     });
-      
 
     if (idx > 0) {
       const [fav] = normals.splice(idx, 1);
@@ -45,13 +44,13 @@ export default function AtomicBalanceCard({ initialWalletId = null }) {
 
   // Use ordered arrays throughout
   const orderedItems = useMemo(() => reorderCards(items), [items]);
-  const orderedBase = useMemo(() => reorderCards(baseCards), [baseCards]);
+  const orderedBase  = useMemo(() => reorderCards(baseCards), [baseCards]);
 
   const tabs = useMemo(() => {
     const source =
-      (Array.isArray(orderedBase) && orderedBase.length) ?
-      orderedBase :
-      orderedItems.filter((it) => !it.isAddCard);
+      (Array.isArray(orderedBase) && orderedBase.length)
+        ? orderedBase
+        : orderedItems.filter((it) => !it.isAddCard);
 
     return source.map((c) => ({
       id: c.id,
@@ -66,34 +65,110 @@ export default function AtomicBalanceCard({ initialWalletId = null }) {
   const [isHidden, setIsHidden] = useState(false);
   const viewportRef = useRef(null);
 
-  // jump to initialWalletId when available (after ordering)
-  useEffect(() => {
-    if (!initialWalletId || !orderedItems.length) return;
-    const idx = orderedItems.findIndex((it) => it.id === initialWalletId);
-    if (idx >= 0) setActiveIndex(idx);
-  }, [initialWalletId, orderedItems]);
+  // --- helpers to target non-Add slides ---
+  const firstNormalIndex = useMemo(
+    () => orderedItems.findIndex((it) => !it?.isAddCard),
+    [orderedItems]
+  );
+  const indexOfWallet = (id) =>
+    orderedItems.findIndex((it) => it?.id === id && !it?.isAddCard);
 
+  // Snap to a safe non-Add slide whenever data changes / initialWalletId provided
+  useEffect(() => {
+    if (!orderedItems.length) return;
+
+    // Prefer explicit initial wallet if present
+    if (initialWalletId) {
+      const idx = indexOfWallet(initialWalletId);
+      if (idx >= 0) {
+        setActiveIndex(idx);
+        viewportRef.current?.scrollToIndex?.(idx);
+        return;
+      }
+    }
+
+    // Otherwise snap to first non-Add card
+    const target = firstNormalIndex >= 0 ? firstNormalIndex : 0;
+    if (activeIndex !== target) {
+      setActiveIndex(target);
+      viewportRef.current?.scrollToIndex?.(target);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [orderedItems, initialWalletId]); // intentionally exclude activeIndex here
+
+  // Keep index valid if list shrinks
+  useEffect(() => {
+    if (activeIndex >= orderedItems.length) {
+      const target = firstNormalIndex >= 0 ? firstNormalIndex : 0;
+      setActiveIndex(target);
+      viewportRef.current?.scrollToIndex?.(target);
+    }
+  }, [orderedItems.length, activeIndex, firstNormalIndex]);
+
+  // goTo: never land on an Add card (choose nearest non-Add)
   const goTo = (i) => {
-    const clamped = Math.max(0, Math.min(orderedItems.length - 1, i));
-    setActiveIndex(clamped);
-    viewportRef.current?.scrollToIndex?.(clamped);
-  };
+    if (!orderedItems.length) return;
+    const clamp = (n) => Math.max(0, Math.min(orderedItems.length - 1, n));
+    let target = clamp(i);
 
-  useEffect(() => {
-    if (activeIndex >= orderedItems.length) setActiveIndex(0);
-  }, [orderedItems.length, activeIndex]);
+    if (orderedItems[target]?.isAddCard) {
+      // try previous non-Add
+      let j = target - 1;
+      while (j >= 0 && orderedItems[j]?.isAddCard) j--;
+      if (j >= 0) target = j;
+      else {
+        // otherwise next non-Add
+        j = target + 1;
+        while (j < orderedItems.length && orderedItems[j]?.isAddCard) j++;
+        if (j < orderedItems.length) target = j;
+      }
+    }
+
+    setActiveIndex(target);
+    viewportRef.current?.scrollToIndex?.(target);
+  };
 
   const handleCreateWallet = () => navigate("/app/wallets/new");
 
   const attachWalletToLinks = (links = {}, walletId) => {
-    if (!links || !walletId) return links;
+    if (!links) return {};
     const out = {};
-    Object.entries(links).forEach(([k, p]) => {
-      if (!p) return;
-      out[k] = p.includes("?") ? `${p}&wallet=${walletId}` : `${p}?wallet=${walletId}`;
-    });
+    for (const [key, path] of Object.entries(links)) {
+      if (!path) continue;
+      if (key === "topup" || key === "transfer") {
+        out[key] = path;
+        continue;
+      }
+      let url = path;
+      if (url.includes(":walletId")) {
+        url = url.replace(":walletId", encodeURIComponent(walletId));
+        out[key] = url;
+        continue;
+      }
+      const hasConcreteId = /\/wallets\/[^/:?]+(\/|$)/.test(url);
+      if (hasConcreteId) {
+        out[key] = url;
+        continue;
+      }
+      if (/\/wallets\/?$/.test(url)) {
+        url = `${url.replace(/\/$/, "")}/${encodeURIComponent(walletId)}`;
+        out[key] = url;
+        continue;
+      }
+      if (/\/wallets(\/|$)/.test(url)) {
+        url = url.replace(
+          /(\/wallets)(\/|$)/,
+          `$1/${encodeURIComponent(walletId)}$2`
+        );
+        out[key] = url;
+        continue;
+      }
+      out[key] = url;
+    }
     return out;
   };
+  
+  
 
   const makeOverlayHandlers = (to) => {
     const draggingRef = viewportRef.current?.isDraggingRef;
@@ -205,7 +280,6 @@ export default function AtomicBalanceCard({ initialWalletId = null }) {
                   <CardTopBar
                     title={card.title}
                     type={card.type}
-                    // highlight defaultForUser instead of hardcoded id
                     isMain={card?.defaultForUser === true}
                     onBadgeClick={() => goTo(idx)}
                   />

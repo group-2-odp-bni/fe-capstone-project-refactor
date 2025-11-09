@@ -68,16 +68,7 @@ export default function useRecentTransfer({
  * Fetches a single transaction (receipt) by id.
  * Endpoint: GET /api/v1/transactions/{trxId}
  * Returns: { trx, loading, error, refetch }
- * Mapped fields match ReceiptCard needs:
- *   trx = {
- *     amount,
- *     walletName,
- *     receiver,
- *     receiverPhone,
- *     createdAt,
- *     trxId,   // transactionRef or id
- *     notes,   // description or type label
- *   }
+ * Mapped fields match ReceiptCard needs.
  */
 export function useReceiptById(trxId) {
   const [trx, setTrx] = useState(null);
@@ -136,7 +127,7 @@ function mapTxnRowToUI(tx = {}) {
     tx.refId ||
     String(Math.random());
 
-  // counterparty name/phone
+  // counterparty / display name
   const name =
     tx.counterpartyName ||
     tx.receiverName ||
@@ -144,6 +135,7 @@ function mapTxnRowToUI(tx = {}) {
     tx.senderName ||
     tx.beneficiaryName ||
     tx.toName ||
+    tx.displayName || // fallback for your sample
     "-";
 
   const phone =
@@ -159,10 +151,14 @@ function mapTxnRowToUI(tx = {}) {
   const amount = Number(tx.amount ?? tx.nominal ?? tx.value ?? 0);
 
   // type -> "kirim"/"terima"
-  const rawType = String(tx.type || tx.transactionType || "").toUpperCase();
+  const rawType = String(tx.type || tx.transactionType || "").toUpperCase(); // e.g. "TOP_UP"
+  const norm = rawType.replace(/_/g, ""); // "TOPUP"
   const isIncome =
-    rawType.includes("IN") || rawType.includes("RECEIVE") || rawType.includes("CREDIT");
+    norm === "TOPUP" || /CREDIT|INCOME|RECEIVE|INCOMING/.test(rawType);
   const type = isIncome ? "terima" : "kirim";
+
+  // user-facing description
+  const description = tx.displaySubtitle || (isIncome ? "Top Up" : "Transfer");
 
   // timestamps
   const ts =
@@ -186,7 +182,10 @@ function mapTxnRowToUI(tx = {}) {
     name,
     phone: normalizePhoneLocal(phone),
     amount,
-    type, // "kirim" | "terima"
+    type,        // "kirim" | "terima"
+    isIncome,    // handy for UI
+    rawType,     // for debugging/analytics if needed
+    description, // "Top Up" / "Transfer"
     dateLabel,
     timeLabel,
   };
@@ -194,7 +193,7 @@ function mapTxnRowToUI(tx = {}) {
 
 /**
  * Map the single-transaction payload into what ReceiptCard expects.
- * Works for both "execute" response and "history" response shapes.
+ * Flips From/To for Top Up via Virtual Account (VA).
  */
 function mapReceiptPayload(p = {}) {
   const amount = Number(p.amount ?? p.nominal ?? p.value ?? 0);
@@ -205,37 +204,38 @@ function mapReceiptPayload(p = {}) {
     p.sourceWalletName ||
     p.sourceName ||
     p.source ||
+    p.displayName ||
     "-";
 
-  // Counterparty
-  const receiver =
-    p.counterpartyName ||
-    p.receiverName ||
-    p.recipientName ||
-    p.beneficiaryName ||
-    p.toName ||
-    "-";
+  // detect TOP UP VA
+  const rawType = String(p.type || "").toUpperCase(); // e.g., "TOP_UP"
+  const normType = rawType.replace(/_/g, ""); // "TOPUP"
+  const desc = String(p.description || p.displaySubtitle || "").toUpperCase();
+  const counterName = String(p.counterpartyName || p.displayName || "").toUpperCase();
 
-  const receiverPhoneRaw =
-    p.counterpartyPhone ||
-    p.receiverPhone ||
-    p.recipientPhone ||
-    p.beneficiaryPhone ||
-    p.toPhone ||
-    "";
+  const isTopUp = normType === "TOPUP";
+  const isVirtualAccount = /VIRTUAL\s*ACCOUNT|(^|\s)VA(\s|$)/.test(desc) || /VIRTUAL\s*ACCOUNT|(^|\s)VA(\s|$)/.test(counterName);
+  const isTopUpVA = isTopUp && isVirtualAccount;
 
-  // Timestamps
+  // default parties: From = user, To = counterparty
+  let sender = p.userName || "-";
+  let senderPhoneRaw = p.userPhone || "";
+  let receiver = p.counterpartyName || "-";
+  let receiverPhoneRaw = p.counterpartyPhone || "";
+
+  // flip for Top Up VA: From = VA, To = user
+  if (isTopUpVA) {
+    sender = p.counterpartyName || p.displayName || "Virtual Account";
+    senderPhoneRaw = p.counterpartyPhone || "";
+    receiver = p.userName || "-";
+    receiverPhoneRaw = p.userPhone || "";
+  }
+
   const createdAt =
-    p.completedAt || // execute response
-    p.createdAt ||
-    p.updatedAt ||
-    p.timestamp ||
-    p.time ||
-    null;
+    p.completedAt || p.createdAt || p.updatedAt || p.timestamp || p.time || null;
 
-  // Ref / trx id shown on your UI
   const trxId =
-    p.transactionRef || // execute response
+    p.transactionRef ||
     p.referenceId ||
     p.refId ||
     p.id ||
@@ -243,21 +243,17 @@ function mapReceiptPayload(p = {}) {
     p.transaction_id ||
     "";
 
-  // Notes/description
-  const notes =
-    p.description ||
-    p.notes ||
-    p.type ||
-    p.transactionType ||
-    "";
+  const type = p.type;
 
   return {
     amount,
     walletName,
+    sender,
+    senderPhone: normalizePhoneLocal(senderPhoneRaw),
     receiver,
     receiverPhone: normalizePhoneLocal(receiverPhoneRaw),
     createdAt,
     trxId,
-    notes,
+    type,
   };
 }

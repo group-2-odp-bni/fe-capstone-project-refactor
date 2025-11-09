@@ -50,24 +50,6 @@ function SetPinContent() {
       const { accessToken, refreshToken } = pinRes.data?.data || {};
       if (!accessToken) throw new Error("Access token tidak ditemukan");
       saveTokens(accessToken, refreshToken);
-
-      const idemKey = `wallet-create-${uuidv4()}`;
-      const createWalletRes = await api.post(
-        "/api/v1/wallets",
-        {
-          type: "PERSONAL",
-          name: "Default Main Wallet",
-          metadata: { colors: "#2F5755" },
-          is_default_for_wallet: true,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            "Idempotency-Key": idemKey,
-          },
-        }
-      );
-
       navigate("/app/dashboard");
     } catch (err) {
       console.error("Set PIN failed:", err);

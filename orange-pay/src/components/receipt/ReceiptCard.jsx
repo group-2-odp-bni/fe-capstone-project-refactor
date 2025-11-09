@@ -2,8 +2,8 @@
 import React, { useMemo, useState, useRef, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { ClipboardIcon, CheckIcon, ShareIcon } from "@heroicons/react/24/outline";
-import api from "../../lib/api";
 // import * as htmlToImage from "html-to-image"; // optional; guarded below
+import { useReceiptById } from "../../hooks/api/useHistory";
 
 const formatIDR = (n) =>
   new Intl.NumberFormat("id-ID", {
@@ -40,64 +40,8 @@ function FieldBox({ label, name, phone }) {
   );
 }
 
-// Map API response into the fields the card uses
-function mapTxnToTrx(payload = {}) {
-  const trxId =
-    payload.referenceId ||
-    payload.transactionRef ||
-    payload.refId ||
-    payload.id ||
-    payload.transactionId ||
-    "";
-
-  const amount = Number(payload.amount ?? payload.nominal ?? payload.value ?? 0);
-
-  const createdAt =
-    payload.completedAt ||
-    payload.createdAt ||
-    payload.updatedAt ||
-    payload.timestamp ||
-    payload.time ||
-    null;
-
-  const walletName =
-    payload.walletName ||
-    payload.sourceWalletName ||
-    (payload.wallet && payload.wallet.name) ||
-    "-";
-
-  const receiver =
-    payload.counterpartyName ||
-    payload.receiverName ||
-    payload.recipientName ||
-    payload.beneficiaryName ||
-    payload.toName ||
-    "-";
-
-  const receiverPhone =
-    payload.counterpartyPhone ||
-    payload.receiverPhone ||
-    payload.recipientPhone ||
-    payload.beneficiaryPhone ||
-    payload.toPhone ||
-    "";
-
-  const notes =
-    payload.description || payload.notes || (payload.type || payload.transactionType) || "-";
-
-  return {
-    trxId,
-    amount,
-    createdAt,
-    walletName,
-    receiver,
-    receiverPhone,
-    notes,
-  };
-}
-
-export default function ReceiptCard({ trx, externalShareRef = null, hideInlineShare = true }) {
-  // ---- Robust param extraction ----
+// robustly extract trxId from route
+function useTrxIdFromParams() {
   const params = useParams();
   const firstParamValue = params ? Object.values(params)[0] : "";
   const rawParam =
@@ -106,62 +50,32 @@ export default function ReceiptCard({ trx, externalShareRef = null, hideInlineSh
     params?.tx ||
     firstParamValue ||
     "";
+  return String(rawParam || "")
+    .replace(/^receipt\//, "")
+    .replace(/^\/+/, "");
+}
 
-  const trxId = String(rawParam || "")
-    .replace(/^receipt\//, "")  // strip accidental "receipt/"
-    .replace(/^\/+/, "");       // strip any leading slashes
+export default function ReceiptCard({ trx, externalShareRef = null, hideInlineShare = true }) {
+  // If trx is passed, skip fetching; otherwise take it from URL
+  const trxIdFromUrl = useTrxIdFromParams();
+  const shouldFetch = !trx && !!trxIdFromUrl;
+  const { trx: fetchedTrx, loading: hookLoading, error: hookError } = useReceiptById(
+    shouldFetch ? trxIdFromUrl : null
+  );
 
-  const [localTrx, setLocalTrx] = useState(null);
-  const [loading, setLoading] = useState(!trx && !!trxId);
-  const [err, setErr] = useState(null);
+  const loading = shouldFetch ? hookLoading : false;
+  const err = shouldFetch ? hookError : (!trx && !trxIdFromUrl ? "Transaction ID is missing in the URL." : null);
 
-  const cardRef = useRef(null);
-  const [copied, setCopied] = useState(false);
+  const dataTrx = trx || fetchedTrx || null;
 
-  // Fetch detail when trx prop is not provided
-  useEffect(() => {
-    let active = true;
-
-    // If we already have trx via props, just stop loading
-    if (trx) {
-      setLoading(false);
-      setErr(null);
-      return;
-    }
-
-    // No route id at all -> show friendly error instead of blank
-    if (!trxId) {
-      setLoading(false);
-      setErr("Transaction ID is missing in the URL.");
-      return;
-    }
-
-    (async () => {
-      setLoading(true);
-      setErr(null);
-      try {
-        const { data } = await api.get(`/api/v1/transactions/${encodeURIComponent(trxId)}`);
-        const payload = data?.data ?? data ?? {};
-        const mapped = mapTxnToTrx(payload);
-        if (active) setLocalTrx(mapped);
-      } catch (e) {
-        if (active) setErr("Failed to load transaction");
-      } finally {
-        if (active) setLoading(false);
-      }
-    })();
-
-    return () => {
-      active = false;
-    };
-  }, [trx, trxId]);
-
-  const dataTrx = trx || localTrx;
   const { date, time } = useMemo(
     () => parseDT(dataTrx?.createdAt),
     [dataTrx?.createdAt]
   );
   const refId = dataTrx?.trxId || "";
+
+  const cardRef = useRef(null);
+  const [copied, setCopied] = useState(false);
 
   const onCopy = async () => {
     try {
@@ -221,9 +135,9 @@ export default function ReceiptCard({ trx, externalShareRef = null, hideInlineSh
     return () => {
       if (externalShareRef) externalShareRef.current = null;
     };
-  }, [externalShareRef]);
+  }, [externalShareRef, onShare]);
 
-  // ---- UI states ----
+  /* ---------- UI states ---------- */
   if (loading) {
     return (
       <div className="p-4">
@@ -272,7 +186,8 @@ export default function ReceiptCard({ trx, externalShareRef = null, hideInlineSh
         </div>
 
         <div className="mt-6 space-y-4">
-          <FieldBox label="From:" name={dataTrx.walletName} phone="-" />
+          {/* Use walletName for "From" (sender) */}
+          <FieldBox label="From:" name={dataTrx.sender} phone={dataTrx.senderPhone} />
           <FieldBox label="To:" name={dataTrx.receiver} phone={dataTrx.receiverPhone} />
         </div>
 
@@ -303,7 +218,7 @@ export default function ReceiptCard({ trx, externalShareRef = null, hideInlineSh
 
           <div className="flex justify-between">
             <span className="text-gray-500">Type of Transactions</span>
-            <span>{dataTrx.notes}</span>
+            <span>{dataTrx.type || "-"}</span>
           </div>
 
           {!hideInlineShare && (
