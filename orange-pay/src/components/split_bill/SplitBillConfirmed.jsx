@@ -689,6 +689,7 @@ Silakan bayar sesuai nominal ya! 🙏
         </div>
       </div>
 
+{/* ✅ TAMBAH px-4 */}
       <div className="flex-1 overflow-auto bg-white">
         <div
           className={`max-w-md mx-auto transition-all duration-500 ${

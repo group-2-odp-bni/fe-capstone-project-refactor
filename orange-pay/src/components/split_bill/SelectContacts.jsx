@@ -158,7 +158,7 @@ export default function SelectContacts({
                         {currentUser?.name || "Kamu"}
                       </div>
                       <div className="text-xs text-gray-500 truncate">
-                        {currentUser?.phoneMasked || "*7195"}
+                        {currentUser?.phoneMasked || "*7198"}
                       </div>
                     </div>
                   </div>

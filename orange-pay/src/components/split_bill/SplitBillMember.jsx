@@ -10,11 +10,17 @@ export default function SplitBillMemberPage() {
   const [data, setData] = useState(null);
   const [member, setMember] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [copySuccess, setCopySuccess] = useState(false);
+  const [error, setError] = useState(null);
+  const [receiptImage, setReceiptImage] = useState(null);
+  const [openRows, setOpenRows] = useState({});
+
+  // state di parent
+const [showPay, setShowPay] = useState(false);
+const [payCtx, setPayCtx] = useState(null);
 
   const fmt = (n) => {
     const num = Number(n || 0);
-    return num.toLocaleString("id-ID", {
+    return new Intl.NumberFormat("id-ID", {
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     });
@@ -25,6 +31,13 @@ export default function SplitBillMemberPage() {
   useEffect(() => {
     if (typeof window === "undefined") return;
 
+  // ====== RECEIPT IMAGE (location.state / localStorage) ======
+  useEffect(() => {
+    if (!splitId) return;
+    if (location.state?.receiptImage) {
+      setReceiptImage(location.state.receiptImage);
+      return;
+    }
     try {
       console.log(
         "🔍 Loading split bill data for:",
@@ -55,6 +68,37 @@ export default function SplitBillMemberPage() {
           setMember(foundMember);
         }
       }
+    } catch {}
+  }, [location.state, splitId]);
+
+  // ====== LOAD DATA ======
+  useEffect(() => {
+    if (!splitId || !memberId) {
+      setError("Parameter tidak valid");
+      setLoading(false);
+      return;
+    }
+    try {
+      let stored =
+        localStorage.getItem(`splitbill_${splitId}`) ||
+        localStorage.getItem(`splitbill_data_${splitId}`);
+      if (!stored) {
+        setError(`Data tidak ditemukan untuk split ID: ${splitId}`);
+        setLoading(false);
+        return;
+      }
+      const parsed = JSON.parse(stored);
+      const splitData = parsed.data || parsed;
+
+      if (!splitData.members || !splitData.expandedItems) {
+        throw new Error("Struktur data tidak valid");
+      }
+
+      setData(splitData);
+
+      const foundMember = splitData.members.find((m) => m.id === memberId);
+      if (!foundMember) setError("Member tidak ditemukan");
+      else setMember(foundMember);
     } catch (e) {
       console.error("❌ Load error:", e);
     } finally {
@@ -117,20 +161,69 @@ export default function SplitBillMemberPage() {
       };
     }
 
-    const memberItems = data.expandedItems.filter(
-      (item) => item.assignedTo && item.assignedTo.includes(memberId)
-    );
+      // Ada original items -> pro-rata per item
+      return data.expandedItems
+        .filter((it) => it.assignedTo?.includes(mId))
+        .reduce(
+          (acc, item) => {
+            const qty = item.assignedQuantities?.[mId] ?? 0;
+            const totalPeopleForItem = item.assignedTo?.length ?? 1;
+            const pricePerPerson = item.pricePerUnit / totalPeopleForItem;
+            const memberItemTotal = pricePerPerson * qty;
+
+            const originalItem =
+              originalItems.find(
+                (o) =>
+                  o.name?.toLowerCase().trim() ===
+                  item.name?.toLowerCase().trim()
+              ) || originalItems[item.originalIdx];
+
+            if (!originalItem) return acc;
+            const originalItemTotal = originalItem.total ?? 0;
+            if (originalItemTotal === 0) return acc;
+
+            const itemProportionOfTotal =
+              originalItemTotal / originalItemsSubtotal;
+            const memberProportionOfItem = memberItemTotal / originalItemTotal;
+
+            return {
+              tax:
+                acc.tax +
+                (data.pajak ?? 0) *
+                  itemProportionOfTotal *
+                  memberProportionOfItem,
+              discount:
+                acc.discount +
+                Math.abs(data.discount ?? 0) *
+                  itemProportionOfTotal *
+                  memberProportionOfItem,
+              service:
+                acc.service +
+                (data.service ?? 0) *
+                  itemProportionOfTotal *
+                  memberProportionOfItem,
+              other:
+                acc.other +
+                Math.abs(data.other ?? 0) *
+                  itemProportionOfTotal *
+                  memberProportionOfItem,
+            };
+          },
+          { tax: 0, discount: 0, service: 0, other: 0 }
+        );
+    },
+    [data, getMemberItemSubtotal]
+  );
 
     let totalTax = 0,
       totalDiscount = 0,
       totalService = 0,
       totalOther = 0;
 
-    memberItems.forEach((item) => {
-      const qty = item.assignedQuantities?.[memberId] || 0;
-      const totalPeopleForItem = item.assignedTo?.length || 1;
-      const pricePerPerson = item.pricePerUnit / totalPeopleForItem;
-      const memberItemTotal = pricePerPerson * qty;
+  const popupFees = useMemo(() => {
+    if (!showingDetailFor) return { tax: 0, discount: 0, service: 0, other: 0 };
+    return getFeeBreakdown(showingDetailFor);
+  }, [showingDetailFor, getFeeBreakdown]);
 
       let originalItem = originalItems.find(
         (origItem) =>
@@ -196,8 +289,8 @@ export default function SplitBillMemberPage() {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#FF9A25]"></div>
-          <p className="text-gray-500 text-sm">Memuat invoice...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-4 border-gray-200 border-t-[#FF9A25]" />
+          <p className="text-gray-500 text-sm font-medium">Memuat invoice...</p>
         </div>
       </div>
     );
@@ -212,17 +305,17 @@ export default function SplitBillMemberPage() {
             Invoice tidak ditemukan
           </p>
           <p className="text-gray-500 text-sm mb-4">
-            Data split bill mungkin sudah kedaluwarsa atau link tidak valid
+            {error || "Data split bill mungkin sudah kedaluwarsa atau link tidak valid"}
           </p>
-          <p className="text-xs text-gray-400 mb-4 font-mono bg-gray-100 px-3 py-2 rounded">
-            Split ID: {splitId}
+          <p className="text-xs text-gray-400 mb-4 font-mono bg-gray-100 px-3 py-2 rounded break-all">
+            Split ID: {splitId} | Member ID: {memberId}
           </p>
         </div>
         <button
           onClick={() => navigate("/")}
           className="px-6 py-3 bg-gradient-to-r from-[#FF9A25] to-[#FF7A25] text-white rounded-xl font-semibold active:scale-95 transition-all"
         >
-          Kembali ke Beranda
+          Kembali ke Split Bill
         </button>
       </div>
     );
@@ -239,6 +332,7 @@ export default function SplitBillMemberPage() {
     year: "numeric",
   });
 
+  // ====== RENDER ======
   return (
     <div className="min-h-screen bg-gradient-to-b from-orange-50 to-white flex flex-col">
       <div className="bg-white border-b border-gray-200 px-4 py-3 sticky top-0 z-10 shadow-sm">
@@ -257,11 +351,13 @@ export default function SplitBillMemberPage() {
               />
             </svg>
           </button>
+
           <div className="flex-1 text-center">
             <div className="text-sm text-gray-900 font-semibold">
               Invoice Pembayaran
             </div>
           </div>
+
           <div className="w-10" />
         </div>
       </div>
@@ -401,6 +497,7 @@ export default function SplitBillMemberPage() {
                     {currency(memberTotal)}
                   </span>
                 </div>
+                {/* /kertas */}
               </div>
             </div>
 

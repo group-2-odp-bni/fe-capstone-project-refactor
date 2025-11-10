@@ -29,52 +29,58 @@ function PinLoginContent() {
   const [pin, setPin] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [attempt, setAttempt] = useState(0);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError("");
-    setLoading(true);
+  const submitPin = async () => {
+    setAttempt((x) => x + 1);
 
+    if (pin.length !== 6) { setError("PIN harus 6 digit"); return; }
+    if (!loginData?.stateToken) { setError("Sesi login tidak valid. Silakan coba lagi."); return; }
+
+    setError(""); setLoading(true);
     try {
-      console.log("--- sending login PIN ---");
-      console.log(`PIN: ${pin}`);
-      console.log(`State token: ${loginData.stateToken}`);
-
-      const response = await axios.post(
-        "/api/v1/auth/pin",
-        { pin }, // request body
-        {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${loginData.stateToken}`,
-          },
-        }
-      );
-
-      // Save tokens securely
-      const { accessToken, refreshToken } = response.data.data;
+      const res = await axios.post("/api/v1/auth/pin", { pin }, {
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${loginData.stateToken}` },
+      });
+      const { accessToken, refreshToken } = res?.data?.data || {};
       saveTokens(accessToken, refreshToken);
-
-      console.log("PIN verified successfully:", response.data);
-
-      // Navigate to dashboard
       navigate("/app/dashboard");
     } catch (err) {
-      console.error("PIN verification failed:", err);
-      setError(err.response?.data?.message || err.message || "Something went wrong.");
+      setError(err?.response?.data?.message || err?.message || "Something went wrong.");
     } finally {
       setLoading(false);
     }
   };
 
+  const goBack = () => {
+    if (window.history.length > 1) navigate(-1);
+    else navigate("/login", { replace: true });
+  };
+
+  const handleForgotPin = () => {
+    navigate("/auth/forgot-pin", { state: { phone: loginData?.phone ?? null } });
+  };
+
+  const onFormSubmit = (e) => { e.preventDefault(); submitPin(); };
 
   return (
-    <form onSubmit={handleSubmit} className="pb-10">
-      <CenteredNumberInputPad value={pin} onChange={setPin} />
+    <form onSubmit={onFormSubmit} className="pb-10">
+      <CenteredNumberInputPad
+        value={pin}
+        onChange={setPin}
+        onConfirm={submitPin}
+        errorText={error}
+        loading={loading}
+        title="Masukkan PIN Anda"
+        attemptKey={attempt}
+        onClearError={() => setError("")}
+        onBack={goBack}                 // ← aktif di login
+        onForgot={handleForgotPin}      // ← aktif di login
+      />
 
       {error && <p className="text-red-500 text-xs text-center mb-4">{error}</p>}
 
-      <FullSubmitButton disabled={loading}>
+      <FullSubmitButton disabled={loading || pin.length !== 6}>
         {loading ? "Memverifikasi..." : "Masuk"}
       </FullSubmitButton>
     </form>

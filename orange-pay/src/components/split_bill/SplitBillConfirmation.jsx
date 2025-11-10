@@ -6,7 +6,7 @@ const roundIDR = (n) => Math.round(Number(n || 0));
 
 export default function SplitBillConfirmation({
   splitName = "Rincian Split Bill",
-  currentUser = { id: "me", name: "Kamu", phoneMasked: "*7195" },
+  currentUser = { id: "me", name: "Kamu", phoneMasked: "*7198" },
   members = [],
   items = [],
   subtotal = 0,
@@ -1083,6 +1083,9 @@ export default function SplitBillConfirmation({
   );
 }
 
+/* ================= KOMPONEN: Animasi Success dengan Checkmark ================= */
+function HighFiveAnimation({ members = [] }) { 
+  const [stage, setStage] = useState(0);
 function QuantitySelectorModal({ item, onClose, onConfirm }) {
   const [qty, setQty] = useState(1);
   const maxQty = item.maxQty;
@@ -1178,4 +1181,5 @@ if (
   s.id = "sb-style-hide";
   s.innerHTML = style;
   document.head.appendChild(s);
+}
 }
