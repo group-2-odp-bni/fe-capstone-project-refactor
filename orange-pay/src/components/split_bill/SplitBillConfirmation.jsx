@@ -1084,7 +1084,7 @@ export default function SplitBillConfirmation({
 }
 
 /* ================= KOMPONEN: Animasi Success dengan Checkmark ================= */
-function HighFiveAnimation({ members = [] }) {  // ← TAMBAHAN: Terima props members
+function HighFiveAnimation({ members = [] }) { 
   const [stage, setStage] = useState(0);
 function QuantitySelectorModal({ item, onClose, onConfirm }) {
   const [qty, setQty] = useState(1);
@@ -1181,4 +1181,5 @@ if (
   s.id = "sb-style-hide";
   s.innerHTML = style;
   document.head.appendChild(s);
+}
 }

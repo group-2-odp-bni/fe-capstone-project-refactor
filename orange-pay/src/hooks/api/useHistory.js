@@ -257,3 +257,117 @@ function mapReceiptPayload(p = {}) {
     type,
   };
 }
+function monthLabelToIndex(label) {
+  if (!label) return new Date().getMonth();
+  const s = String(label).trim().toLowerCase();
+
+  const en = ["jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec"];
+  const id = ["jan","feb","mar","apr","mei","jun","jul","agu","sep","okt","nov","des"];
+
+  let idx = en.indexOf(s);
+  if (idx >= 0) return idx;
+
+  idx = id.indexOf(s);
+  if (idx >= 0) return idx;
+
+  // try first 3 letters to be tolerant
+  const s3 = s.slice(0,3);
+  idx = en.findIndex(m => m.startsWith(s3));
+  if (idx >= 0) return idx;
+  idx = id.findIndex(m => m.startsWith(s3));
+  if (idx >= 0) return idx;
+
+  return new Date().getMonth();
+}
+
+/**
+ * Given month index (0-11) and year, return UTC ISO start/end of that month.
+ * Example: { startISO: "2025-03-01T00:00:00.000Z", endISO: "2025-03-31T23:59:59.999Z" }
+ */
+function monthRangeISO(monthIndex, year) {
+  const y = Number.isFinite(year) ? year : new Date().getFullYear();
+  const m = Math.max(0, Math.min(11, monthIndex));
+  const start = new Date(Date.UTC(y, m, 1, 0, 0, 0, 0));
+  // day 0 of next month = last day of current month
+  const end = new Date(Date.UTC(y, m + 1, 0, 23, 59, 59, 999));
+  return { startISO: start.toISOString(), endISO: end.toISOString() };
+}
+
+/**
+ * Fetch transactions for a single wallet, scoped to a month (based on MonthChips label).
+ * Endpoint: GET /api/v1/transactions?walletId=...&startDate=...&endDate=...
+ * Returns: { users, loading, error }
+ */
+export function useWalletHistoryByMonth({
+  walletId,
+  monthLabel,              // e.g. "Jan" / "Feb" / "Mei" / "Agu" etc.
+  year = new Date().getFullYear(),
+  page = 0,
+  size = 20,
+  sortBy = "createdAt",
+  direction = "DESC",
+  status = "SUCCESS",
+} = {}) {
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(Boolean(walletId));
+  const [err, setErr] = useState(null);
+
+  const { startISO, endISO } = useMemo(() => {
+    const mi = monthLabelToIndex(monthLabel);
+    return monthRangeISO(mi, year);
+  }, [monthLabel, year]);
+
+  const params = useMemo(
+    () => ({
+      walletId,
+      page,
+      size,
+      sortBy,
+      direction,
+      status,
+      startDate: startISO,
+      endDate: endISO,
+    }),
+    [walletId, page, size, sortBy, direction, status, startISO, endISO]
+  );
+
+  useEffect(() => {
+    let mounted = true;
+
+    if (!walletId) {
+      setUsers([]);
+      setLoading(false);
+      setErr(null);
+      return;
+    }
+
+    (async () => {
+      setLoading(true);
+      setErr(null);
+      try {
+        const resp = await api.get("/api/v1/transactions", { params });
+
+        const root = resp?.data;
+        const data = root?.data ?? root ?? {};
+        let rows = [];
+
+        if (Array.isArray(data)) rows = data;
+        else if (Array.isArray(data?.items)) rows = data.items;
+        else if (Array.isArray(data?.content)) rows = data.content;
+        else if (Array.isArray(root)) rows = root;
+        else if (Array.isArray(root?.content)) rows = root.content;
+
+        const mapped = rows.map(mapTxnRowToUI);
+        if (mounted) setUsers(mapped);
+      } catch (e) {
+        if (mounted) setErr(e?.message || "Failed to load transactions");
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    })();
+
+    return () => { mounted = false; };
+  }, [params, walletId]);
+
+  return { users, loading, error: err };
+}
