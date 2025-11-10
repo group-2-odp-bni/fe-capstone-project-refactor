@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import DynamicShell from "../../components/layout/DynamicShell";
+import View from "../../components/view/View";
 import WhiteHeader from "../../components/register/WhiteHeader";
 import ContentBox from "../../components/common/ContentBox";
 
@@ -8,7 +8,7 @@ export default function TopUpPage() {
 
 
   return (
-    <DynamicShell>
+    <View>
       <WhiteHeader title="Topup" />
       <ContentBox>
         <div className="p-4">
@@ -40,7 +40,7 @@ export default function TopUpPage() {
       </ContentBox>
 
 
-    </DynamicShell>
+    </View>
 
   );
 }

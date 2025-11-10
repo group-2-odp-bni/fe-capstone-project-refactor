@@ -12,7 +12,7 @@ import { FullSubmitButton } from "../../components/button/FullSubmitButton";
 import PhoneNumberInput from "../../components/login/PhoneNumberInput";
 import { useLoginContext } from "../../context/LoginContext";
 import { GoogleReCaptchaProvider, useGoogleReCaptcha } from "react-google-recaptcha-v3";
-import DynamicShell from "../../components/layout/DynamicShell";
+import View from "../../components/view/View";
 
 export default function LoginPage() {
   return (
@@ -25,9 +25,9 @@ export default function LoginPage() {
       }}
     >
 
-      <DynamicShell>
+      <View>
         <LoginContextContent />
-      </DynamicShell>
+      </View>
 
     </GoogleReCaptchaProvider>
   );

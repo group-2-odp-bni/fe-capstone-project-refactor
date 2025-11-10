@@ -4,7 +4,7 @@ import ContentBox from "../../components/common/ContentBox";
 import { FullActionButton } from "../../components/button/FullActionButton";
 import { clearTokens } from "../../services/auth/authService";
 import AccountButtonLink from "../../components/button/AccountButtonLink";
-import DynamicShell from "../../components/layout/DynamicShell";
+import View from "../../components/view/View";
 import H2Medium from "../../components/text/H2Medium";
 
 
@@ -16,7 +16,7 @@ export default function AccountLandingPage() {
     };
 
     return (
-        <DynamicShell>
+        <View>
             <WhiteHeader title="Account" />
             <ContentBox className="border border-gray-300">
                 <div className="">
@@ -49,7 +49,7 @@ export default function AccountLandingPage() {
 
 
             </ContentBox>
-        </DynamicShell>
+        </View>
 
     );
 }

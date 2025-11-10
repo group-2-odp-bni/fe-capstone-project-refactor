@@ -10,16 +10,16 @@ import WhiteCardContainer from "../../components/register/WhiteCardContainer";
 import { saveTokens } from "../../services/auth/authService";
 import { useLoginContext } from "../../context/LoginContext";
 import axios from "axios";
-import DynamicShell from "../../components/layout/DynamicShell";
+import View from "../../components/view/View";
 
 export default function PinLoginPage() {
   return (
-    <DynamicShell>
+    <View>
       <PageHeader className="mt-5 mb-5">Masukkan PIN</PageHeader>
       <WhiteCardContainer>
         <PinLoginContent />
       </WhiteCardContainer>
-    </DynamicShell>
+    </View>
   );
 }
 

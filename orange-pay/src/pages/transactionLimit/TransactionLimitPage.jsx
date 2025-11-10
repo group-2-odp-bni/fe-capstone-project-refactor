@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import ContentBox from "../../components/common/ContentBox";
 import WhiteHeader from "../../components/register/WhiteHeader";
-import DynamicShell from "../../components/layout/DynamicShell";
+import View from "../../components/view/View";
 import api from "../../lib/api";
 import { useTransactionLimitContext } from "../../context/TransactionLimitContext"
 import H2Medium from "../../components/text/H2Medium"
@@ -44,7 +44,7 @@ export default function TransactionLimitPage() {
 
 
     return (
-        <DynamicShell>
+        <View>
             <WhiteHeader title="Transaction Limit" />
             <ContentBox>
                 <div className="space-y-5">
@@ -120,6 +120,6 @@ export default function TransactionLimitPage() {
 
             </ContentBox>
 
-        </DynamicShell>
+        </View>
     );
 }

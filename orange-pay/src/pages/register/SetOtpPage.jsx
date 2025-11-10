@@ -10,11 +10,11 @@ import api from "../../lib/api";
 import OtpInputField from "../../components/input/OtpInputField";
 import CountdownTimer from "../../components/dashboard/CountdownTimer";
 import ButtonLink from "../../components/button/ButtonLink";
-import DynamicShell from "../../components/layout/DynamicShell";
+import View from "../../components/view/View";
 
 export default function OtpRegisterPage() {
   return (
-    <DynamicShell>
+    <View>
       <OrangeHeader />
       <WhiteCardContainer>
         <OrangePayLogo />
@@ -24,7 +24,7 @@ export default function OtpRegisterPage() {
         </RegisterTextContainer>
         <SetOtpContent />
       </WhiteCardContainer>
-    </DynamicShell>
+    </View>
   );
 }
 

@@ -6,7 +6,7 @@ import OrangeHeader from "../../components/register/OrangeHeader";
 import { FullSubmitButton } from "../../components/button/FullSubmitButton";
 import RegisterTextContainer from "../../components/register/RegisterTextContainer";
 import OtpInputField from "../../components/input/OtpInputField";
-import DynamicShell from "../../components/layout/DynamicShell";
+import View from "../../components/view/View";
 
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -15,7 +15,7 @@ import axios from "axios";
 
 export default function VerifyEmailPage() {
     return (
-        <DynamicShell>
+        <View>
             <OrangeHeader />
             <WhiteCardContainer>
                 <h2 className="text-2xl font-semibold text-center text-gray-800 mb-6">
@@ -27,7 +27,7 @@ export default function VerifyEmailPage() {
 
                 <VerifyProfileContent />
             </WhiteCardContainer>
-        </DynamicShell>
+        </View>
     );
 }
 

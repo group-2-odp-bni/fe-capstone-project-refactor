@@ -9,16 +9,16 @@ import WhiteCardContainer from "../../components/register/WhiteCardContainer";
 import { saveTokens } from "../../services/auth/authService";
 import api from "../../lib/api";
 import { v4 as uuidv4 } from "uuid";
-import DynamicShell from "../../components/layout/DynamicShell";
+import View from "../../components/view/View";
 
 export default function SetPinPage() {
   return (
-    <DynamicShell>
+    <View>
       <PageHeader className="mt-5 mb-5">Input Pin</PageHeader>
       <WhiteCardContainer>
         <SetPinContent />
       </WhiteCardContainer>
-    </DynamicShell >
+    </View >
   );
 }
 
