@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import useBalanceCards from "../hooks/api/useCardBalances";
 import PinKeypad from "../components/register/PinKeypad";
 import PinDots from "../components/register/PinDots";
+import axios from "axios";
 
 const AddBalanceFromWalletPage = () => {
   const navigate = useNavigate();
@@ -39,25 +40,51 @@ const AddBalanceFromWalletPage = () => {
   };
 
   const canEnter = (step === 1 ? pin.length === 6 : confirmPin.length === 6);
+  //Menambahkan fungsi ketika user menekan tombol “Enter” di keypad PIN
+  const handleEnter = async () => {
+  if (!canEnter) return;
+  if (step === 1) {
+    setStep(2);
+    return;
+  }
 
-  const handleEnter = () => {
-    if (!canEnter) return;
-    if (step === 1) {
-      setStep(2);
-      return;
+  if (pin !== confirmPin) {
+    setErrorMsg("PIN tidak cocok. Coba lagi.");
+    setConfirmPin("");
+    return;
+  }
+
+  try {
+    const payload = {
+      sourceWallet: selected,
+      targetWallet: "other_wallet",
+      amount: 50000, 
+      pin: pin,
+    };
+
+    const res = await axios.post(
+      `${import.meta.env.VITE_API_URL}/wallet/add-balance`,
+      payload,
+      {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      }
+    );
+
+    if (res.data.success) {
+      alert("Saldo berhasil ditransfer ke wallet lain!");
+      setShowPin(false);
+      navigate("/app/dashboard");
+    } else {
+      setErrorMsg(res.data.message || "Gagal menambah saldo.");
     }
-
-    if (pin !== confirmPin) {
-      setErrorMsg("PIN tidak cocok. Coba lagi.");
-      setConfirmPin("");
-      return;
-    }
-
-    // success — for now close modal and navigate back to dashboard
-    setShowPin(false);
-    // you can replace this with the actual flow (call API, etc.)
-    navigate("/app/dashboard");
-  };
+  } catch (err) {
+    console.error(err);
+    setErrorMsg("Terjadi kesalahan saat mengirim data ke server.");
+  }
+};
+//hingga sini
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">

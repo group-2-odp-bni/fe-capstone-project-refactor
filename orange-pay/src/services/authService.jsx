@@ -1,5 +1,6 @@
 // src/services/authService.jsx
-const API_BASE_URL = "http://localhost:3000/api";
+import axios from "axios";
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8080";
 
 /* ---------------------- MOCK REGISTRATION FLOW ---------------------- */
 export const registerUserApi = async (userData) => {
@@ -16,6 +17,18 @@ export const registerUserApi = async (userData) => {
       }
     }, 1000);
   });
+};
+
+export const requestOtpApi = async (phoneNumber) => {
+  try {
+    const response = await axios.post(`${API_BASE_URL}/api/v1/auth/request`, {
+      phoneNumber,
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error in requestOtpApi:", error);
+    throw error.response?.data || new Error("Gagal meminta OTP");
+  }
 };
 
 export const verifyOtpApi = async (email, otp) => {

@@ -1,5 +1,6 @@
 import React, { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
 
 import MobileShell from "../../components/layout/MobileShell";
 import PhoneLayoutBackground from "../../components/PhoneLayoutBackground";
@@ -37,7 +38,7 @@ function LoginContextContent() {
   const handleChange = (e) => {
     const value = e.target.value;
 
-    // Allow only numeric input
+    // Hanya boleh angka
     if (!/^[0-9]*$/.test(value)) {
       setError("Nomor hanya boleh berisi angka");
       return;
@@ -54,28 +55,36 @@ function LoginContextContent() {
     setLoading(true);
 
     try {
-      const response = await fetch("/api/v1/auth/request", {
-        method: "POST",
+      // ✅ Gunakan base URL dari .env
+      const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8080";
+
+      const payload = {
+        phoneNumber: `+62${formData.phoneNumber}`,
+      };
+
+      console.log("Sending OTP request to:", `${API_URL}/api/v1/auth/request`, payload);
+
+      // ✅ Gunakan axios (bukan fetch)
+      const response = await axios.post(`${API_URL}/api/v1/auth/request`, payload, {
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          phoneNumber: `+62${formData.phoneNumber}`,
-        }),
       });
 
-      if (!response.ok) throw new Error("Failed to send request");
+      console.log("Login OTP request success:", response.data);
 
-      const data = await response.json();
-
-      // Save phone number into LoginContext
+      // Simpan nomor HP ke context (biar bisa dipakai di halaman OTP)
       setLoginData({ phoneNumber: `+62${formData.phoneNumber}` });
 
-      console.log("Login OTP request success:", data);
-
-      // Navigate to OTP verification
+      // ✅ Navigasi ke halaman verifikasi OTP
       navigate("/login/otp");
     } catch (err) {
-      console.error(err);
-      setError(err.message || "Something went wrong.");
+      console.error("Error saat kirim OTP:", err);
+      if (err.response?.status === 500) {
+        setError("Terjadi kesalahan di server. Coba lagi nanti.");
+      } else if (err.response?.data?.message) {
+        setError(err.response.data.message);
+      } else {
+        setError("Gagal mengirim OTP. Pastikan nomor sudah benar.");
+      }
     } finally {
       setLoading(false);
     }
