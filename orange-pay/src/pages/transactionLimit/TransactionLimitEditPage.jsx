@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import ContentBox from "../../components/common/ContentBox";
 import WhiteHeader from "../../components/register/WhiteHeader";
-import MobileView from "../../components/view/MobileView";
+import View from "../../components/view/View";
 import api from "../../lib/api";
 import { useTransactionLimitContext } from "../../context/TransactionLimitContext";
 import H2Medium from "../../components/text/H2Medium";
@@ -44,76 +44,76 @@ export default function TransactionLimitEditPage() {
     };
 
     return (
-        <MobileView>
+        <View>
             <WhiteHeader title="Edit Transaction Limit" />
             <ContentBox>
                 <form onSubmit={handleSubmit} className="space-y-5">
                     {/* DAILY LIMIT */}
 
-                        <div className="flex items-center justify-between">
-                            <H2Medium>Daily Limit : </H2Medium>
-                            <ToggleSwitch
-                                name="enforceDaily"
-                                enabled={formData.enforceDaily}
-                                onToggle={(val) =>
-                                    setFormData((prev) => ({ ...prev, enforceDaily: val }))
-                                }
-                            />
-                        </div>
-                        <NumberInputField
-                            id="dailyMaxRp"
-                            name="dailyMaxRp"
-                            type="number"
-                            value={formData.dailyMaxRp}
-                            onChange={handleChange}
+                    <div className="flex items-center justify-between">
+                        <H2Medium>Daily Limit : </H2Medium>
+                        <ToggleSwitch
+                            name="enforceDaily"
+                            enabled={formData.enforceDaily}
+                            onToggle={(val) =>
+                                setFormData((prev) => ({ ...prev, enforceDaily: val }))
+                            }
                         />
+                    </div>
+                    <NumberInputField
+                        id="dailyMaxRp"
+                        name="dailyMaxRp"
+                        type="number"
+                        value={formData.dailyMaxRp}
+                        onChange={handleChange}
+                    />
 
 
                     {/* WEEKLY LIMIT */}
 
-                        <div className="flex items-center justify-between">
-                            <H2Medium>Weekly Limit : </H2Medium>
-                            <ToggleSwitch
-                                name="enforceWeekly"
-                                enabled={formData.enforceWeekly}
-                                onToggle={(val) =>
-                                    setFormData((prev) => ({ ...prev, enforceWeekly: val }))
-                                }
-                            />
-                        </div>
-                        <NumberInputField
-                            id="weeklyMaxRp"
-                            name="weeklyMaxRp"
-                            type="number"
-                            value={formData.weeklyMaxRp}
-                            onChange={handleChange}
+                    <div className="flex items-center justify-between">
+                        <H2Medium>Weekly Limit : </H2Medium>
+                        <ToggleSwitch
+                            name="enforceWeekly"
+                            enabled={formData.enforceWeekly}
+                            onToggle={(val) =>
+                                setFormData((prev) => ({ ...prev, enforceWeekly: val }))
+                            }
                         />
+                    </div>
+                    <NumberInputField
+                        id="weeklyMaxRp"
+                        name="weeklyMaxRp"
+                        type="number"
+                        value={formData.weeklyMaxRp}
+                        onChange={handleChange}
+                    />
 
 
                     {/* MONTHLY LIMIT */}
 
-                        <div className="flex items-center justify-between">
-                            <H2Medium>Monthly Limit : </H2Medium>
-                            <ToggleSwitch
-                                name="enforceMonthly"
-                                enabled={formData.enforceMonthly}
-                                onToggle={(val) =>
-                                    setFormData((prev) => ({ ...prev, enforceMonthly: val }))
-                                }
-                            />
-                        </div>
-                        <NumberInputField
-                            id="monthlyMaxRp"
-                            name="monthlyMaxRp"
-                            type="number"
-                            value={formData.monthlyMaxRp}
-                            onChange={handleChange}
+                    <div className="flex items-center justify-between">
+                        <H2Medium>Monthly Limit : </H2Medium>
+                        <ToggleSwitch
+                            name="enforceMonthly"
+                            enabled={formData.enforceMonthly}
+                            onToggle={(val) =>
+                                setFormData((prev) => ({ ...prev, enforceMonthly: val }))
+                            }
                         />
+                    </div>
+                    <NumberInputField
+                        id="monthlyMaxRp"
+                        name="monthlyMaxRp"
+                        type="number"
+                        value={formData.monthlyMaxRp}
+                        onChange={handleChange}
+                    />
 
 
                     <FullSubmitButton>Save Changes</FullSubmitButton>
                 </form>
             </ContentBox>
-        </MobileView>
+        </View>
     );
 }

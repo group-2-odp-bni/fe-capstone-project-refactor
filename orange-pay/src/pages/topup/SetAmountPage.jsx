@@ -7,7 +7,7 @@ import FormLabel from "../../components/top-up/FormLabel";
 import api from "../../lib/api";
 import { useTopupContext } from "../../context/TopupContext";
 import { useNavigate } from "react-router-dom";
-import MobileView from "../../components/view/MobileView";
+import View from "../../components/view/View";
 import WhiteHeader from "../../components/register/WhiteHeader";
 import ContentBox from "../../components/common/ContentBox";
 
@@ -84,7 +84,7 @@ export default function SetAmountPage() {
   const handleCloseWalletPicker = () => setIsSheetOpen(false);
 
   return (
-    <MobileView>
+    <View>
       <WhiteHeader title="Set Topup Amount" />
       <ContentBox>
         <div className="flex flex-col">
@@ -142,7 +142,7 @@ export default function SetAmountPage() {
       </ContentBox>
 
 
-    </MobileView>
+    </View>
 
   );
 }

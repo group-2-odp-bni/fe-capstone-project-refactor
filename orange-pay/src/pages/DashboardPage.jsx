@@ -2,9 +2,9 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import QuickTransfer from "../components/dashboard/QuickTransfer";
 import RecentList from "../components/dashboard/RecentList";
-import DynamicShell from "../components/layout/dynamicShell";
 import HeaderSection from "../components/dashboard/HeaderSection";
 import BalanceCard from "../components/dashboard/BalanceCard";
+import View from "../components/view/View";
 
 export default function DashboardPage() {
   const [name, setName] = useState("");
@@ -29,11 +29,13 @@ export default function DashboardPage() {
   }, []);
 
   return (
-    <DynamicShell>
-      <HeaderSection name={name} />
-      <BalanceCard />
-      <QuickTransfer />
-      <RecentList />
-    </DynamicShell>
+    <View>
+      <div className="p-3">
+        <HeaderSection name={name} />
+        <BalanceCard />
+        <QuickTransfer />
+        <RecentList />
+      </div>
+    </View>
   );
 }

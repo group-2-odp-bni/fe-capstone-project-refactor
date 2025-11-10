@@ -1,5 +1,5 @@
 import { useState } from "react";
-import MobileView from "../view/MobileView";
+import View from "../view/View";
 
 export default function VirtualAccountBox({ vaNumber }) {
   const [copied, setCopied] = useState(false);
@@ -50,9 +50,8 @@ export default function VirtualAccountBox({ vaNumber }) {
 
         {/* Copied Badge */}
         <div
-          className={`absolute inset-x-0 top-0 flex justify-center transition-all duration-300 ${
-            copied ? "opacity-100 -translate-y-6" : "opacity-0 translate-y-0"
-          }`}
+          className={`absolute inset-x-0 top-0 flex justify-center transition-all duration-300 ${copied ? "opacity-100 -translate-y-6" : "opacity-0 translate-y-0"
+            }`}
         >
           <div className="bg-[#10B981] text-white text-xs font-semibold px-3 py-1 rounded-full shadow-sm animate-fade-in-out">
             ✅ Copied!

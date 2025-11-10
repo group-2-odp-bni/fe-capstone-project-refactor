@@ -11,11 +11,11 @@ import { useLoginContext } from "../../context/LoginContext";
 import OtpInputField from "../../components/input/OtpInputField";
 import ButtonLink from "../../components/button/ButtonLink";
 import CountdownTimer from "../../components/dashboard/CountdownTimer";
-import MobileView from "../../components/view/MobileView";
+import View from "../../components/view/View";
 
 export default function OtpLoginPage() {
     return (
-        <MobileView>
+        <View>
             <OrangeHeader />
             <WhiteCardContainer>
                 <OrangePayLogo />
@@ -25,7 +25,7 @@ export default function OtpLoginPage() {
                 </RegisterTextContainer>
                 <SetOtpContent />
             </WhiteCardContainer>
-        </MobileView>
+        </View>
     );
 }
 
