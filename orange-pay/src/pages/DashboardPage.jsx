@@ -4,7 +4,7 @@ import QuickTransfer from "../components/dashboard/QuickTransfer";
 import RecentList from "../components/dashboard/RecentList";
 import HeaderSection from "../components/dashboard/HeaderSection";
 import BalanceCard from "../components/dashboard/BalanceCard";
-import View from "../components/view/View";
+import DynamicShell from "../components/layout/DynamicShell";
 
 export default function DashboardPage() {
   const [name, setName] = useState("");
@@ -29,13 +29,11 @@ export default function DashboardPage() {
   }, []);
 
   return (
-    <View>
-      <div className="p-3">
+    <DynamicShell>
         <HeaderSection name={name} />
         <BalanceCard />
         <QuickTransfer />
         <RecentList />
-      </div>
-    </View>
+   </DynamicShell>
   );
 }

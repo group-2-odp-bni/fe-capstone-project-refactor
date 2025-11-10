@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import ContentBox from "../../components/common/ContentBox";
 import WhiteHeader from "../../components/register/WhiteHeader";
-import View from "../../components/view/View";
+import DynamicShell from "../../components/layout/DynamicShell";
 import api from "../../lib/api";
 import { useTransactionLimitContext } from "../../context/TransactionLimitContext";
 import H2Medium from "../../components/text/H2Medium";
@@ -44,7 +44,7 @@ export default function TransactionLimitEditPage() {
     };
 
     return (
-        <View>
+        <DynamicShell>
             <WhiteHeader title="Edit Transaction Limit" />
             <ContentBox>
                 <form onSubmit={handleSubmit} className="space-y-5">
@@ -114,6 +114,6 @@ export default function TransactionLimitEditPage() {
                     <FullSubmitButton>Save Changes</FullSubmitButton>
                 </form>
             </ContentBox>
-        </View>
+        </DynamicShell>
     );
 }

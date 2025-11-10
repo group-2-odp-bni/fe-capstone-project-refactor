@@ -5,7 +5,7 @@ import InputField from "../../components/account/AccountGeneralInput";
 import { FullSubmitButton } from "../../components/button/FullSubmitButton";
 import ProfileImage from "../../components/account/ProfileImage";
 import { useProfileContext } from "../../context/ProfileContext";
-import View from "../../components/view/View";
+import DynamicShell from "../../components/layout/DynamicShell";
 import WhiteHeader from "../../components/register/WhiteHeader";
 import ContentBox from "../../components/common/ContentBox";
 import api from "../../lib/api";
@@ -110,7 +110,7 @@ export default function EditProfilePage() {
     // }
 
     return (
-        <View>
+        <DynamicShell>
             <WhiteHeader title="Edit Akun" />
             <ContentBox>
                 <ProfileImage />
@@ -151,6 +151,6 @@ export default function EditProfilePage() {
                     </div>
                 </form>
             </ContentBox>
-        </View>
+        </DynamicShell>
     );
 }

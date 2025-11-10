@@ -1,5 +1,5 @@
 import { useState } from "react";
-import View from "../view/View";
+import DynamicShell from "../../components/layout/DynamicShell";
 
 export default function VirtualAccountBox({ vaNumber }) {
   const [copied, setCopied] = useState(false);

@@ -5,7 +5,7 @@ import { useTopupContext } from "../../context/TopupContext";
 import VirtualAccountBox from "../../components/top-up/VirtualAccountBox";
 import CountdownTimer from "../../components/dashboard/CountdownTimer";
 import { useNavigate } from "react-router-dom";
-import View from "../../components/view/View";
+import DynamicShell from "../../components/layout/DynamicShell";
 import WhiteHeader from "../../components/register/WhiteHeader";
 import api from "../../lib/api";
 
@@ -34,7 +34,7 @@ export default function TopUpConfirmationPage() {
     }
 
     return (
-        <View>
+        <DynamicShell>
             <WhiteHeader title="Topup Confirmation" />
             <div className="flex items-center justify-center px-4">
                 {/* Card */}
@@ -76,7 +76,7 @@ export default function TopUpConfirmationPage() {
 
             </div>
 
-        </View>
+        </DynamicShell>
 
     );
 }
