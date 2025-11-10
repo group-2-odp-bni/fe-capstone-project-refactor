@@ -5,9 +5,10 @@ import InputField from "../../components/account/AccountGeneralInput";
 import { FullSubmitButton } from "../../components/button/FullSubmitButton";
 import ProfileImage from "../../components/account/ProfileImage";
 import { useProfileContext } from "../../context/ProfileContext";
-import MobileView from "../../components/view/MobileView";
+import View from "../../components/view/View";
 import WhiteHeader from "../../components/register/WhiteHeader";
 import ContentBox from "../../components/common/ContentBox";
+import api from "../../lib/api";
 
 export default function EditProfilePage() {
     const navigate = useNavigate();
@@ -16,6 +17,7 @@ export default function EditProfilePage() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
     const [originalProfile, setOriginalProfile] = useState({});
+    const [image, setImage] = useState();
 
     useEffect(() => {
         const getUserProfile = async () => {
@@ -99,8 +101,16 @@ export default function EditProfilePage() {
         }
     };
 
+    // const handleChangeProfilePicture = async (e) => {
+    //     const response = await api.post(
+    //         "/users/profile/upload-image",
+    //         image
+    //     );
+
+    // }
+
     return (
-        <MobileView>
+        <View>
             <WhiteHeader title="Edit Akun" />
             <ContentBox>
                 <ProfileImage />
@@ -141,6 +151,6 @@ export default function EditProfilePage() {
                     </div>
                 </form>
             </ContentBox>
-        </MobileView>
+        </View>
     );
 }

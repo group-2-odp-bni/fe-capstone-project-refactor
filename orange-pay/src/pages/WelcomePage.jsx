@@ -2,13 +2,13 @@ import React from "react";
 import { Link, useNavigate } from "react-router-dom";
 import BrandLogo from "../components/common/BrandLogo";
 import Button from "../components/common/Button";
-import MobileView from "../components/view/MobileView";
+import View from "../components/view/View";
 
 export default function WelcomePage() {
   const navigate = useNavigate();
 
   return (
-    <MobileView>
+    <View>
       <div className="bg-white flex items-center justify-center h-full">
         <div className="flex flex-col items-center justify-center w-full px-6">
           <div className="flex flex-col items-center">
@@ -45,6 +45,6 @@ export default function WelcomePage() {
         </div>
 
       </div>
-    </MobileView>
+    </View>
   );
 }

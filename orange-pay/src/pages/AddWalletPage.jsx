@@ -1,9 +1,8 @@
 import { useMemo, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import DynamicShell from "../components/layout/dynamicShell";
-import BackBar from "../components/add_wallet/BackBar";
 import WalletTypeOption from "../components/add_wallet/WalletTypeOption";
 import WalletCardPreview from "../components/add_wallet/WalletCardPreview";
+import View from "../components/view/View";
 import WalletColorPicker, {
   DEFAULT_GRADIENT,
 } from "../components/add_wallet/WalletColorPicker";
@@ -81,7 +80,7 @@ export default function AddWalletPage() {
   };
 
   return (
-    <DynamicShell>
+    <View>
       <Header title="Add New Wallet" onBack={handleBack} showBack centerTitle />
         {/* <BackBar /> */}
         {step === 1 && (
@@ -150,6 +149,6 @@ export default function AddWalletPage() {
             </CreateButton>
           </section>
         )}
-    </DynamicShell>
+    </View>
   );
 }
