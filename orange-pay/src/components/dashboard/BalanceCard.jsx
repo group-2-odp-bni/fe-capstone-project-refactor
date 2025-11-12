@@ -1,4 +1,4 @@
-// src/components/dashboard/AtomicBalanceCard.jsx
+// src/components/dashboard/BalanceCard.jsx
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import useCardBalances from "../../hooks/api/useCardBalances";
@@ -12,7 +12,11 @@ import {
   CTASection,
 } from "../ui/BalanceCardUI";
 
-export default function AtomicBalanceCard({ initialWalletId = null }) {
+export default function AtomicBalanceCard({
+  initialWalletId = null,
+  disableActions = false,
+  onBlocked = () => {},
+}) {
   const navigate = useNavigate();
   const {
     baseCards = [],
@@ -22,7 +26,6 @@ export default function AtomicBalanceCard({ initialWalletId = null }) {
     refetch = () => {},
   } = useCardBalances();
 
-  // ---- helper: put PERSONAL + defaultForUser first, keep add-cards last ----
   const reorderCards = (list) => {
     const arr = Array.isArray(list) ? [...list] : [];
     if (!arr.length) return arr;
@@ -42,13 +45,12 @@ export default function AtomicBalanceCard({ initialWalletId = null }) {
     return [...normals, ...addCards];
   };
 
-  // Use ordered arrays throughout
   const orderedItems = useMemo(() => reorderCards(items), [items]);
-  const orderedBase  = useMemo(() => reorderCards(baseCards), [baseCards]);
+  const orderedBase = useMemo(() => reorderCards(baseCards), [baseCards]);
 
   const tabs = useMemo(() => {
     const source =
-      (Array.isArray(orderedBase) && orderedBase.length)
+      Array.isArray(orderedBase) && orderedBase.length
         ? orderedBase
         : orderedItems.filter((it) => !it.isAddCard);
 
@@ -65,7 +67,6 @@ export default function AtomicBalanceCard({ initialWalletId = null }) {
   const [isHidden, setIsHidden] = useState(false);
   const viewportRef = useRef(null);
 
-  // --- helpers to target non-Add slides ---
   const firstNormalIndex = useMemo(
     () => orderedItems.findIndex((it) => !it?.isAddCard),
     [orderedItems]
@@ -73,11 +74,9 @@ export default function AtomicBalanceCard({ initialWalletId = null }) {
   const indexOfWallet = (id) =>
     orderedItems.findIndex((it) => it?.id === id && !it?.isAddCard);
 
-  // Snap to a safe non-Add slide whenever data changes / initialWalletId provided
   useEffect(() => {
     if (!orderedItems.length) return;
 
-    // Prefer explicit initial wallet if present
     if (initialWalletId) {
       const idx = indexOfWallet(initialWalletId);
       if (idx >= 0) {
@@ -87,16 +86,14 @@ export default function AtomicBalanceCard({ initialWalletId = null }) {
       }
     }
 
-    // Otherwise snap to first non-Add card
     const target = firstNormalIndex >= 0 ? firstNormalIndex : 0;
     if (activeIndex !== target) {
       setActiveIndex(target);
       viewportRef.current?.scrollToIndex?.(target);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [orderedItems, initialWalletId]); // intentionally exclude activeIndex here
+  }, [orderedItems, initialWalletId]);
 
-  // Keep index valid if list shrinks
   useEffect(() => {
     if (activeIndex >= orderedItems.length) {
       const target = firstNormalIndex >= 0 ? firstNormalIndex : 0;
@@ -105,19 +102,16 @@ export default function AtomicBalanceCard({ initialWalletId = null }) {
     }
   }, [orderedItems.length, activeIndex, firstNormalIndex]);
 
-  // goTo: never land on an Add card (choose nearest non-Add)
   const goTo = (i) => {
     if (!orderedItems.length) return;
     const clamp = (n) => Math.max(0, Math.min(orderedItems.length - 1, n));
     let target = clamp(i);
 
     if (orderedItems[target]?.isAddCard) {
-      // try previous non-Add
       let j = target - 1;
       while (j >= 0 && orderedItems[j]?.isAddCard) j--;
       if (j >= 0) target = j;
       else {
-        // otherwise next non-Add
         j = target + 1;
         while (j < orderedItems.length && orderedItems[j]?.isAddCard) j++;
         if (j < orderedItems.length) target = j;
@@ -167,8 +161,6 @@ export default function AtomicBalanceCard({ initialWalletId = null }) {
     }
     return out;
   };
-  
-  
 
   const makeOverlayHandlers = (to) => {
     const draggingRef = viewportRef.current?.isDraggingRef;
@@ -179,7 +171,10 @@ export default function AtomicBalanceCard({ initialWalletId = null }) {
     };
     const onKeyDown = (e) => {
       if (draggingRef?.current) return;
-      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick(); }
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        onClick();
+      }
     };
     return { onClick, onKeyDown };
   };
@@ -195,7 +190,6 @@ export default function AtomicBalanceCard({ initialWalletId = null }) {
         Your Wallet
       </h3>
 
-      {/* hidden tab buttons for accessibility / programmatic nav */}
       <div className="flex flex-wrap items-center justify-center gap-2">
         {tabs.map((c, i) => (
           <button
@@ -236,8 +230,11 @@ export default function AtomicBalanceCard({ initialWalletId = null }) {
           return (
             <div className="p-0" style={{ width: "100%" }}>
               <GradientCardShell bg={card.bg}>
-                <div className="relative" style={{ transformStyle: "preserve-3d" }}>
-                  {/* Overlay (excludes CTA) */}
+                <div
+                  className="relative"
+                  style={{ transformStyle: "preserve-3d" }}
+                >
+                  {/* Keep card overlay click (history) */}
                   <div
                     role="button"
                     tabIndex={0}
@@ -300,13 +297,16 @@ export default function AtomicBalanceCard({ initialWalletId = null }) {
                     />
                   </div>
 
-                  <div className="relative z-30">
+                  {/* CTA stays clickable; just pass disabled + onBlocked */}
+                  <div className="relative z-30" aria-disabled={disableActions}>
                     <CTASection
                       links={linksWithWallet}
                       walletId={card.id}
                       type={card.type}
                       defaultForUser={card.defaultForUser}
                       isDraggingRef={viewportRef.current?.isDraggingRef}
+                      disabled={disableActions}
+                      onBlocked={onBlocked}
                     />
                   </div>
                 </div>

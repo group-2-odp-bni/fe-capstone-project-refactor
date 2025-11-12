@@ -277,6 +277,29 @@
   border-color: #ef4444;
 }
 
+.toast-btn {
+  background: #ffffff;
+  color: #333;
+  border: 1px solid #d1d1d1;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.25s ease;
+}
+
+.toast-btn:hover {
+  background: #FF9A25;
+  border-color: #FF9A25;
+  color: white;
+}
+
+.toast-btn:active {
+  transform: scale(0.97);
+}
+
+
 .skeleton {
   height: 180px;
   border-radius: 14px;
