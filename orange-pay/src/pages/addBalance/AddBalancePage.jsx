@@ -1,33 +1,39 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import useBalanceCards from "../hooks/api/useCardBalances";
-import Header from "../components/Header";
+import useBalanceCards from "../../hooks/api/useCardBalances";
+import Header from "../../components/Header";
 import { ChevronDownIcon } from "@heroicons/react/24/outline";
+import BalanceCard from "../../components/history_transaksi/BalanceCard";
+import LoadingSpinner from "../../components/common/LoadingSpinner";
+import { useAddBalanceContext } from "../../context/AddBalanceContext";
 
-import BalanceCard from "../components/history_transaksi/BalanceCard";
-import LoadingSpinner from "../components/common/LoadingSpinner";
-export default function AddBalanceFromWalletPage() {
+
+
+export default function AddBalancePage() {
+
   const navigate = useNavigate();
+
   const { walletId: toWalletId } = useParams();
+  const { addBalanceData, setAddBalanceData } = useAddBalanceContext();
+
 
   const { items, loading } = useBalanceCards();
-
+  
   const allWallets = useMemo(() => items.filter((w) => !w.isAddCard), [items]);
-
   const toWallet = useMemo(
     () => allWallets.find((w) => w.id === toWalletId),
     [allWallets, toWalletId]
   );
-
   const fromWalletOptions = useMemo(
     () => allWallets.filter((w) => w.id !== toWalletId),
     [allWallets, toWalletId]
   );
-
   const [fromWalletId, setFromWalletId] = useState("");
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [amount, setAmount] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
+
+
 
   useEffect(() => {
     if (loading || allWallets.length === 0) return;
@@ -46,7 +52,9 @@ export default function AddBalanceFromWalletPage() {
     setAmount(formatted);
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
+
+    // reformat input
     const numericAmount = parseInt(amount.replace(/\D/g, ""), 10);
     setErrorMsg("");
 
@@ -63,13 +71,19 @@ export default function AddBalanceFromWalletPage() {
       return;
     }
 
-    navigate("/app/confirm-add-balance", {
-      state: {
-        fromId: fromWalletId,
-        toId: toWalletId,
-        amount: numericAmount,
-      },
+    //save data
+    setAddBalanceData({
+      sourceWalletId: fromWalletId,
+      destinationWalletId: toWalletId,
+      amount: numericAmount,
+
     });
+
+
+    //navigate to confirmation page
+    navigate("/app/wallets/confirm-add-balance")
+
+
   };
 
   const selectedFromWallet = useMemo(
@@ -78,6 +92,8 @@ export default function AddBalanceFromWalletPage() {
   );
 
   return (
+
+
     <div className="min-h-screen flex flex-col bg-white">
       <Header
         title="Add Balance"
@@ -132,9 +148,8 @@ export default function AddBalanceFromWalletPage() {
                 </span>
               </div>
               <ChevronDownIcon
-                className={`w-5 h-5 text-gray-500 transition-transform ${
-                  dropdownOpen ? "rotate-180" : ""
-                }`}
+                className={`w-5 h-5 text-gray-500 transition-transform ${dropdownOpen ? "rotate-180" : ""
+                  }`}
               />
             </button>
 
@@ -152,9 +167,8 @@ export default function AddBalanceFromWalletPage() {
                       setFromWalletId(w.id);
                       setDropdownOpen(false);
                     }}
-                    className={`px-4 py-3 text-sm cursor-pointer hover:bg-orange-50 ${
-                      fromWalletId === w.id ? "bg-orange-100 font-medium" : ""
-                    }`}
+                    className={`px-4 py-3 text-sm cursor-pointer hover:bg-orange-50 ${fromWalletId === w.id ? "bg-orange-100 font-medium" : ""
+                      }`}
                   >
                     {w.title} (Rp{w.balance.toLocaleString("id-ID")})
                   </li>
