@@ -4,11 +4,12 @@ import { useParams, useNavigate } from "react-router-dom";
 import BalanceCard from "../components/history_transaksi/BalanceCard";
 import RecentHistory from "../components/history_transaksi/RecentHistory";
 import ArrowButton from "../components/common/ArrowButton";
+import DynamicShell from "../components/layout/dynamicShell";
 import { PlusIcon, UserIcon } from "@heroicons/react/24/solid";
 import useCardBalances from "../hooks/api/useCardBalances";
 import LoadingSpinner from "../components/common/LoadingSpinner";
 import PageHeader from "../components/page_header/PageHeader";
-import DynamicShell from "../components/layout/DynamicShell";
+
 export default function HistoryTransactionPage() {
   const { walletId } = useParams();
   const navigate = useNavigate();

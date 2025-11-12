@@ -3,9 +3,10 @@ import { useEffect, useState, useRef } from "react";
 import axios from "axios";
 import QuickTransfer from "../components/dashboard/QuickTransfer";
 import RecentList from "../components/dashboard/RecentList";
+import View from "../components/layout/dynamicShell";
 import HeaderSection from "../components/dashboard/HeaderSection";
 import BalanceCard from "../components/dashboard/BalanceCard";
-import DynamicShell from "../components/layout/DynamicShell";
+
 
 /* ===== Global, centered toast/modal ===== */
 function GlobalToast({ show, onClose, onPrimary }) {

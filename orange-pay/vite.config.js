@@ -5,11 +5,6 @@ export default defineConfig({
   plugins: [react()],
   server: {
     proxy: {
-      "/api/v1/split-bill": {
-        target: "http://localhost:5000",
-        changeOrigin: true,
-        secure: false,
-      },
       // online service, comment this for local testing
       "/api/v1/user": {
         target: "https://api-dev.orangebybni.my.id",

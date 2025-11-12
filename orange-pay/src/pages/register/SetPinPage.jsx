@@ -9,16 +9,16 @@ import WhiteCardContainer from "../../components/register/WhiteCardContainer";
 import { saveTokens } from "../../services/auth/authService";
 import api from "../../lib/api";
 import { v4 as uuidv4 } from "uuid";
-import View from "../../components/view/View";
+import MobileView from "../../components/view/MobileView";
 
 export default function SetPinPage() {
   return (
-    <View>
+    <MobileView>
       <PageHeader className="mt-5 mb-5">Input Pin</PageHeader>
       <WhiteCardContainer>
         <SetPinContent />
       </WhiteCardContainer>
-    </View >
+    </MobileView >
   );
 }
 

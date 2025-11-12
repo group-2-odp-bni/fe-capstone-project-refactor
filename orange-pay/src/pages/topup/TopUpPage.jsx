@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
-import View from "../../components/view/View";
+import { div } from "three/tsl";
+import MobileView from "../../components/view/MobileView";
 import WhiteHeader from "../../components/register/WhiteHeader";
 import ContentBox from "../../components/common/ContentBox";
 
@@ -8,7 +9,7 @@ export default function TopUpPage() {
 
 
   return (
-    <View>
+    <MobileView>
       <WhiteHeader title="Topup" />
       <ContentBox>
         <div className="p-4">
@@ -40,7 +41,7 @@ export default function TopUpPage() {
       </ContentBox>
 
 
-    </View>
+    </MobileView>
 
   );
 }

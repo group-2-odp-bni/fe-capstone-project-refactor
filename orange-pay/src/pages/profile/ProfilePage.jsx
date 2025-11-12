@@ -6,7 +6,7 @@ import UserInfoCard from "../../components/account/userInfoCard";
 import ProfileImage from "../../components/account/ProfileImage";
 import { FullActionButton } from "../../components/button/FullActionButton";
 import { useProfileContext } from "../../context/ProfileContext";
-import View from "../../components/view/View";
+import MobileView from "../../components/view/MobileView";
 import WhiteHeader from "../../components/register/WhiteHeader";
 import ContentBox from "../../components/common/ContentBox";
 
@@ -43,7 +43,7 @@ export default function ProfilePage() {
   }, []);
 
   return (
-    <View>
+    <MobileView>
       <WhiteHeader title="Akun Saya" />
       <ContentBox>
         <ProfileImage unhoverable ={true} />
@@ -66,7 +66,7 @@ export default function ProfilePage() {
 
       </ContentBox>
 
-    </View>
+    </MobileView>
 
   );
 }

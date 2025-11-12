@@ -5,10 +5,9 @@ import InputField from "../../components/account/AccountGeneralInput";
 import { FullSubmitButton } from "../../components/button/FullSubmitButton";
 import ProfileImage from "../../components/account/ProfileImage";
 import { useProfileContext } from "../../context/ProfileContext";
-import View from "../../components/view/View";
+import MobileView from "../../components/view/MobileView";
 import WhiteHeader from "../../components/register/WhiteHeader";
 import ContentBox from "../../components/common/ContentBox";
-import api from "../../lib/api";
 
 export default function EditProfilePage() {
     const navigate = useNavigate();

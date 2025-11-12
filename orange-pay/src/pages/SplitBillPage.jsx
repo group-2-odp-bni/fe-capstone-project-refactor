@@ -1,6 +1,6 @@
 import OpenSplitBill from "../components/split_bill/SplitBill";
+import DynamicShell from "../components/layout/dynamicShell";
 import PageHeader from "../components/page_header/PageHeader";
-import DynamicShell from "../components/layout/DynamicShell";
 
 
 export default function SplitBillPage() {

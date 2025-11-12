@@ -8,7 +8,7 @@ import OrangePayLogo from "../../components/register/OrangePayLogo";
 import RegisterTextContainer from "../../components/register/RegisterTextContainer";
 import api from "../../lib/api";
 import { GoogleReCaptchaProvider, useGoogleReCaptcha } from "react-google-recaptcha-v3";
-import View from "../../components/view/View";
+import MobileView from "../../components/view/MobileView";
 import PhoneNumberInput from "../../components/login/PhoneNumberInput";
 import LoginTextContainer from "../../components/login/LoginTextContainer";
 
@@ -23,9 +23,9 @@ export default function RegisterPage() {
         appendTo: "body",
       }}
     >
-      <View>
+      <MobileView>
         <RegisterContent />
-      </View>
+      </MobileView>
     </GoogleReCaptchaProvider>
 
   );

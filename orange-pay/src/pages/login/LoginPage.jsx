@@ -12,7 +12,7 @@ import { FullSubmitButton } from "../../components/button/FullSubmitButton";
 import PhoneNumberInput from "../../components/login/PhoneNumberInput";
 import { useLoginContext } from "../../context/LoginContext";
 import { GoogleReCaptchaProvider, useGoogleReCaptcha } from "react-google-recaptcha-v3";
-import View from "../../components/view/View";
+import MobileView from "../../components/view/MobileView";
 
 export default function LoginPage() {
   return (
@@ -25,9 +25,9 @@ export default function LoginPage() {
       }}
     >
 
-      <View>
+      <MobileView>
         <LoginContextContent />
-      </View>
+      </MobileView>
 
     </GoogleReCaptchaProvider>
   );

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState, useCallback } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useParams, useSearchParams, useNavigate } from "react-router-dom";
 
 import WalletMiniCard from "../components/members/WalletMiniCard.jsx";
@@ -8,7 +8,6 @@ import PendingRow from "../components/members/PendingRow.jsx";
 import ContactSearch from "../components/members/ContactSearch.jsx";
 import ConfirmDialog from "../components/members/ConfirmDialog.jsx";
 import api from "../lib/api.js";
-
 function parseJsonSafe(v, fb = {}) {
   if (v == null) return fb;
   if (typeof v === "object") return v;
@@ -18,7 +17,6 @@ function parseJsonSafe(v, fb = {}) {
     return fb;
   }
 }
-
 function mapQTtoContact(qt) {
   return {
     id: qt.recipientUserId,
@@ -46,14 +44,13 @@ function mapWalletToCard(wallet) {
     wallet.name && wallet.name.trim().length > 0
       ? wallet.name
       : "Unnamed Wallet";
-
-  const serverType = String(wallet.type || "PERSONAL").toUpperCase();
+  const serverType = String(wallet.type || "").toUpperCase();
   const isMain = Boolean(wallet.defaultForUser);
-
   const uiType = isMain
     ? "Utama"
-    : serverType.charAt(0) + serverType.slice(1).toLowerCase();
-
+    : serverType === "PERSONAL"
+    ? "Personal"
+    : "Shared";
   return {
     id: wallet.id,
     walletName: title,
@@ -67,39 +64,6 @@ function mapWalletToCard(wallet) {
   };
 }
 
-function ContactRowButton({ contact, onSelect }) {
-  return (
-    <button
-      className="contact-row"
-      onClick={() => onSelect(contact)}
-      title={`Invite ${contact.name} as member`}
-    >
-      <div className="avatar-small">
-        {contact.avatarInitial || contact.name[0]?.toUpperCase() || "?"}
-      </div>
-      <div className="contact-meta">
-        <div className="contact-name">{contact.name}</div>
-        <div className="contact-phone">{contact.phone}</div>
-      </div>
-      <div className="pill">Add</div>
-    </button>
-  );
-}
-
-function formatPhoneE164(phone) {
-  if (!phone) return null;
-  let p = String(phone).replace(/[^0-9]/g, "");
-  if (p.startsWith("62")) {
-    return `+${p}`;
-  }
-  if (p.startsWith("0")) {
-    return `+62${p.substring(1)}`;
-  }
-  if (p.length > 9) {
-    return `+${p}`;
-  }
-  return null;
-}
 export default function AssignMemberPage({ walletIdOverride }) {
   const { walletId: walletIdFromParam } = useParams();
   const [searchParams] = useSearchParams();
@@ -107,112 +71,71 @@ export default function AssignMemberPage({ walletIdOverride }) {
   const navigate = useNavigate();
 
   const walletId = walletIdOverride || walletIdFromParam || walletIdFromQuery;
-
   const [owner, setOwner] = useState(null);
   const [members, setMembers] = useState([]);
   const [pending, setPending] = useState([]);
-  const [walletDetails, setWalletDetails] = useState(null);
   const [balance, setBalance] = useState(0);
-  const [currentUser, setCurrentUser] = useState(null);
-  const [currentUserId, setCurrentUserId] = useState(null);
-  const [currentUserRole, setCurrentUserRole] = useState(null);
+  const [walletLabel, setWalletLabel] = useState("O RANGE • PAY"); // <-- Subteks kartu
   const [search, setSearch] = useState("");
-  const [favorites, setFavorites] = useState([]);
   const [contacts, setContacts] = useState([]);
-  const [searchResults, setSearchResults] = useState([]);
-  const [roleToInvite, setRoleToInvite] = useState("SPENDER");
   const [loading, setLoading] = useState(true);
+  const [currentUserRole, setCurrentUserRole] = useState(null);
+  const [roleToInvite, setRoleToInvite] = useState("SPENDER");
+
+  const [walletDetails, setWalletDetails] = useState(null);
+
   const [inviteTarget, setInviteTarget] = useState(null);
   const [inviting, setInviting] = useState(false);
   const [removeTarget, setRemoveTarget] = useState(null);
   const [removing, setRemoving] = useState(false);
-  const [verifyName, setVerifyName] = useState("");
-  const [verifyTarget, setVerifyTarget] = useState(null);
-  const [verifying, setVerifying] = useState(false);
-  const [verifyError, setVerifyError] = useState(null);
 
   const cancelInvite = () => setInviteTarget(null);
   const askRemove = (m) => setRemoveTarget(m);
   const closeDialog = () => setRemoveTarget(null);
-  const askToVerify = (phone) => {
-    const formattedPhone = formatPhoneE164(phone);
-    if (!formattedPhone) {
-      console.error("Format nomor telepon tidak valid");
-      return;
-    }
-    setVerifyTarget({ phone: formattedPhone });
-    setVerifyName("");
-    setVerifyError(null);
-  };
-  const cancelVerify = () => setVerifyTarget(null);
 
   useEffect(() => {
     let cancel = false;
     (async () => {
       setLoading(true);
       try {
-        const [
-          memberRes,
-          balanceRes,
-          contactsRes,
-          roleRes,
-          detailRes,
-          meRes,
-          qtRes,
-        ] = await Promise.all([
-          api.get(
-            `/api/v1/wallets/${walletId}/members?page=0&size=20&&includePending=true`
-          ),
-          api.get(`/api/v1/wallets/${walletId}/balance`),
-          api.get(`/api/v1/contacts?page=0&size=100`),
-          api.get(`/api/v1/wallets/${walletId}/me/role`),
-          api.get(`/api/v1/wallets/${walletId}`),
-          api.get(`/api/v1/user/me`),
-          api.get(`/quick-transfers/top?limit=10`),
-        ]);
+        const [memberRes, balanceRes, contactsRes, roleRes, detailRes] =
+          await Promise.all([
+            api.get(
+              `/api/v1/wallets/${walletId}/members?page=0&size=20&&includePending=true`
+            ),
+            api.get(`/api/v1/wallets/${walletId}/balance`),
+            api.get(`/api/v1/contacts?page=0&size=100`),
 
+            api.get(`/api/v1/wallets/${walletId}/me/role`),
+            api.get(`/api/v1/wallets/${walletId}`),
+          ]);
+
+        const balanceData = balanceRes.data.data;
         const membersFromApi = memberRes.data.data;
         const allContacts = (contactsRes.data?.data?.content ?? []).map(
           mapQTtoContact
         );
+        // const allContacts = contactsRes.data.data;
         const myRoleData = roleRes.data.data;
+
         const walletData = detailRes.data.data;
-
         const mappedWallet = mapWalletToCard(walletData);
-
-        if (mappedWallet.serverType !== "SHARED") {
-          console.warn("Akses ditolak: Halaman ini hanya untuk wallet SHARED.");
-          navigate(-1);
-          return;
-        }
-
-        const meData = meRes.data.data;
-        const favoritesData = (qtRes.data?.data ?? []).map(mapQTtoContact);
-
         const contactsMap = new Map(allContacts.map((c) => [c.id, c]));
-        contactsMap.set(meData.id, {
-          id: meData.id,
-          name: meData.name,
-          phone: meData.phoneNumber,
-          avatarInitial: meData.name?.[0]?.toUpperCase() || "?",
-        });
-
+        // const contactsMap = new Map(
+        //   allContacts.map((contact) => [contact.id, contact])
+        // );
         const combinedMembers = membersFromApi.map((member) => {
           const contactDetails = contactsMap.get(member.userId);
           const name = contactDetails ? contactDetails.name : "Unknown User";
           const phone = contactDetails ? contactDetails.phone : null;
-          const initials = contactDetails
-            ? contactDetails.avatarInitial || name[0]?.toUpperCase() || "?"
-            : "?";
           return {
             ...member,
+            ...contactDetails,
             id: member.userId,
             name: name,
-            initials: initials,
-            phone: phone,
+            initials: name[0]?.toUpperCase() || "?",
           };
         });
-
         const owner = combinedMembers.find((m) => m.role === "OWNER");
         const activeMembers = combinedMembers.filter(
           (m) => m.role !== "OWNER" && m.status === "ACTIVE"
@@ -220,18 +143,16 @@ export default function AssignMemberPage({ walletIdOverride }) {
         const pendingMembers = combinedMembers
           .filter((m) => m.status === "INVITED")
           .map((p) => ({ ...p, status: "Waiting" }));
-
         if (!cancel) {
           setOwner(owner);
           setMembers(activeMembers);
           setPending(pendingMembers);
+          setContacts(allContacts);
+          setCurrentUserRole(myRoleData.role);
           setWalletDetails(mappedWallet);
           setBalance(mappedWallet.balance);
-          setCurrentUser(meData);
-          setCurrentUserId(meData.id);
-          setCurrentUserRole(myRoleData.role);
-          setFavorites(favoritesData);
-          setContacts(allContacts);
+          setWalletLabel("O RANGE • PAY");
+
           setLoading(false);
         }
       } catch (e) {
@@ -242,22 +163,20 @@ export default function AssignMemberPage({ walletIdOverride }) {
     return () => {
       cancel = true;
     };
-  }, [walletId, navigate]);
+  }, [walletId]);
   useEffect(() => {
     const q = (search || "").trim();
-    if (q.length < 2) {
-      setSearchResults([]);
-      return;
-    }
+    if (q.length < 2) return;
+
     let cancel = false;
     const run = async () => {
       try {
         const resp = await api.get(`/api/v1/contacts/search`, {
-          params: { q, page: 0, size: 20 },
+          params: { q, page: 0, size: 50 },
         });
         const content = (resp.data?.data?.content ?? []).map(mapQTtoContact);
         if (!cancel) {
-          setSearchResults(content);
+          setContacts(content);
         }
       } catch (err) {
         console.error("Gagal mencari kontak:", err);
@@ -269,23 +188,17 @@ export default function AssignMemberPage({ walletIdOverride }) {
       clearTimeout(timer);
     };
   }, [search]);
+  const filteredContacts = useMemo(() => {
+    const q = (search || "").toLowerCase();
+    if (!q) return contacts;
+    return contacts.filter(
+      (c) =>
+        c.name.toLowerCase().includes(q) ||
+        (c.phone || "").toLowerCase().includes(q)
+    );
+  }, [contacts, search]);
 
   const canInvite = currentUserRole === "OWNER" || currentUserRole === "ADMIN";
-  const canRemoveMember = useCallback(
-    (memberToRemove) => {
-      if (!memberToRemove || !currentUserRole || !currentUserId) return false;
-      if (memberToRemove.id === currentUserId) return false;
-      if (memberToRemove.role === "OWNER") return false;
-      if (currentUserRole === "OWNER") return true;
-      if (
-        currentUserRole === "ADMIN" &&
-        (memberToRemove.role === "SPENDER" || memberToRemove.role === "VIEWER")
-      )
-        return true;
-      return false;
-    },
-    [currentUserRole, currentUserId]
-  );
 
   const handleAddFromContact = (contact) => {
     setRoleToInvite("SPENDER");
@@ -294,6 +207,7 @@ export default function AssignMemberPage({ walletIdOverride }) {
 
   const confirmInvite = async () => {
     if (!inviteTarget) return;
+
     const role = roleToInvite;
     const phoneE164 = inviteTarget.phone;
     const encodedPhone = encodeURIComponent(phoneE164);
@@ -305,13 +219,13 @@ export default function AssignMemberPage({ walletIdOverride }) {
       setPending((p) => [
         ...p,
         {
-          ...inviteTarget,
-          id: `tmp-${Date.Mow()}`,
+          id: `tmp-${Date.now()}`,
+          name: inviteTarget.name,
+          phone: inviteTarget.phone,
+          initials: inviteTarget.name[0]?.toUpperCase() || "?",
           status: "Waiting",
         },
       ]);
-      setSearch("");
-      setSearchResults([]);
     } catch (e) {
       console.error("Gagal meng-invite member:", e);
     } finally {
@@ -335,57 +249,6 @@ export default function AssignMemberPage({ walletIdOverride }) {
       setRemoveTarget(null);
     }
   };
-
-  const confirmVerifyAndInvite = async () => {
-    if (!verifyTarget) return;
-    const phone = verifyTarget.phone;
-    const name = verifyName.trim();
-
-    if (name.length === 0) {
-      setVerifyError("Nama kontak tidak boleh kosong.");
-      return;
-    }
-
-    setVerifying(true);
-    setVerifyError(null);
-    try {
-      const response = await api.post("/api/v1/contacts/verify", {
-        phoneNumber: phone,
-        name: name,
-      });
-
-      const newContactData = response.data.data;
-      const mappedContact = mapQTtoContact({
-        recipientUserId:
-          newContactData.userId || newContactData.recipientUserId,
-        recipientName: newContactData.name || newContactData.recipientName,
-        recipientPhone:
-          newContactData.phoneNumber || newContactData.recipientPhone,
-        ...newContactData,
-      });
-
-      setVerifyTarget(null);
-      setVerifyName("");
-      setSearch("");
-      setSearchResults([]);
-      handleAddFromContact(mappedContact);
-    } catch (e) {
-      console.error("Gagal verifikasi kontak:", e);
-      const errorData = e.response?.data?.error;
-      if (errorData?.code === "TXN-2001") {
-        setVerifyError("User belum terdaftar di O-RANGE PAY.");
-      } else if (errorData?.details?.name) {
-        setVerifyError("Nama tidak valid.");
-      } else {
-        setVerifyError(
-          "Nomor yang anda masukkan belum terdaftar di OrangePay."
-        );
-      }
-    } finally {
-      setVerifying(false);
-    }
-  };
-
   if (loading || !walletDetails) {
     return (
       <div className="page assign-page">
@@ -407,14 +270,16 @@ export default function AssignMemberPage({ walletIdOverride }) {
         </button>
         <span>Add Member</span>
         {canInvite && (
-          <button className="ghost-btn" aria-label="Add" disabled></button>
+          <button className="ghost-btn" aria-label="Add">
+            ＋
+          </button>
         )}
       </div>
 
       <WalletMiniCard
         balance={balance}
-        name={walletDetails.walletName}
-        variant={walletDetails.type}
+        name={walletLabel}
+        variant={walletDetails.serverType}
         gradient={walletDetails.bg}
         rightBadge={walletDetails.title}
       />
@@ -428,11 +293,7 @@ export default function AssignMemberPage({ walletIdOverride }) {
         <div className="section-title">Member</div>
         <div className="list">
           {members.map((m) => (
-            <MemberRow
-              key={m.id}
-              member={m}
-              onRemove={canRemoveMember(m) ? () => askRemove(m) : null}
-            />
+            <MemberRow key={m.id} member={m} onRemove={() => askRemove(m)} />
           ))}
           {members.length === 0 && (
             <div className="muted">Belum ada member.</div>
@@ -455,75 +316,25 @@ export default function AssignMemberPage({ walletIdOverride }) {
         <section className="section">
           <div className="section-title">Undang Member Baru</div>
           <ContactSearch value={search} onChange={setSearch} />
-
-          {search.length > 1 && (
-            <div className="list">
+          <div className="list">
+            {filteredContacts.map((c) => (
               <button
+                key={c.id}
                 className="contact-row"
-                onClick={() => askToVerify(search)}
+                onClick={() => handleAddFromContact(c)}
+                title="Invite as member"
               >
-                <div
-                  className="avatar-small"
-                  style={{ background: "#eee", color: "#333" }}
-                >
-                  ?
+                <div className="avatar-small">
+                  {c.name[0]?.toUpperCase() || "?"}
                 </div>
                 <div className="contact-meta">
-                  <div className="contact-name">Not in your contact</div>
-                  <div className="contact-phone">
-                    Click to verify & add {search}
-                  </div>
+                  <div className="contact-name">{c.name}</div>
+                  <div className="contact-phone">{c.phone}</div>
                 </div>
+                <div className="pill">Add</div>
               </button>
-
-              {searchResults.map((c) => (
-                <ContactRowButton
-                  key={c.id}
-                  contact={c}
-                  onSelect={handleAddFromContact}
-                />
-              ))}
-              {searchResults.length === 0 && (
-                <div className="muted" style={{ padding: "8px 16px" }}>
-                  No contacts found matching "{search}".
-                </div>
-              )}
-            </div>
-          )}
-
-          {search.length <= 1 && (
-            <>
-              <div className="section-title-small">Favorite</div>
-              <div className="list">
-                {favorites.length > 0 ? (
-                  favorites.map((c) => (
-                    <ContactRowButton
-                      key={c.id}
-                      contact={c}
-                      onSelect={handleAddFromContact}
-                    />
-                  ))
-                ) : (
-                  <div className="muted">No favorites</div>
-                )}
-              </div>
-
-              <div className="section-title-small">Contact</div>
-              <div className="list">
-                {contacts.length > 0 ? (
-                  contacts.map((c) => (
-                    <ContactRowButton
-                      key={c.id}
-                      contact={c}
-                      onSelect={handleAddFromContact}
-                    />
-                  ))
-                ) : (
-                  <div className="muted">No contacts found</div>
-                )}
-              </div>
-            </>
-          )}
+            ))}
+          </div>
         </section>
       )}
 
@@ -572,55 +383,6 @@ export default function AssignMemberPage({ walletIdOverride }) {
             <option value="SPENDER">Spender</option>
             <option value="VIEWER">Viewer</option>
           </select>
-        </div>
-      </ConfirmDialog>
-
-      <ConfirmDialog
-        open={!!verifyTarget}
-        title="Verifikasi Kontak Baru"
-        message={`User ${verifyTarget?.phone} tidak ada di kontak Anda. Masukkan nama untuk ditambahkan:`}
-        confirmText="Tambah Kontak"
-        cancelText="Batal"
-        onConfirm={confirmVerifyAndInvite}
-        onClose={cancelVerify}
-        loading={verifying}
-      >
-        <div style={{ margin: "16px 0" }}>
-          <label
-            htmlFor="verify-name-input"
-            style={{ display: "block", marginBottom: "8px", color: "#555" }}
-          >
-            Nama Kontak:
-          </label>
-          <input
-            id="verify-name-input"
-            type="text"
-            value={verifyName}
-            onChange={(e) => {
-              setVerifyName(e.target.value);
-              setVerifyError(null);
-            }}
-            placeholder="Masukkan nama"
-            style={{
-              width: "100%",
-              padding: "10px",
-              boxSizing: "border-box",
-              borderRadius: "8px",
-              border: "1px solid #ccc",
-            }}
-          />
-          {verifyError && (
-            <p
-              style={{
-                color: "red",
-                fontSize: "14px",
-                marginTop: "10px",
-                marginBottom: "0",
-              }}
-            >
-              {verifyError}
-            </p>
-          )}
         </div>
       </ConfirmDialog>
     </div>

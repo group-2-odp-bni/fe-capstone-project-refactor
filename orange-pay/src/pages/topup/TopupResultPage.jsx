@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 import ConfirmButton from "../../components/top-up/ConfirmButton";
 import WhiteHeader from "../../components/register/WhiteHeader";
 import ContentBox from "../../components/common/ContentBox";
-import View from "../../components/view/View";
+import MobileView from "../../components/view/MobileView";
 
 export default function TopupResultPage({
 }) {
@@ -26,7 +26,7 @@ export default function TopupResultPage({
   });
 
   return (
-    <View>
+    <MobileView>
       <WhiteHeader title="Topup Result" />
       <ContentBox>
         <div className="w-full bg-white flex justify-center">
@@ -101,7 +101,7 @@ export default function TopupResultPage({
         </div>
 
       </ContentBox>
-    </View>
+    </MobileView>
 
 
 

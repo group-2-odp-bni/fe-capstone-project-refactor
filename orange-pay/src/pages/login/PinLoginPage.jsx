@@ -10,16 +10,16 @@ import WhiteCardContainer from "../../components/register/WhiteCardContainer";
 import { saveTokens } from "../../services/auth/authService";
 import { useLoginContext } from "../../context/LoginContext";
 import axios from "axios";
-import View from "../../components/view/View";
+import MobileView from "../../components/view/MobileView";
 
 export default function PinLoginPage() {
   return (
-    <View>
+    <MobileView>
       <PageHeader className="mt-5 mb-5">Masukkan PIN</PageHeader>
       <WhiteCardContainer>
         <PinLoginContent />
       </WhiteCardContainer>
-    </View>
+    </MobileView>
   );
 }
 
