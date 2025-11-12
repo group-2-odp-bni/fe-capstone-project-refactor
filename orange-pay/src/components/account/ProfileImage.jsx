@@ -1,12 +1,63 @@
-export default function ProfileImage() {
+import { useRef, useState } from "react";
+import { Camera } from "lucide-react";
+
+export default function ProfileImage({ onImageSelected, unhoverable = false, src }) {
+    const fileInputRef = useRef(null);
+    const [preview, setPreview] = useState(
+        src || "https://randomuser.me/api/portraits/women/44.jpg"
+    );
+    const [hover, setHover] = useState(false);
+
+    const handleFileChange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        if (!file.type.startsWith("image/")) {
+            alert("Please select an image file");
+            return;
+        }
+
+        const previewUrl = URL.createObjectURL(file);
+        setPreview(previewUrl);
+        if (onImageSelected) onImageSelected(file);
+    };
+
+    const handleClick = () => {
+        if (unhoverable) return; // disable interaction if unhoverable
+        fileInputRef.current?.click();
+    };
+
     return (
-        <div className="flex flex-col items-center mt-2 mb-2">
-            <div className="w-24 h-24 rounded-full border-4 border-white shadow-md overflow-hidden">
+        <div className="flex justify-center mt-2 mb-2">
+            <div
+                className={`relative inline-flex w-24 h-24 rounded-full border-4 border-white shadow-md overflow-hidden ${unhoverable ? "cursor-default" : "cursor-pointer"
+                    }`}
+                onClick={handleClick}
+                onMouseEnter={() => !unhoverable && setHover(true)}
+                onMouseLeave={() => !unhoverable && setHover(false)}
+            >
                 <img
-                    src="https://randomuser.me/api/portraits/women/44.jpg"
+                    src={preview}
                     alt="Profile"
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-cover transition-transform duration-200"
                 />
+
+                {!unhoverable && hover && (
+                    <div className="absolute inset-0 bg-black bg-opacity-50 flex flex-col items-center justify-center text-white transition-opacity duration-200">
+                        <Camera className="w-6 h-6 mb-1" />
+                        <span className="text-xs font-semibold">Ganti Foto</span>
+                    </div>
+                )}
+
+                {!unhoverable && (
+                    <input
+                        type="file"
+                        accept="image/*"
+                        ref={fileInputRef}
+                        className="hidden"
+                        onChange={handleFileChange}
+                    />
+                )}
             </div>
         </div>
     );

@@ -8,7 +8,7 @@ import { PlusIcon, UserIcon } from "@heroicons/react/24/solid";
 import useCardBalances from "../hooks/api/useCardBalances";
 import LoadingSpinner from "../components/common/LoadingSpinner";
 import PageHeader from "../components/page_header/PageHeader";
-import View from "../components/view/View";
+import DynamicShell from "../components/layout/DynamicShell";
 export default function HistoryTransactionPage() {
   const { walletId } = useParams();
   const navigate = useNavigate();
@@ -48,24 +48,24 @@ export default function HistoryTransactionPage() {
   };
   if (walletsLoading) {
     return (
-      <View>
+      <DynamicShell>
         <PageHeader>Wallet Detail</PageHeader>
         <LoadingSpinner />
-      </View>
+      </DynamicShell>
     );
   }
 
   if (!wallet) {
     return (
-      <View>
+      <DynamicShell>
         <PageHeader>Error</PageHeader>
         <p className="text-center text-gray-600">Wallet tidak ditemukan.</p>
-      </View>
+      </DynamicShell>
     );
   }
 
   return (
-    <View>
+    <DynamicShell>
       <div className="space-y-4 md:space-y-6" style={{ overflow: "hidden" }}>
         <PageHeader>{pageTitle}</PageHeader>
 
@@ -115,6 +115,6 @@ export default function HistoryTransactionPage() {
           dynamicTop={buttonGroupY}
         />
       </div>
-    </View>
+    </DynamicShell>
   );
 }

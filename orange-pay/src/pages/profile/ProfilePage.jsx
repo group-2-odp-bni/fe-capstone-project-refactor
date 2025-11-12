@@ -4,7 +4,6 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import UserInfoCard from "../../components/account/userInfoCard";
 import ProfileImage from "../../components/account/ProfileImage";
-import { clearTokens } from "../../services/auth/authService";
 import { FullActionButton } from "../../components/button/FullActionButton";
 import { useProfileContext } from "../../context/ProfileContext";
 import View from "../../components/view/View";
@@ -47,7 +46,7 @@ export default function ProfilePage() {
     <View>
       <WhiteHeader title="Akun Saya" />
       <ContentBox>
-        <ProfileImage />
+        <ProfileImage unhoverable ={true} />
 
         <UserInfoCard
           name={profileData.name}
