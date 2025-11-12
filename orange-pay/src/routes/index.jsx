@@ -28,13 +28,9 @@ import HistoryTransactionPage from "../pages/HistoryTransactionPage";
 import { isAuthenticated } from "../services/authService";
 import { RegistrationProvider } from "../context/RegistrationContext";
 import AddWalletPage from "../pages/AddWalletPage";
+import AddBalanceFromWalletPage from "../pages/AddBalanceFromWalletPageNew";
 import AllHistoryPage from "../pages/AllHistory";
-
-// add balance
-import ConfirmAddBalancePage from "../pages/addBalance/ConfirmAddBalancePage";
-import AddBalancePage from "../pages/addBalance/AddBalancePage";
-import { AddBalanceProvider } from "../context/AddBalanceContext";
-
+import ConfirmAddBalancePage from "../pages/ConfirmAddBalancePage";
 // import ReceiptPage from "../pages/ReceiptPage";
 import ReceiptPage from "../pages/ReceiptPage";
 import InviteClaimPage from "../pages/InviteClaimsPage";
@@ -144,14 +140,6 @@ function TransactionLimitLayout() {
   );
 }
 
-function AddBalancelayout() {
-  return (
-    <AddBalanceProvider>
-      <Outlet />
-    </AddBalanceProvider>
-  )
-}
-
 /* ----------------- Routes ----------------- */
 export default function AppRoutes() {
   return (
@@ -225,17 +213,19 @@ export default function AppRoutes() {
               <AssignMemberPage walletIdOverride="d69f4f9d-ec91-4d43-8db0-3006185c1090" />
             }
           />
-          <Route path="wallets/:walletId/members" element={<AssignMemberPage />} />
-
-          {/* split bill */}
+          <Route
+            path="wallets/:walletId/members"
+            element={<AssignMemberPage />}
+          />
           <Route path="splitbill/review" element={<SplitBillReviewPage />} />
           <Route path="splitbill" element={<SplitBillPage />} />
           <Route path="splitbill/:id" element={<SplitBillConfirmedPage />} />
-          <Route path="splitbill/:id/member/:memberId" element={<SplitBillMemberPage />} />{" "}
-
+          <Route
+            path="splitbill/:id/member/:memberId"
+            element={<SplitBillMemberPage />}
+          />{" "}
           {/* account page */}
           <Route path="account" element={<AccountLandingPage />} />
-
           {/* topup page */}
           <Route path="topup" element={<TopupLayout />}>
             <Route index element={<TopUpPage />} />
@@ -244,6 +234,7 @@ export default function AppRoutes() {
             <Route path="result" element={<TopupResultPage />} />
           </Route>
 
+
           {/* user profile page */}
           <Route element={<ProfileLayout />}>
             <Route path="profile" element={<ProfilePage />} />
@@ -251,17 +242,10 @@ export default function AppRoutes() {
             <Route path="verifyEmail" element={<VerifyEmailPage />} />
             <Route path="verifyPhone" element={<VerifyPhonePage />} />
           </Route>
-
           {/* user transaction limit page */}
           <Route element={<TransactionLimitLayout />}>
             <Route path="transactionLimit" element={<TransactionLimitPage />} />
             <Route path="edittransactionLimit" element={<TransactionLimitEditPage />} />
-          </Route>
-
-          {/* add balance */}
-          <Route element={<AddBalancelayout />}>
-            <Route path="wallets/confirm-add-balance" element={<ConfirmAddBalancePage />} />
-            <Route path="wallets/:walletId/add" element={<AddBalancePage />} />
           </Route>
 
 
@@ -269,14 +253,23 @@ export default function AppRoutes() {
             <Route path="new" element={<AddWalletPage />} />
             <Route path=":walletId" element={<HistoryTransactionPage />} />{" "}
             <Route path=":walletId/members" element={<AssignMemberPage />} />{" "}
-            <Route path=":walletId/history" element={<HistoryTransactionPage />} />
+            <Route
+              path=":walletId/history"
+              element={<HistoryTransactionPage />}
+            />
+            <Route path=":walletId/topup" element={<TopUpPage />} />
+            <Route
+              path=":walletId/add"
+              element={<AddBalanceFromWalletPage />}
+            />
             <Route path=":walletId/transfer" element={<TransferPage />} />
           </Route>
-
-
           <Route path="allhistory" element={<AllHistoryPage />} />
-
-
+          <Route
+            path="confirm-add-balance"
+            element={<ConfirmAddBalancePage />}
+          />
+          <Route path="add-balance-pin" element={<AddBalancePinPage />} />
           {/* ----------- Transfer Flow ----------- */}
           <Route
             path="transfer/*"

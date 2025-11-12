@@ -3,10 +3,9 @@ import { useEffect, useState, useRef } from "react";
 import axios from "axios";
 import QuickTransfer from "../components/dashboard/QuickTransfer";
 import RecentList from "../components/dashboard/RecentList";
-import View from "../components/layout/dynamicShell";
 import HeaderSection from "../components/dashboard/HeaderSection";
 import BalanceCard from "../components/dashboard/BalanceCard";
-
+import View from "../components/view/View";
 
 /* ===== Global, centered toast/modal ===== */
 function GlobalToast({ show, onClose, onPrimary }) {
@@ -159,11 +158,13 @@ export default function DashboardPage() {
 
   return (
     <View>
+      <div className="p-3">
         <HeaderSection name={name} />
         {/* Make sure your BalanceCard forwards `onBlocked` to CTASection */}
         <BalanceCard disableActions={disableActions} onBlocked={handleBlocked} />
         <QuickTransfer />
         <RecentList />
+      </div>
 
       <GlobalToast
         show={showToast}
