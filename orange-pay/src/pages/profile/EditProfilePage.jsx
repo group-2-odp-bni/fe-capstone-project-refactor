@@ -13,16 +13,15 @@ import api from "../../lib/api";
 export default function EditProfilePage() {
     const navigate = useNavigate();
     const { profileData, setProfileData } = useProfileContext();
-
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
     const [originalProfile, setOriginalProfile] = useState({});
-    const [image, setImage] = useState();
+    const [imageFile, setImageFile] = useState(null);
+    const [uploading, setUploading] = useState(false);
 
     useEffect(() => {
         const getUserProfile = async () => {
             try {
-                console.log("--- get user name ----");
                 const response = await axios.get("/api/v1/user/me", {
                     headers: {
                         Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
@@ -30,14 +29,12 @@ export default function EditProfilePage() {
                 });
 
                 const user = response.data.data;
-                console.log("Fetched user:", user);
-
                 const normalizedUser = {
                     name: user.name || "",
                     email: user.email || "",
                     phoneNumber: user.phoneNumber || "",
+                    profileImageUrl: user.profileImageUrl || "",
                 };
-
 
                 setProfileData(normalizedUser);
                 setOriginalProfile(normalizedUser);
@@ -49,7 +46,6 @@ export default function EditProfilePage() {
         getUserProfile();
     }, []);
 
-
     const handleChange = (e) => {
         const { name, value } = e.target;
         setProfileData({ [name]: value });
@@ -60,97 +56,102 @@ export default function EditProfilePage() {
         setError("");
         setLoading(true);
 
-        try {
-            const changedFields = Object.keys(profileData).reduce((acc, key) => {
-                const current = profileData[key]?.toString().trim() || "";
-                const original = originalProfile[key]?.toString().trim() || "";
+        const changedFields = Object.keys(profileData).reduce((acc, key) => {
+            const current = profileData[key]?.toString().trim() || "";
+            const original = originalProfile[key]?.toString().trim() || "";
 
-                if (current !== original) {
-                    acc[key] = profileData[key];
-                }
-                return acc;
-            }, {});
-
-            if (Object.keys(changedFields).length === 0) {
-                setError("Tidak ada perubahan untuk disimpan.");
-                setLoading(false);
-                return;
+            if (current !== original) {
+                acc[key] = profileData[key];
             }
+            return acc;
+        }, {});
 
-            console.log("Changed fields to send:", changedFields);
+        if (Object.keys(changedFields).length === 0 && !imageFile) {
+            setError("Tidak ada perubahan untuk disimpan.");
+            setLoading(false);
+            return;
+        }
 
-            const response = await axios.put(
+        if (Object.keys(changedFields).length > 0) {
+            await axios.put(
                 "/api/v1/users/profile",
                 changedFields,
-                {
-                    headers: {
-                        Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-                    },
-                }
-            );
+            )
+        };
 
-            console.log("Profile updated:", response.data);
-
-            navigate("/app/profile");
-
-        } catch (err) {
-            console.error("Failed to update profile:", err);
-            setError("Gagal menyimpan data. Silakan coba lagi.");
-        } finally {
-            setLoading(false);
+        if (imageFile) {
+            await handleSaveProfilePicture();
         }
-    };
 
-    // const handleChangeProfilePicture = async (e) => {
-    //     const response = await api.post(
-    //         "/users/profile/upload-image",
-    //         image
-    //     );
+        navigate("/app/profile");
+    }
 
-    // }
 
-    return (
-        <View>
-            <WhiteHeader title="Edit Akun" />
-            <ContentBox>
-                <ProfileImage />
+const handleSaveProfilePicture = async () => {
+    try {
+        setUploading(true);
+        const formData = new FormData();
+        formData.append("image", imageFile);
 
-                <form onSubmit={handleSave}>
-                    <InputField
-                        id="name"
-                        name="name"
-                        label="Nama:"
-                        value={profileData.name}
-                        onChange={handleChange}
-                    />
+        const response = await api.post("/users/profile/upload-image", formData, {
+            headers: {
+                Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+                "Content-Type": "multipart/form-data",
+            },
+        });
 
-                    <InputField
-                        id="email"
-                        name="email"
-                        label="Email:"
-                        value={profileData.email}
-                        onChange={handleChange}
-                    />
+        console.log("Image uploaded:", response.data);
+    } catch (err) {
+        console.error("Failed to upload profile image:", err);
+        setError("Gagal mengunggah foto profil.");
+    } finally {
+        setUploading(false);
+    }
+};
 
-                    <InputField
-                        id="phone"
-                        name="phoneNumber"
-                        label="Nomor Telepon:"
-                        value={profileData.phoneNumber}
-                        onChange={handleChange}
-                    />
+return (
+    <View>
+        <WhiteHeader title="Edit Akun" />
+        <ContentBox>
+            <ProfileImage onImageSelected={setImageFile} />
 
-                    {error && (
-                        <p className="text-red-500 text-sm text-center mt-2">{error}</p>
-                    )}
+            <form onSubmit={handleSave}>
+                <InputField
+                    id="name"
+                    name="name"
+                    label="Nama:"
+                    value={profileData.name}
+                    onChange={handleChange}
+                />
 
-                    <div className="mt-4">
-                        <FullSubmitButton>
-                            {loading ? "Menyimpan..." : "Simpan Data"}
-                        </FullSubmitButton>
-                    </div>
-                </form>
-            </ContentBox>
-        </View>
-    );
+                <InputField
+                    id="email"
+                    name="email"
+                    label="Email:"
+                    value={profileData.email}
+                    onChange={handleChange}
+                />
+
+                <InputField
+                    id="phone"
+                    name="phoneNumber"
+                    label="Nomor Telepon:"
+                    value={profileData.phoneNumber}
+                    onChange={handleChange}
+                />
+
+                {error && (
+                    <p className="text-red-500 text-sm text-center mt-2">{error}</p>
+                )}
+
+                <div className="mt-4">
+                    <FullSubmitButton>
+                        {loading || uploading ? "Menyimpan..." : "Simpan Data"}
+                    </FullSubmitButton>
+                </div>
+            </form>
+        </ContentBox>
+    </View>
+);
+
 }
