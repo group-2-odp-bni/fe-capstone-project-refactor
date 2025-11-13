@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { Camera } from "lucide-react";
 
 export default function ProfileImage({ onImageSelected, unhoverable = false, src }) {
@@ -7,6 +7,12 @@ export default function ProfileImage({ onImageSelected, unhoverable = false, src
         src || "https://randomuser.me/api/portraits/women/44.jpg"
     );
     const [hover, setHover] = useState(false);
+
+    useEffect(() => {
+        if (src) {
+            setPreview(src);
+        }
+    }, [src]);
 
     const handleFileChange = (e) => {
         const file = e.target.files[0];
