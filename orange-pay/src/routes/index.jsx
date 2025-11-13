@@ -53,8 +53,7 @@ import PinLoginPage from "../pages/login/PinLoginPage";
 import { ProfileProvider } from "../context/ProfileContext";
 import ProfilePage from "../pages/profile/ProfilePage";
 import EditProfilePage from "../pages/profile/EditProfilePage";
-import VerifyEmailPage from "../pages/profile/VerifyEmailPage";
-import VerifyPhonePage from "../pages/profile/VerifyPhonePage";
+import VerifyProfileDataPage from "../pages/profile/VerifyProfileDataPage";
 
 /* account setting */
 import AccountLandingPage from "../pages/account/AccountLandingPage";
@@ -247,8 +246,7 @@ export default function AppRoutes() {
           <Route element={<ProfileLayout />}>
             <Route path="profile" element={<ProfilePage />} />
             <Route path="editProfile" element={<EditProfilePage />} />
-            <Route path="verifyEmail" element={<VerifyEmailPage />} />
-            <Route path="verifyPhone" element={<VerifyPhonePage />} />
+            <Route path="verify" element={<VerifyProfileDataPage />} />
           </Route>
           {/* user transaction limit page */}
           <Route element={<TransactionLimitLayout />}>
