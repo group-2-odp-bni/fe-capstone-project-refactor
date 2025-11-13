@@ -38,9 +38,6 @@ export default function LoginPhone() {
   };
 
   return (
-
-    
-
     <div className="flex-1 bg-[#FF9A25] pt-4">
       <BackButton />
       
