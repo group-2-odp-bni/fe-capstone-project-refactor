@@ -33,6 +33,7 @@ export default function ProfilePage() {
           phoneNumber: user.phoneNumber,
           phoneVerified: user.phoneVerified,
           emailVerified: user.emailVerified,
+          profileImageUrl: user.profileImageUrl,
         });
       } catch (error) {
         console.error("Failed to fetch user profile:", error);
@@ -40,13 +41,18 @@ export default function ProfilePage() {
     };
 
     getUserProfile();
+    console.log("test")
+    console.log(profileData.profileImageUrl)
   }, []);
 
   return (
     <View>
       <WhiteHeader title="Akun Saya" />
       <ContentBox>
-        <ProfileImage unhoverable ={true} />
+        <ProfileImage
+          src={profileData.profileImageUrl}
+          unhoverable={true}
+        />
 
         <UserInfoCard
           name={profileData.name}
