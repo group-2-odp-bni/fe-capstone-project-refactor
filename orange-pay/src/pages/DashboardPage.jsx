@@ -5,7 +5,7 @@ import QuickTransfer from "../components/dashboard/QuickTransfer";
 import RecentList from "../components/dashboard/RecentList";
 import HeaderSection from "../components/dashboard/HeaderSection";
 import BalanceCard from "../components/dashboard/BalanceCard";
-import DynamicShell from "../components/layout/DynamicShell";
+import View from "../components/view/View";
 
 /* ===== Global, centered toast/modal ===== */
 function GlobalToast({ show, onClose, onPrimary }) {

@@ -38,7 +38,7 @@ import { AddBalanceProvider } from "../context/AddBalanceContext";
 // import ReceiptPage from "../pages/ReceiptPage";
 import ReceiptPage from "../pages/ReceiptPage";
 import InviteClaimPage from "../pages/InviteClaimsPage";
-import AddBalancePinPage from "../pages/AddBalancePinPage";
+
 /* login flow context & step guard */
 import { LoginProvider } from "../context/LoginContext";
 import RequireLoginStep from "./RequireLoginStep";
