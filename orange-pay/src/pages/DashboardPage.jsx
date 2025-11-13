@@ -5,35 +5,36 @@ import RecentList from "../components/dashboard/RecentList";
 import HeaderSection from "../components/dashboard/HeaderSection";
 import BalanceCard from "../components/dashboard/BalanceCard";
 import DynamicShell from "../components/layout/DynamicShell";
+import api from "../lib/api";
 
 export default function DashboardPage() {
-  const [name, setName] = useState("");
+  const [profileData, setProfileData] = useState({
+    name: "",
+    profileImageUrl: "",
+  });
 
   useEffect(() => {
-    const getUserName = async () => {
-      try {
-        console.log("--- get user name ----");
-        const response = await axios.get("/api/v1/user/me", {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-          },
-        });
-        console.log(response.data.data.name);
-        setName(response.data.data.name);
-      } catch (error) {
-        console.log("Failed to fetch user name:", error);
-      }
+    const getUserProfile = async () => {
+      const response = await api.get("/api/v1/user/me");
+
+      setProfileData({
+        name: response.data.data.name,
+        profileImageUrl: response.data.data.profileImageUrl,
+      })
+
     };
 
-    getUserName();
+    getUserProfile();
   }, []);
 
   return (
     <DynamicShell>
-        <HeaderSection name={name} />
-        <BalanceCard />
-        <QuickTransfer />
-        <RecentList />
-   </DynamicShell>
+      <HeaderSection
+        name={profileData.name}
+        avatarSrc={profileData.profileImageUrl} />
+      <BalanceCard />
+      <QuickTransfer />
+      <RecentList />
+    </DynamicShell>
   );
 }
