@@ -2,7 +2,7 @@ import WalletAvatar from "./WalletAvatar";
 
 export default function WalletSelectorButton({
   walletName = "Pilih wallet",
-  walletId = "-",
+  walletAmount = "-",
   onClick,
 }) {
   return (
@@ -16,7 +16,7 @@ export default function WalletSelectorButton({
       <WalletAvatar />
       <div className="flex-1 text-left">
         <p className="text-sm font-bold text-gray-900">{walletName}</p>
-        <p className="text-xs text-gray-500">ID: {walletId}</p>
+        <p className="text-xs text-gray-500">Saldo : Rp {walletAmount.toLocaleString("id-ID")}</p>
       </div>
       <span className="text-xs text-gray-500">Ganti</span>
     </button>
