@@ -45,7 +45,7 @@ export default function WalletPickerSheet({ onClose, walletList = [], onSelectWa
                   className="p-3 border border-gray-200 rounded-2xl text-left hover:bg-gray-50 transition-all"
                 >
                   <p className="font-medium text-gray-900">{wallet.name}</p>
-                  <p className="text-sm text-gray-500">ID: {wallet.id}</p>
+                  <p className="text-sm text-gray-500">Saldo : Rp {wallet.amount.toLocaleString("id-ID")}</p>
                 </button>
               ))
             )}

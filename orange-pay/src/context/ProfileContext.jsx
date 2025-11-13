@@ -15,6 +15,7 @@ export const ProfileProvider = ({ children }) => {
     phoneNumber: "",
     phoneVerified:false,
     emailVerified:false,
+    profileImageUrl: "",
   });
 
   const updateProfileData = (data) => {
