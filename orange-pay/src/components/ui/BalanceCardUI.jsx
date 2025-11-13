@@ -290,13 +290,8 @@ export const CTASection = ({
       <div className="flex space-x-6 md:space-x-8 text-white">
         {renderActionsForUtama()}
 
-        <ActionIcon
-          onClick={handleTransferClick}
-          asButton
-          label="Transfer"
-          disabled={disabled}
-          title={disabled ? "Lengkapi profil untuk melanjutkan" : undefined}
-        >
+        {/* Transfer: always shown, uses button to attach walletId and respect dragging */}
+        <ActionIcon onClick={handleTransferClick} asButton label="Transfer">
           <svg
             viewBox="0 0 20 24"
             fill="currentColor"
