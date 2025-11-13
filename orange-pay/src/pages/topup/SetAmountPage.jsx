@@ -29,6 +29,7 @@ export default function SetAmountPage() {
         const walletData = response.data.data.map((wallet) => ({
           id: wallet.id,
           name: wallet.name,
+          amount: wallet.balanceSnapshot,
         }));
         setWalletList(walletData);
         console.log("Wallets:", walletData);
@@ -94,7 +95,7 @@ export default function SetAmountPage() {
 
             <WalletSelectorButton
               walletName={selectedWallet?.name || "Pilih wallet"}
-              walletId={selectedWallet?.id || "-"}
+              walletAmount={selectedWallet?.amount || "-"}
               onClick={handleOpenWalletPicker}
             />
 

@@ -72,8 +72,11 @@ export default function EditProfilePage() {
             return;
         }
 
+        delete changedFields.phoneVerified;
+        delete changedFields.emailVerified;
+
         if (Object.keys(changedFields).length > 0) {
-            await axios.put(
+            await api.put(
                 "/api/v1/users/profile",
                 changedFields,
             )
@@ -87,71 +90,71 @@ export default function EditProfilePage() {
     }
 
 
-const handleSaveProfilePicture = async () => {
-    try {
-        setUploading(true);
-        const formData = new FormData();
-        formData.append("image", imageFile);
+    const handleSaveProfilePicture = async () => {
+        try {
+            setUploading(true);
+            const formData = new FormData();
+            formData.append("file", imageFile);
 
-        const response = await api.post("/users/profile/upload-image", formData, {
-            headers: {
-                Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-                "Content-Type": "multipart/form-data",
-            },
-        });
+            const response = await api.post("/api/v1/users/profile/upload-image", formData, {
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+                    "Content-Type": "multipart/form-data",
+                },
+            });
 
-        console.log("Image uploaded:", response.data);
-    } catch (err) {
-        console.error("Failed to upload profile image:", err);
-        setError("Gagal mengunggah foto profil.");
-    } finally {
-        setUploading(false);
-    }
-};
+            console.log("Image uploaded:", response.data);
+        } catch (err) {
+            console.error("Failed to upload profile image:", err);
+            setError("Gagal mengunggah foto profil.");
+        } finally {
+            setUploading(false);
+        }
+    };
 
-return (
-    <View>
-        <WhiteHeader title="Edit Akun" />
-        <ContentBox>
-            <ProfileImage onImageSelected={setImageFile} />
+    return (
+        <View>
+            <WhiteHeader title="Edit Akun" />
+            <ContentBox>
+                <ProfileImage src={profileData.profileImageUrl} onImageSelected={setImageFile} />
 
-            <form onSubmit={handleSave}>
-                <InputField
-                    id="name"
-                    name="name"
-                    label="Nama:"
-                    value={profileData.name}
-                    onChange={handleChange}
-                />
+                <form onSubmit={handleSave}>
+                    <InputField
+                        id="name"
+                        name="name"
+                        label="Nama:"
+                        value={profileData.name}
+                        onChange={handleChange}
+                    />
 
-                <InputField
-                    id="email"
-                    name="email"
-                    label="Email:"
-                    value={profileData.email}
-                    onChange={handleChange}
-                />
+                    <InputField
+                        id="email"
+                        name="email"
+                        label="Email:"
+                        value={profileData.email}
+                        onChange={handleChange}
+                    />
 
-                <InputField
-                    id="phone"
-                    name="phoneNumber"
-                    label="Nomor Telepon:"
-                    value={profileData.phoneNumber}
-                    onChange={handleChange}
-                />
+                    <InputField
+                        id="phone"
+                        name="phoneNumber"
+                        label="Nomor Telepon:"
+                        value={profileData.phoneNumber}
+                        onChange={handleChange}
+                    />
 
-                {error && (
-                    <p className="text-red-500 text-sm text-center mt-2">{error}</p>
-                )}
+                    {error && (
+                        <p className="text-red-500 text-sm text-center mt-2">{error}</p>
+                    )}
 
-                <div className="mt-4">
-                    <FullSubmitButton>
-                        {loading || uploading ? "Menyimpan..." : "Simpan Data"}
-                    </FullSubmitButton>
-                </div>
-            </form>
-        </ContentBox>
-    </View>
-);
+                    <div className="mt-4">
+                        <FullSubmitButton>
+                            {loading || uploading ? "Menyimpan..." : "Simpan Data"}
+                        </FullSubmitButton>
+                    </div>
+                </form>
+            </ContentBox>
+        </View>
+    );
 
 }
