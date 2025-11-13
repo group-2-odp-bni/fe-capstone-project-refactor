@@ -34,7 +34,7 @@ api.interceptors.response.use(
       );
 
     if (error?.response?.status !== 401 || original?._retry) {
-      throw normalizeError(error);
+      throw error;;
     }
     original._retry = true;
 

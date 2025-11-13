@@ -89,9 +89,26 @@ function RegisterContent() {
         phoneNumber: formData.phoneNumber,
       });
       navigate("/register/otp");
+
     } catch (err) {
-      console.error(err);
-      setError(err.message || "Something went wrong.");
+
+      console.log("error")
+
+      if (err.response) {
+        console.log(err.response)
+        const errorCode = err.response.data?.error?.code;
+
+        if (errorCode === "AUTH-1002") {
+          setError("Nomor Handphone Anda telah terdaftar");
+        } else {
+          // fallback message from backend
+          setError(err.response.data?.error?.message || "Terjadi kesalahan. Silakan coba lagi.");
+        }
+      } else {
+        // no response (e.g. network issue)
+        setError("Tidak dapat terhubung ke server. Coba lagi nanti.");
+      }
+      
     } finally {
       setLoading(false);
     }
@@ -103,7 +120,7 @@ function RegisterContent() {
       <WhiteCardContainer>
         <OrangePayLogo />
         <RegisterTextContainer>
-          Masukkan nama dan email aktif Anda untuk menikmati semua layanan kami.
+          Masukkan nomor handphone Anda yang aktif untuk menikmati semua layanan kami
         </RegisterTextContainer>
 
         <form onSubmit={handleSubmit} className="space-y-5 mt-6">
