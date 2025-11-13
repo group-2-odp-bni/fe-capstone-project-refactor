@@ -11,18 +11,13 @@ export default defineConfig({
         secure: false,
       },
       // online service, comment this for local testing
-      "/api/v1/user": {
-        target: "https://api-dev.orangebybni.my.id",
-        changeOrigin: true,
-        secure: false,
-      },
-      "/api/v1/contacts": {
-        target: "https://api-dev.orangebybni.my.id",
-        changeOrigin: true,
-        secure: false,
-      },
       "/api/v1": {
         target: "https://api-dev.orangebybni.my.id",
+        changeOrigin: true,
+        secure: false,
+      },
+      "/s/": {
+        target: "http://localhost:5000",
         changeOrigin: true,
         secure: false,
       },
@@ -48,11 +43,6 @@ export default defineConfig({
       //   secure: false,
       // },
       // "/api/v1/split-bill": {
-      //   target: "http://localhost:5000",
-      //   changeOrigin: true,
-      //   secure: false,
-      // },
-      // "/s/": {
       //   target: "http://localhost:5000",
       //   changeOrigin: true,
       //   secure: false,

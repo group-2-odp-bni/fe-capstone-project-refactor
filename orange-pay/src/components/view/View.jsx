@@ -9,7 +9,7 @@ export default function View({ children }) {
     useEffect(() => {
         const handleResize = () => {
             // Switch to mobile if viewport width < 768px
-            setIsMobile(window.innerWidth < 768);
+            setIsMobile(window.innerWidth < 800);
         };
 
         handleResize(); // run once on mount
