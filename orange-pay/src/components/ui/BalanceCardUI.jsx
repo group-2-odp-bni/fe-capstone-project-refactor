@@ -271,8 +271,7 @@ export const CTASection = ({
       style={{ transform: "translateZ(25px)" }}
     >
       <div className="flex space-x-6 md:space-x-8 text-white">
-        {String(type || "").toLowerCase() === "utama" &&
-          renderActionsForUtama()}
+        {renderActionsForUtama()}
 
         {/* Transfer: always shown, uses button to attach walletId and respect dragging */}
         <ActionIcon onClick={handleTransferClick} asButton label="Transfer">
