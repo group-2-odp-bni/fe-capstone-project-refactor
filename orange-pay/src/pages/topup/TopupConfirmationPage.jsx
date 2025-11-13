@@ -5,7 +5,7 @@ import { useTopupContext } from "../../context/TopupContext";
 import VirtualAccountBox from "../../components/top-up/VirtualAccountBox";
 import CountdownTimer from "../../components/dashboard/CountdownTimer";
 import { useNavigate } from "react-router-dom";
-import MobileView from "../../components/view/MobileView";
+import View from "../../components/view/View";
 import WhiteHeader from "../../components/register/WhiteHeader";
 import api from "../../lib/api";
 
@@ -22,7 +22,7 @@ export default function TopUpConfirmationPage() {
     }
 
     // get topup status
-    const handleGetTopupStatus = async() => {
+    const handleGetTopupStatus = async () => {
         const response = await api.get(
             "",
             {
@@ -34,8 +34,8 @@ export default function TopUpConfirmationPage() {
     }
 
     return (
-        <MobileView>
-            <WhiteHeader title="Topup Confirmation"/>
+        <View>
+            <WhiteHeader title="Topup Confirmation" />
             <div className="flex items-center justify-center px-4">
                 {/* Card */}
                 <div className="w-full max-w-sm rounded-[28px] border border-gray-200 shadow-sm min-h-[500px]">
@@ -76,7 +76,7 @@ export default function TopUpConfirmationPage() {
 
             </div>
 
-        </MobileView>
+        </View>
 
     );
 }

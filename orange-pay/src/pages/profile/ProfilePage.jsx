@@ -7,7 +7,7 @@ import ProfileImage from "../../components/account/ProfileImage";
 import { clearTokens } from "../../services/auth/authService";
 import { FullActionButton } from "../../components/button/FullActionButton";
 import { useProfileContext } from "../../context/ProfileContext";
-import MobileView from "../../components/view/MobileView";
+import View from "../../components/view/View";
 import WhiteHeader from "../../components/register/WhiteHeader";
 import ContentBox from "../../components/common/ContentBox";
 
@@ -44,7 +44,7 @@ export default function ProfilePage() {
   }, []);
 
   return (
-    <MobileView>
+    <View>
       <WhiteHeader title="Akun Saya" />
       <ContentBox>
         <ProfileImage />
@@ -67,7 +67,7 @@ export default function ProfilePage() {
 
       </ContentBox>
 
-    </MobileView>
+    </View>
 
   );
 }
