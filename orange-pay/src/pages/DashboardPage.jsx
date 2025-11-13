@@ -162,7 +162,7 @@ export default function DashboardPage() {
   };
 
   return (
-    <View>
+    <View className="pt-8 pr-3 pl-3">
       <HeaderSection
         name={profileData.name}
         avatarSrc={profileData.profileImageUrl} />
