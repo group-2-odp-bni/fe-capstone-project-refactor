@@ -100,7 +100,6 @@ export default function EditProfilePage() {
     };
 
 
-
     const handleSaveProfilePicture = async () => {
         try {
             setUploading(true);
@@ -157,6 +156,7 @@ export default function EditProfilePage() {
                     {error && (
                         <p className="text-red-500 text-sm text-center mt-2">{error}</p>
                     )}
+                     
 
                     <div className="mt-4">
                         <FullSubmitButton>

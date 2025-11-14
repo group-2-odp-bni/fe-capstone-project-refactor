@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
@@ -12,6 +12,7 @@ import OtpInputField from "../../components/input/OtpInputField";
 import ButtonLink from "../../components/button/ButtonLink";
 import CountdownTimer from "../../components/dashboard/CountdownTimer";
 import View from "../../components/view/View";
+import { useCountdown } from "../../hooks/useCountDown";
 
 export default function OtpLoginPage() {
     return (
@@ -36,14 +37,7 @@ function SetOtpContent() {
     const [otp, setOtp] = useState("");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
-    const [timer, setTimer] = useState(60); // 5 minutes in seconds
-
-    /** Countdown timer effect */
-    useEffect(() => {
-        if (timer <= 0) return;
-        const interval = setInterval(() => setTimer((prev) => prev - 1), 1000);
-        return () => clearInterval(interval);
-    }, [timer]);
+    const { secondsLeft, reset } = useCountdown(30);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -59,9 +53,10 @@ function SetOtpContent() {
             setLoginData({ stateToken: response.data.data.stateToken });
             navigate("/login/pin");
         } catch (err) {
-            console.error(err);
             setError(
-                err.response?.data?.message || err.message || "Something went wrong."
+                err.response?.data?.message ||
+                err.message ||
+                "Something went wrong."
             );
         } finally {
             setLoading(false);
@@ -79,11 +74,24 @@ function SetOtpContent() {
 
             setLoginData({ stateToken: response.data.data.stateToken });
             setOtp("");
-            setTimer(60); // Reset 5-minute timer
+            reset();
         } catch (err) {
-            console.error(err);
+
+            // get error code
+            errorCode = err.response?.data?.error.code 
+
+            // error handle - expired
+            if(errorCode ==="AUTH-2002"){
+                setError("OTP telah expired")
+                setOtp("")
+                reset("")
+            }
+
+            // else
             setError(
-                err.response?.data?.message || err.message || "Something went wrong."
+                err.response?.data?.error.message ||
+                err.message ||
+                "Something went wrong."
             );
         } finally {
             setLoading(false);
@@ -93,6 +101,8 @@ function SetOtpContent() {
     return (
         <div>
             <form onSubmit={handleSubmit} className="space-y-5 mt-6">
+
+                {/* OTP field */}
                 <OtpInputField
                     id="otp"
                     name="otp"
@@ -104,8 +114,7 @@ function SetOtpContent() {
                     onChange={(e) => setOtp(e.target.value)}
                 />
 
-                {/* Countdown Timer */}
-                <CountdownTimer initialSeconds={60} />
+                <CountdownTimer initialSeconds={secondsLeft} />
 
                 {error && <p className="text-red-500 text-xs">{error}</p>}
 
@@ -116,9 +125,11 @@ function SetOtpContent() {
 
             {/* Resend OTP */}
             <div className="text-center mt-4 pb-6">
-                <ButtonLink onClick={handleResendOtp} disabled={loading || timer > 0}>
-                    {timer > 0 ? "" : "Resend OTP"}
-                </ButtonLink>
+                {secondsLeft === 0 && (
+                    <ButtonLink onClick={handleResendOtp}>
+                        Kirim Ulang OTP
+                    </ButtonLink>
+                )}
             </div>
         </div>
     );

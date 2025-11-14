@@ -8,13 +8,14 @@ import { useNavigate } from "react-router-dom";
 import View from "../../components/view/View";
 import WhiteHeader from "../../components/register/WhiteHeader";
 import api from "../../lib/api";
+import { useCountdown } from "../../hooks/useCountDown";
 
 export default function TopUpConfirmationPage() {
     const { topupData } = useTopupContext();
     const navigate = useNavigate();
     const [error, setError] = useState("")
     const [loading, setLoading] = useState(false);
-    const paymentTimeDuration = 86400
+    const { secondsLeft } = useCountdown(86400)
 
 
 
@@ -89,7 +90,7 @@ export default function TopUpConfirmationPage() {
 
 
                         {/* Expiry */}
-                        <CountdownTimer initialSeconds={paymentTimeDuration} className="mt-5 mb-5" />
+                        <CountdownTimer initialSeconds={secondsLeft} className="mt-5 mb-5" />
 
                         {error && (
                             <p className="text-red-500 text-sm text-center mt-2">{error}</p>

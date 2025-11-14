@@ -1,7 +1,5 @@
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import PhoneLayoutBackground from "../../components/PhoneLayoutBackground";
-import MobileShell from "../../components/layout/MobileShell";
 import WhiteCardContainer from "../../components/register/WhiteCardContainer";
 import OrangeHeader from "../../components/register/OrangeHeader";
 import { FullSubmitButton } from "../../components/button/FullSubmitButton";
@@ -9,13 +7,14 @@ import RegisterTextContainer from "../../components/register/RegisterTextContain
 import OtpInputField from "../../components/input/OtpInputField";
 import View from "../../components/view/View";
 import api from "../../lib/api";
+import ButtonLink from "../../components/button/ButtonLink";
+import CountdownTimer from "../../components/dashboard/CountdownTimer";
+import { useCountdown } from "../../hooks/useCountDown";
 
 export default function VerifyProfileDataPage() {
     const location = useLocation();
-    const navigate = useNavigate();
+    const verifyType = location.state?.type || "email";
 
-    // Expect `type` to be passed like: navigate("/verify", { state: { type: "email" } })
-    const verifyType = location.state?.type || "email"; // fallback to email
     const isEmail = verifyType === "email";
 
     return (
@@ -40,9 +39,13 @@ export default function VerifyProfileDataPage() {
 
 function VerifyProfileContent({ verifyType }) {
     const navigate = useNavigate();
+
     const [otpCode, setOtpCode] = useState("");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
+
+    // Countdown state
+    const { secondsLeft, reset } = useCountdown(5);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -55,20 +58,62 @@ function VerifyProfileContent({ verifyType }) {
                     ? "/api/v1/users/profile/verify-email"
                     : "/api/v1/users/profile/verify-phone";
 
-            console.log(`--- verifying ${verifyType} with OTP ${otpCode} ---`);
-
             await api.post(endpoint, { otpCode });
 
-            //  Move back to profile after successful verification
             navigate("/app/profile");
         } catch (err) {
-            if (err.response) {
-                const errorMessage =
-                    err.response.data?.error?.message || "Kode OTP salah atau sudah kadaluarsa.";
-                setError(errorMessage);
-            } else {
-                setError("Tidak dapat terhubung ke server. Coba lagi nanti.");
-            }
+            const message =
+                err.response?.data?.error?.message ||
+                "Kode OTP salah atau sudah kadaluarsa.";
+
+            setError(message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // --------------------------
+    // CHANGE EMAIL / PHONE
+    // --------------------------
+    const handleChangeEmailOrPhone = async (e) => {
+        e.preventDefault();
+
+        try {
+            const endpoint =
+                verifyType === "email"
+                    ? "/api/v1/users/profile/cancel-pending-email"
+                    : "/api/v1/users/profile/cancel-pending-phone";
+
+            await api.post(endpoint);
+        } catch {
+            // backend already sends proper response, ignore
+        } finally {
+            navigate("/app/editProfile");
+        }
+    };
+
+    // --------------------------
+    // RESEND OTP
+    // --------------------------
+    const handleResendOtp = async (e) => {
+        e.preventDefault();
+        setError("");
+        setLoading(true);
+
+        try {
+            const endpoint =
+                verifyType === "email"
+                    ? "/api/v1/users/profile/resend-email-otp"
+                    : "/api/v1/users/profile/resend-phone-otp";
+
+            await api.post(endpoint);
+
+            reset();
+
+        } catch (err) {
+            const message =
+                err.response?.data?.error?.message || "Gagal mengirim ulang OTP.";
+            setError(message);
         } finally {
             setLoading(false);
         }
@@ -76,6 +121,8 @@ function VerifyProfileContent({ verifyType }) {
 
     return (
         <form onSubmit={handleSubmit} className="space-y-5 mt-6">
+
+            {/* OTP field */}
             <OtpInputField
                 className="mt-10 mb-10"
                 id="otpCode"
@@ -88,7 +135,26 @@ function VerifyProfileContent({ verifyType }) {
                 onChange={(e) => setOtpCode(e.target.value)}
             />
 
+            {/* Countdown */}
+            <CountdownTimer
+                initialSeconds={secondsLeft}
+                className="text-center"
+            />
+
+            {/* Error */}
             {error && <p className="text-red-500 text-xs">{error}</p>}
+
+            {/* Show only when timer ends */}
+            {secondsLeft === 0 && (
+                <ButtonLink onClick={handleResendOtp}>
+                    Kirim Ulang OTP
+                </ButtonLink>
+            )}
+
+            {/* change email or phone */}
+            <ButtonLink onClick={handleChangeEmailOrPhone}>
+                Ganti {verifyType === "email" ? "Email" : "Phone"}
+            </ButtonLink>
 
             <FullSubmitButton disabled={loading}>
                 {loading ? "Memverifikasi..." : "Lanjut"}
