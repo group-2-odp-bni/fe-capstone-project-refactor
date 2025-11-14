@@ -67,9 +67,13 @@ function SetOtpContent() {
     setError("");
     setLoading(true);
 
+    //get recaptcha token
+    const recaptchaToken = localStorage.getItem("_grecaptcha")
+
     try {
       const response = await axios.post("/api/v1/auth/resend-otp", {
         phoneNumber: userData.phoneNumber,
+        captchaToken: recaptchaToken,
       });
 
       setLoginData({ stateToken: response.data.data.stateToken });
