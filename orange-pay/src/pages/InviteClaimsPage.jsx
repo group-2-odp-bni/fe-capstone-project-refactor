@@ -33,6 +33,7 @@ export default function InviteClaimPage() {
   const [boundToken, setBoundToken] = useState(null);
   const [isVerifying, setIsVerifying] = useState(false);
   const [isAlreadyMember, setIsAlreadyMember] = useState(false);
+  const [codeError, setCodeError] = useState(null);
   useEffect(() => {
     if (!token) {
       setError("Token undangan tidak ditemukan.");
@@ -47,7 +48,7 @@ export default function InviteClaimPage() {
           `/api/v1/wallets/invites/inspect?token=${token}`
         );
         const data = res.data.data;
-        if (data.status !== "VALID") {
+        if (data.status !== "VERIFIED") {
           setError(`Undangan ini sudah ${res.data.data.status.toLowerCase()}.`);
         } else {
           setInviteDetails(data);
@@ -89,6 +90,14 @@ export default function InviteClaimPage() {
       if (res.data.data.status === "VERIFIED") {
         setBoundToken(res.data.data.boundToken);
         await handleAccept(res.data.data.boundToken, walletId);
+      } else if (res.data.data.status === "INVALID_CODE") {
+        setCodeError(
+          `Kode verifikasi salah. Percobaan tersisa ditangani oleh sistem.`
+        );
+      } else if (res.data.data.status === "EXPIRED") {
+        setError(
+          `Undangan telah kedaluwarsa karena batas percobaan kode verifikasi telah terlampaui atau waktu habis.`
+        );
       } else {
         setError("Verifikasi gagal. Cek kode atau coba lagi.");
       }
@@ -150,11 +159,8 @@ export default function InviteClaimPage() {
 
   if (inviteDetails) {
     const showVerificationForm =
-      inviteDetails.status === "VALID" && !boundToken;
-    const canAcceptDirectly =
-      inviteDetails.status === "BOUND" ||
-      inviteDetails.status === "VERIFIED" ||
-      boundToken;
+      inviteDetails.status === "VERIFIED" && !boundToken;
+    const canAcceptDirectly = boundToken;
     return (
       <PageWrapper>
         <EnvelopeIcon className="w-16 h-16 text-orange-500 mx-auto mb-4" />
