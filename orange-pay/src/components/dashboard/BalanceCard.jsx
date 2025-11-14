@@ -45,23 +45,39 @@ export default function AtomicBalanceCard({
     return [...normals, ...addCards];
   };
 
-  const orderedItems = useMemo(() => reorderCards(items), [items]);
+  const orderedItemsRaw = useMemo(() => reorderCards(items), [items]);
   const orderedBase = useMemo(() => reorderCards(baseCards), [baseCards]);
 
-  const tabs = useMemo(() => {
-    const source =
-      Array.isArray(orderedBase) && orderedBase.length
-        ? orderedBase
-        : orderedItems.filter((it) => !it.isAddCard);
+  // Ensure there's always a single Add Wallet item at the end of orderedItems.
+  const orderedItems = useMemo(() => {
+    const arr = Array.isArray(orderedItemsRaw) ? [...orderedItemsRaw] : [];
+    const hasAddCard = arr.some((it) => Boolean(it?.isAddCard));
+    if (!hasAddCard) {
+      // Synthetic add-card placeholder
+      arr.push({
+        id: "__add_wallet__",
+        isAddCard: true,
+        // optional: provide title/bg/accent so tabs/dots can style it if needed
+        title: "Add Wallet",
+        bg: "#fff",
+        accent: "#FFAE51",
+      });
+    }
+    return arr;
+  }, [orderedItemsRaw]);
 
+  // Make tabs come from orderedItems (ensures indices align)
+  const tabs = useMemo(() => {
+    const source = Array.isArray(orderedItems) ? orderedItems : [];
     return source.map((c) => ({
-      id: c.id,
+      id: c.id ?? `${c.title ?? "tab"}-${Math.random().toString(36).slice(2, 6)}`,
       defaultForUser: c.defaultForUser,
       title: c.title,
       bg: c.bg,
       accent: c.accent,
+      isAddCard: Boolean(c.isAddCard),
     }));
-  }, [orderedBase, orderedItems]);
+  }, [orderedItems]);
 
   const [activeIndex, setActiveIndex] = useState(0);
   const [isHidden, setIsHidden] = useState(false);
@@ -102,22 +118,11 @@ export default function AtomicBalanceCard({
     }
   }, [orderedItems.length, activeIndex, firstNormalIndex]);
 
+  // Allow landing on add-card: no special skipping logic here.
   const goTo = (i) => {
     if (!orderedItems.length) return;
     const clamp = (n) => Math.max(0, Math.min(orderedItems.length - 1, n));
-    let target = clamp(i);
-
-    if (orderedItems[target]?.isAddCard) {
-      let j = target - 1;
-      while (j >= 0 && orderedItems[j]?.isAddCard) j--;
-      if (j >= 0) target = j;
-      else {
-        j = target + 1;
-        while (j < orderedItems.length && orderedItems[j]?.isAddCard) j++;
-        if (j < orderedItems.length) target = j;
-      }
-    }
-
+    const target = clamp(i);
     setActiveIndex(target);
     viewportRef.current?.scrollToIndex?.(target);
   };
@@ -211,7 +216,7 @@ export default function AtomicBalanceCard({
           if (card.isAddCard) {
             return (
               <div className="p-0" style={{ width: "100%", height: "100%" }}>
-                <AddWalletCard onClick={handleCreateWallet} />
+                <AddWalletCard onCreate={handleCreateWallet} />
               </div>
             );
           }
@@ -322,7 +327,7 @@ export default function AtomicBalanceCard({
             count={orderedItems.length}
             activeIndex={activeIndex}
             onChange={(idx) => goTo(idx)}
-            accent={tabs[activeIndex]?.accent || "#FFAE51"}
+            accent={orderedItems[activeIndex]?.accent || "#FFAE51"}
           />
         </div>
       </div>

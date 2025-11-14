@@ -153,6 +153,7 @@ export default function StepPin() {
         data.transactionId;
 
       console.log("StepPin: navigating to success tx=", tx);
+      window.dispatchEvent(new Event("contacts:updated"));
       navigate(`/app/transfer/success?tx=${encodeURIComponent(tx)}`, { replace: false });
     } catch (err) {
       console.error("submitPinAndTransfer error:", err);

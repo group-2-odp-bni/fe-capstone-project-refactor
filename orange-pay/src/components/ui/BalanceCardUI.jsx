@@ -224,7 +224,7 @@ export const CTASection = ({
   defaultForUser = true,
   isDraggingRef,
   disabled = false,
-  onBlocked = () => {},   // safe default
+  onBlocked = () => {}, // safe default
 }) => {
   const navigate = useNavigate();
 
@@ -364,10 +364,26 @@ export const CarouselViewport = forwardRef(function CarouselViewport(
     );
   };
 
+  const computeCardStep = (el) => {
+    // width used to step between cards; each item uses width: calc(100% - PEEK)
+    // so step = clientWidth - PEEK + GAP (gap accounts space between)
+    return Math.max(1, (el.clientWidth || 0) - PEEK + GAP);
+  };
+
   const updateActiveIndexFromScroll = () => {
     const el = viewportRef.current;
     if (!el) return;
-    const cardStep = Math.max(1, el.clientWidth - PEEK + GAP);
+
+    const cardStep = computeCardStep(el);
+    const maxScrollLeft = Math.max(0, (el.scrollWidth || 0) - (el.clientWidth || 0));
+
+    // If we're very close to the end, force last index
+    if ((el.scrollLeft || 0) >= maxScrollLeft - 2) {
+      const clamped = Math.max(0, Math.min(items.length - 1, items.length - 1));
+      if (clamped !== activeIndex) setActiveIndex(clamped);
+      return;
+    }
+
     const idx = Math.round(el.scrollLeft / cardStep);
     const clamped = Math.max(0, Math.min(items.length - 1, idx));
     if (clamped !== activeIndex) setActiveIndex(clamped);
@@ -410,6 +426,23 @@ export const CarouselViewport = forwardRef(function CarouselViewport(
     el.scrollLeft = startScrollLeftRef.current - delta;
   };
 
+  const scrollToIndex = (i) => {
+    const el = viewportRef.current;
+    if (!el) return;
+    const clamped = Math.max(0, Math.min(items.length - 1, i));
+    const maxScrollLeft = Math.max(0, (el.scrollWidth || 0) - (el.clientWidth || 0));
+
+    // special-case last index: scroll to right edge
+    if (clamped >= items.length - 1) {
+      el.scrollTo({ left: maxScrollLeft, behavior: "smooth" });
+      return;
+    }
+
+    const cardStep = computeCardStep(el);
+    const left = Math.max(0, Math.min(maxScrollLeft, Math.round(clamped * cardStep)));
+    el.scrollTo({ left, behavior: "smooth" });
+  };
+
   const onPointerUp = (e) => {
     const el = viewportRef.current;
     if (!el) return;
@@ -426,21 +459,15 @@ export const CarouselViewport = forwardRef(function CarouselViewport(
       return;
     }
 
-    const cardStep = Math.max(1, el.clientWidth - PEEK + GAP);
+    const cardStep = computeCardStep(el);
     const idx = Math.round(el.scrollLeft / cardStep);
+
+    // Use the improved scrollToIndex so last item snaps to right-edge properly
     scrollToIndex(idx);
 
     isDraggingRef.current = false;
     draggingActiveRef.current = false;
     if (e.cancelable) e.preventDefault();
-  };
-
-  const scrollToIndex = (i) => {
-    const el = viewportRef.current;
-    if (!el) return;
-    const clamped = Math.max(0, Math.min(items.length - 1, i));
-    const cardStep = Math.max(1, el.clientWidth - PEEK + GAP);
-    el.scrollTo({ left: clamped * cardStep, behavior: "smooth" });
   };
 
   useImperativeHandle(
@@ -452,6 +479,10 @@ export const CarouselViewport = forwardRef(function CarouselViewport(
       },
       get isDraggingRef() {
         return isDraggingRef;
+      },
+      // expose the raw element for optional fallbacks
+      get element() {
+        return viewportRef.current;
       },
     }),
     [activeIndex]
