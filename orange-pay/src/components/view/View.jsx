@@ -3,12 +3,12 @@ import MobileShell from "../layout/MobileShell";
 import PhoneLayoutBackground from "../PhoneLayoutBackground";
 import DynamicShell from "../layout/DynamicShell";
 
-export default function View({ children }) {
+export default function View({ children, className = "" }) {
     const [isMobile, setIsMobile] = useState(false);
 
     useEffect(() => {
         const handleResize = () => {
-            // Switch to mobile if viewport width < 768px
+            // Switch to mobile if viewport width < 800px
             setIsMobile(window.innerWidth < 800);
         };
 
@@ -20,9 +20,9 @@ export default function View({ children }) {
 
     return isMobile ? (
         <PhoneLayoutBackground>
-            <MobileShell>{children}</MobileShell>
+            <MobileShell className={className}>{children}</MobileShell>
         </PhoneLayoutBackground>
     ) : (
-        <DynamicShell>{children}</DynamicShell>
+        <DynamicShell className={className}>{children}</DynamicShell>
     );
 }
