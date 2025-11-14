@@ -5,7 +5,7 @@ export default function CenteredNumberInputPad({
   value,
   onChange,
   onConfirm,                 // (pin) => void
-  title = "Masukkan PIN Anda",
+  title = "Masukkan PIN Anda hehe",
   length = 6,
   loading = false,
   errorText = "",

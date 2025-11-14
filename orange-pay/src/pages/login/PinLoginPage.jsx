@@ -58,7 +58,9 @@ function PinLoginContent() {
   };
 
   const handleForgotPin = () => {
-    navigate("/auth/forgot-pin", { state: { phone: loginData?.phone ?? null } });
+    // Navigate to the Reset PIN page and pass current phone (if available)
+    // `ResetPin` will prefill the input if `location.state.phone` exists.
+    navigate("/login/reset", { state: { phone: loginData?.phoneNumber ?? loginData?.phone ?? null } });
   };
 
   const onFormSubmit = (e) => { e.preventDefault(); submitPin(); };

@@ -92,7 +92,15 @@ export default function ResetPinOtp() {
         console.warn("markOtpVerified failed (provider missing?), continuing", e);
       }
 
-      // navigate to reset set-pin step (choose appropriate route)
+      // persist login flow so RequireLoginStep allows access to /login/reset/pin
+      try {
+        const data = { step: "pin", phone };
+        sessionStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      } catch (e) {
+        console.warn("Failed to persist login flow to sessionStorage", e);
+      }
+
+      // navigate to reset set-pin step
       nav("/login/reset/pin", { replace: true });
     } catch (err) {
       console.error("OTP verification failed:", err);

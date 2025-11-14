@@ -1,10 +1,23 @@
 import React, { useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
 export default function ResetPin() {
     const nav = useNavigate();
+    const { state } = useLocation();
     const inputRef = useRef(null);
-    const [phone, setPhone] = useState("");
+
+    // If `state.phone` is passed (full format like +62812...), strip +62 and prefill
+    const initialPhone = (() => {
+        const p = state?.phone ?? null;
+        if (!p) return "";
+        if (typeof p !== "string") return "";
+        if (p.startsWith("+62")) return p.slice(3);
+        if (p.startsWith("62")) return p.slice(2);
+        if (p.startsWith("0")) return p.slice(1);
+        return p;
+    })();
+
+    const [phone, setPhone] = useState(initialPhone);
     const [err, setErr] = useState("");
 
     const onChange = (e) => {
@@ -17,6 +30,9 @@ export default function ResetPin() {
     const next = () => {
         if (!phone.startsWith("8")) return setErr("Nomor harus dimulai dengan 8");
         if (phone.length < 9) return setErr("Minimal 9 digit setelah +62");
+
+        // Navigate to OTP step; ResetPinOtp will handle verifying OTP and
+        // persisting login flow state so the pin step is accessible.
         nav("/login/reset/otp", { state: { phone: `+62${phone}` } });
     };
 

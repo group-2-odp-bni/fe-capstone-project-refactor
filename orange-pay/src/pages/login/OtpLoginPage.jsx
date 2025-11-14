@@ -21,7 +21,7 @@ export default function OtpLoginPage() {
                 <OrangePayLogo />
                 <RegisterTextContainer>
                     Kode OTP telah dikirim ke WhatsApp Anda. Masukkan kode di bawah untuk
-                    melanjutkan.
+                    melanjutkan hehe
                 </RegisterTextContainer>
                 <SetOtpContent />
             </WhiteCardContainer>
