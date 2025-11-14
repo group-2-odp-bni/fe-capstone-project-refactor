@@ -5,16 +5,37 @@ export default function CountdownTimer({ initialSeconds, className = "" }) {
 
   useEffect(() => {
     if (secondsLeft <= 0) return;
-    const interval = setInterval(() => setSecondsLeft((prev) => prev - 1), 1000);
+    const interval = setInterval(() => {
+      setSecondsLeft((prev) => Math.max(prev - 1, 0));
+    }, 1000);
+
     return () => clearInterval(interval);
   }, [secondsLeft]);
 
   const formatTimer = (secs) => {
-    const min = Math.floor(secs / 60)
+    const days = Math.floor(secs / 86400); // 24 * 60 * 60
+    const hours = Math.floor((secs % 86400) / 3600);
+    const minutes = Math.floor((secs % 3600) / 60);
+    const seconds = secs % 60;
+
+    if (days > 0) {
+      // Example: 1d 05:30:10
+      return `${days}d ${hours.toString().padStart(2, "0")} j : ${minutes
+        .toString()
+        .padStart(2, "0")} j : ${seconds.toString().padStart(2, "0")} d`;
+    }
+
+    // No days → show HH:MM:SS or MM:SS if <1 hour
+    if (hours > 0) {
+      return `${hours.toString().padStart(2, "0")} j : ${minutes
+        .toString()
+        .padStart(2, "0")} m : ${seconds.toString().padStart(2, "0")} d`;
+    }
+
+    // Under 1 hour → MM:SS
+    return `${minutes.toString().padStart(2, "0")}:${seconds
       .toString()
-      .padStart(2, "0");
-    const sec = (secs % 60).toString().padStart(2, "0");
-    return `${min}:${sec}`;
+      .padStart(2, "0")}`;
   };
 
   return (
