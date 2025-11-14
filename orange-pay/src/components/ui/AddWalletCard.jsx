@@ -1,3 +1,4 @@
+// src/components/ui/AddWalletCard.jsx
 import React from "react";
 import { Link } from "react-router-dom";
 
@@ -58,6 +59,7 @@ export default function AddWalletCard({
     </div>
   );
 
+  // When an onCreate handler is provided, render a button (preferred)
   if (onCreate) {
     return (
       <button
@@ -70,17 +72,21 @@ export default function AddWalletCard({
           background: "transparent",
           border: "none",
         }}
+        data-allow-drag="true"   // <-- allow carousel dragging starting from here
+        aria-disabled={isCreating}
       >
         {inner}
       </button>
     );
   }
 
+  // Fallback: render as link (when no onCreate) — still allow dragging
   return (
     <Link
       to={to}
       className="block w-full h-full p-0"
       style={{ textDecoration: "none" }}
+      data-allow-drag="true"   // <-- allow carousel dragging starting from here
     >
       {inner}
     </Link>
