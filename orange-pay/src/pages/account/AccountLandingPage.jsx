@@ -17,7 +17,7 @@ export default function AccountLandingPage() {
 
     return (
         <View>
-            <WhiteHeader title="Account" />
+            <WhiteHeader title="Account" to="/app/dashboard"/>
             <ContentBox className="border border-gray-300">
                 <div className="">
 

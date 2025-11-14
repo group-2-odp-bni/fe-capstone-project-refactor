@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import WhiteCardContainer from "../../components/register/WhiteCardContainer";
-import OrangeHeader from "../../components/register/OrangeHeader";
+import ContentBox from "../../components/common/ContentBox";
+import WhiteHeader from "../../components/register/WhiteHeader";
 import { FullSubmitButton } from "../../components/button/FullSubmitButton";
 import RegisterTextContainer from "../../components/register/RegisterTextContainer";
 import OtpInputField from "../../components/input/OtpInputField";
@@ -19,8 +19,8 @@ export default function VerifyProfileDataPage() {
 
     return (
         <View>
-            <OrangeHeader />
-            <WhiteCardContainer>
+            <WhiteHeader title="" to="/app/editProfile" />
+            <ContentBox>
                 <h2 className="text-2xl font-semibold text-center text-gray-800 mb-6">
                     {isEmail ? "Verifikasi Email" : "Verifikasi Nomor Telepon"}
                 </h2>
@@ -32,7 +32,7 @@ export default function VerifyProfileDataPage() {
                 </RegisterTextContainer>
 
                 <VerifyProfileContent verifyType={verifyType} />
-            </WhiteCardContainer>
+            </ContentBox>
         </View>
     );
 }

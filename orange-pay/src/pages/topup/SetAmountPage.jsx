@@ -87,7 +87,7 @@ export default function SetAmountPage() {
 
   return (
     <View>
-      <WhiteHeader title="Set Topup Amount" />
+      <WhiteHeader title="Set Topup Amount" to="/app/topup"/>
       <ContentBox>
         <div className="flex flex-col">
           <div className=" pb-28 flex-1">

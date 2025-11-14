@@ -45,7 +45,7 @@ export default function TransactionLimitPage() {
 
     return (
         <View>
-            <WhiteHeader title="Transaction Limit" />
+            <WhiteHeader title="Transaction Limit" to="/app/account" />
             <ContentBox>
                 <div className="space-y-5">
                     <div className="flex items-center justify-between">
