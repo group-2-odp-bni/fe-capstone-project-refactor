@@ -41,7 +41,6 @@ function mapWalletToCard(wallet) {
   const color = meta.colors || meta.color || "#2F5755";
   const bg =
     meta.bg || `linear-gradient(135deg, ${color} 0%, rgba(0,0,0,0.28) 100%)`;
-
   const title =
     wallet.name && wallet.name.trim().length > 0
       ? wallet.name
@@ -67,21 +66,51 @@ function mapWalletToCard(wallet) {
   };
 }
 
-function ContactRowButton({ contact, onSelect }) {
+function ContactRowButton({
+  contact,
+  onSelect,
+  isExisting,
+  isRecentlyInvited,
+  allMemberPhones = new Set(),
+}) {
+  const isPhoneAlreadyMember = allMemberPhones.has(contact.phone);
+
+  const finalIsExisting = isExisting || isPhoneAlreadyMember;
+  const isDisabled = finalIsExisting || isRecentlyInvited;
+  let pillText = "Add";
+  if (finalIsExisting) {
+    pillText = "Already Member";
+  } else if (isRecentlyInvited) {
+    pillText = "Pending";
+  }
   return (
     <button
       className="contact-row"
-      onClick={() => onSelect(contact)}
-      title={`Invite ${contact.name} as member`}
+      onClick={() => !isDisabled && onSelect(contact)}
+      title={
+        isDisabled
+          ? `Tidak dapat mengundang saat ini`
+          : `Invite ${contact.name} as member`
+      }
+      disabled={isDisabled}
+      style={{
+        opacity: isDisabled ? 0.6 : 1,
+        cursor: isDisabled ? "default" : "pointer",
+      }}
     >
-      <div className="avatar-small">
-        {contact.avatarInitial || contact.name[0]?.toUpperCase() || "?"}
-      </div>
       <div className="contact-meta">
         <div className="contact-name">{contact.name}</div>
         <div className="contact-phone">{contact.phone}</div>
       </div>
-      <div className="pill">Add</div>
+      <div
+        className="pill"
+        style={{
+          backgroundColor: isDisabled ? "#ccc" : "#f90",
+          color: isDisabled ? "#666" : "#fff",
+        }}
+      >
+        {pillText}
+      </div>
     </button>
   );
 }
@@ -130,10 +159,20 @@ export default function AssignMemberPage({ walletIdOverride }) {
   const [verifyTarget, setVerifyTarget] = useState(null);
   const [verifying, setVerifying] = useState(false);
   const [verifyError, setVerifyError] = useState(null);
-
+  const [refreshCounter, setRefreshCounter] = useState(0);
+  const [lastInviteTime, setLastInviteTime] = useState(null);
   const cancelInvite = () => setInviteTarget(null);
   const askRemove = (m) => setRemoveTarget(m);
   const closeDialog = () => setRemoveTarget(null);
+  const isRecentlyInvited = useMemo(() => {
+    if (!lastInviteTime) return false;
+    const now = Date.now();
+    const TTL_MS = 10 * 60 * 1000;
+    if (now < lastInviteTime + TTL_MS) {
+      return true;
+    }
+    return false;
+  }, [lastInviteTime, refreshCounter]);
   const askToVerify = (phone) => {
     const formattedPhone = formatPhoneE164(phone);
     if (!formattedPhone) {
@@ -144,8 +183,28 @@ export default function AssignMemberPage({ walletIdOverride }) {
     setVerifyName("");
     setVerifyError(null);
   };
-  const cancelVerify = () => setVerifyTarget(null);
+  const allMemberPhones = useMemo(() => {
+    const phones = new Set();
+    pending.forEach((p) => {
+      const matchedContact = contacts.find((c) => c.id === p.id);
+      if (matchedContact) {
+        phones.add(matchedContact.phone);
+      }
+    });
 
+    members.forEach((m) => {
+      if (m.phone) phones.add(m.phone);
+    });
+    if (currentUser?.phoneNumber) {
+      const currentUserE164 = formatPhoneE164(currentUser.phoneNumber);
+      if (currentUserE164) {
+        phones.add(currentUserE164);
+      }
+    }
+    return phones;
+  }, [members, pending, contacts, currentUser]);
+  const cancelVerify = () => setVerifyTarget(null);
+  const refreshData = () => setRefreshCounter((c) => c + 1);
   useEffect(() => {
     let cancel = false;
     (async () => {
@@ -198,15 +257,29 @@ export default function AssignMemberPage({ walletIdOverride }) {
         });
 
         const combinedMembers = membersFromApi.map((member) => {
-          const contactDetails = contactsMap.get(member.userId);
-          const name = contactDetails ? contactDetails.name : "Unknown User";
-          const phone = contactDetails ? contactDetails.phone : null;
-          const initials = contactDetails
-            ? contactDetails.avatarInitial || name[0]?.toUpperCase() || "?"
-            : "?";
+          const contactDetails = member.userId
+            ? contactsMap.get(member.userId)
+            : null;
+          let name = member.name;
+          let phone = member.phone;
+          let initials = "?";
+          if (contactDetails) {
+            name = contactDetails.name;
+            phone = contactDetails.phone;
+            initials =
+              contactDetails.avatarInitial || name[0]?.toUpperCase() || "?";
+          } else {
+            if (member.status === "INVITED" && member.phoneMasked) {
+              name = member.phoneMasked;
+              phone = member.phone || null;
+            } else if (member.userId) {
+              name = "Unknown User";
+            }
+            initials = name?.[0]?.toUpperCase() || "?";
+          }
           return {
             ...member,
-            id: member.userId,
+            id: member.userId || member.id,
             name: name,
             initials: initials,
             phone: phone,
@@ -242,7 +315,13 @@ export default function AssignMemberPage({ walletIdOverride }) {
     return () => {
       cancel = true;
     };
-  }, [walletId, navigate]);
+  }, [walletId, navigate, refreshCounter]);
+  const existingMemberIds = useMemo(() => {
+    const activeIds = members.map((m) => m.id).filter((id) => id != null);
+    const pendingIds = pending.map((m) => m.id).filter((id) => id != null);
+    const allIds = [...activeIds, ...pendingIds, currentUserId].filter(Boolean);
+    return new Set(allIds);
+  }, [members, pending, currentUserId]);
   useEffect(() => {
     const q = (search || "").trim();
     if (q.length < 2) {
@@ -302,14 +381,8 @@ export default function AssignMemberPage({ walletIdOverride }) {
       await api.post(
         `/api/v1/wallets/${walletId}/invites?phoneE164=${encodedPhone}&role=${role}`
       );
-      setPending((p) => [
-        ...p,
-        {
-          ...inviteTarget,
-          id: `tmp-${Date.Mow()}`,
-          status: "Waiting",
-        },
-      ]);
+      setLastInviteTime(Date.now());
+      refreshData();
       setSearch("");
       setSearchResults([]);
     } catch (e) {
@@ -327,7 +400,7 @@ export default function AssignMemberPage({ walletIdOverride }) {
       await api.delete(
         `/api/v1/wallets/${walletId}/members/${removeTarget.id}`
       );
-      setMembers((arr) => arr.filter((x) => x.id !== removeTarget.id));
+      refreshData();
     } catch (e) {
       console.error("Gagal menghapus member:", e);
     } finally {
@@ -481,6 +554,7 @@ export default function AssignMemberPage({ walletIdOverride }) {
                   key={c.id}
                   contact={c}
                   onSelect={handleAddFromContact}
+                  isExisting={existingMemberIds.has(c.id)}
                 />
               ))}
               {searchResults.length === 0 && (
@@ -501,6 +575,7 @@ export default function AssignMemberPage({ walletIdOverride }) {
                       key={c.id}
                       contact={c}
                       onSelect={handleAddFromContact}
+                      isExisting={existingMemberIds.has(c.id)}
                     />
                   ))
                 ) : (
@@ -516,6 +591,8 @@ export default function AssignMemberPage({ walletIdOverride }) {
                       key={c.id}
                       contact={c}
                       onSelect={handleAddFromContact}
+                      isExisting={existingMemberIds.has(c.id)}
+                      isRecentlyInvited={isRecentlyInvited}
                     />
                   ))
                 ) : (
