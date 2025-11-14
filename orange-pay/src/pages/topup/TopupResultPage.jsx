@@ -27,7 +27,7 @@ export default function TopupResultPage({
 
   return (
     <View>
-      <WhiteHeader title="Topup Result" />
+      <WhiteHeader title="Topup Result" to="/app/dashboard"/>
       <ContentBox>
         <div className="w-full bg-white flex justify-center">
           <div className="w-full max-w-sm bg-white rounded-[22px] shadow-[0_8px_28px_rgba(0,0,0,0.06)] border border-gray-100 p-6">

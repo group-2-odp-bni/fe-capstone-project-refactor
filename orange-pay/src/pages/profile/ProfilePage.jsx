@@ -47,7 +47,7 @@ export default function ProfilePage() {
 
   return (
     <View>
-      <WhiteHeader title="Akun Saya" />
+      <WhiteHeader title="Akun Saya" to="/app/account" />
       <ContentBox>
         <ProfileImage
           src={profileData.profileImageUrl}

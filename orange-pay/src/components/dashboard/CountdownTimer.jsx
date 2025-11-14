@@ -1,25 +1,32 @@
-import React, { useState, useEffect } from "react";
-
+// CountdownTimer.jsx
 export default function CountdownTimer({ initialSeconds, className = "" }) {
-  const [secondsLeft, setSecondsLeft] = useState(initialSeconds);
-
-  useEffect(() => {
-    if (secondsLeft <= 0) return;
-    const interval = setInterval(() => setSecondsLeft((prev) => prev - 1), 1000);
-    return () => clearInterval(interval);
-  }, [secondsLeft]);
-
   const formatTimer = (secs) => {
-    const min = Math.floor(secs / 60)
-      .toString()
-      .padStart(2, "0");
-    const sec = (secs % 60).toString().padStart(2, "0");
-    return `${min}:${sec}`;
+    const days = Math.floor(secs / 86400);
+    const hours = Math.floor((secs % 86400) / 3600);
+    const minutes = Math.floor((secs % 3600) / 60);
+    const seconds = secs % 60;
+
+    if (days > 0) {
+      return `${days}d ${String(hours).padStart(2, "0")}j : ${String(
+        minutes
+      ).padStart(2, "0")}m : ${String(seconds).padStart(2, "0")}d`;
+    }
+
+    if (hours > 0) {
+      return `${String(hours).padStart(2, "0")}j : ${String(
+        minutes
+      ).padStart(2, "0")}m : ${String(seconds).padStart(2, "0")}d`;
+    }
+
+    return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(
+      2,
+      "0"
+    )}`;
   };
 
   return (
     <p className={`text-center text-gray-500 font-medium ${className}`}>
-      {formatTimer(secondsLeft)}
+      {formatTimer(initialSeconds)}
     </p>
   );
 }

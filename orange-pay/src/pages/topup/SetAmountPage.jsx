@@ -30,6 +30,7 @@ export default function SetAmountPage() {
           id: wallet.id,
           name: wallet.name,
           amount: wallet.balanceSnapshot,
+          transactionId: wallet.transactionId,
         }));
         setWalletList(walletData);
         console.log("Wallets:", walletData);
@@ -86,7 +87,7 @@ export default function SetAmountPage() {
 
   return (
     <View>
-      <WhiteHeader title="Set Topup Amount" />
+      <WhiteHeader title="Set Topup Amount" to="/app/topup"/>
       <ContentBox>
         <div className="flex flex-col">
           <div className=" pb-28 flex-1">

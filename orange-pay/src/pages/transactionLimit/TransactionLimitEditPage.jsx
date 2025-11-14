@@ -45,7 +45,7 @@ export default function TransactionLimitEditPage() {
 
     return (
         <View>
-            <WhiteHeader title="Edit Transaction Limit" />
+            <WhiteHeader title="Edit Transaction Limit" to="/app/transactionLimit" />
             <ContentBox>
                 <form onSubmit={handleSubmit} className="space-y-5">
                     {/* DAILY LIMIT */}

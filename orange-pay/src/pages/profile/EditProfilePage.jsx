@@ -100,7 +100,6 @@ export default function EditProfilePage() {
     };
 
 
-
     const handleSaveProfilePicture = async () => {
         try {
             setUploading(true);
@@ -125,7 +124,7 @@ export default function EditProfilePage() {
 
     return (
         <View>
-            <WhiteHeader title="Edit Akun" />
+            <WhiteHeader title="Edit Akun" to="/app/profile"/>
             <ContentBox>
                 <ProfileImage src={profileData.profileImageUrl} onImageSelected={setImageFile} />
 
@@ -157,6 +156,7 @@ export default function EditProfilePage() {
                     {error && (
                         <p className="text-red-500 text-sm text-center mt-2">{error}</p>
                     )}
+
 
                     <div className="mt-4">
                         <FullSubmitButton>

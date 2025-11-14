@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import ConfirmButton from "../../components/top-up/ConfirmButton";
 import TopUpIcon from "../../components/top-up/TopUpIcon";
 import { useTopupContext } from "../../context/TopupContext";
@@ -8,11 +8,15 @@ import { useNavigate } from "react-router-dom";
 import View from "../../components/view/View";
 import WhiteHeader from "../../components/register/WhiteHeader";
 import api from "../../lib/api";
+import { useCountdown } from "../../hooks/useCountDown";
 
 export default function TopUpConfirmationPage() {
-    const [copied, setCopied] = useState(false);
     const { topupData } = useTopupContext();
     const navigate = useNavigate();
+    const [error, setError] = useState("")
+    const [loading, setLoading] = useState(false);
+    const { secondsLeft } = useCountdown(86400)
+
 
 
     // format number coming from context
@@ -23,15 +27,38 @@ export default function TopUpConfirmationPage() {
 
     // get topup status
     const handleGetTopupStatus = async () => {
-        const response = await api.get(
-            "",
-            {
+        +    setError("");
+        +    setLoading(true);
 
+        try {
+            const response = await api.get(
+                `/api/v1/topup/${topupData.transactionId}/status`
+            );
+
+            const status = response.data?.data?.status;
+
+            // handle no status
+            if (!status) {
+                throw new Error("Status tidak valid dari server");
             }
-        )
 
-        return response.data.data;
-    }
+            if (status === "PAID") {
+                navigate("/app/topup/result");
+            } else {
+                setError("Pembayaran belum dilakukan.");
+            }
+
+        } catch (err) {
+            console.error("Failed to get status:", err);
+            setError(
+                err.response?.data?.error?.message ||
+                err.message ||
+                "Gagal memeriksa status."
+            );
+        } finally {
+            setLoading(false);
+        }
+    };
 
     return (
         <View>
@@ -63,14 +90,19 @@ export default function TopUpConfirmationPage() {
 
 
                         {/* Expiry */}
-                        <CountdownTimer initialSeconds={60} className="mt-5 mb-5" />
+                        <CountdownTimer initialSeconds={secondsLeft} className="mt-5 mb-5" />
+
+                        {error && (
+                            <p className="text-red-500 text-sm text-center mt-2">{error}</p>
+                        )}
 
                         {/* Done button */}
                         <ConfirmButton
-                            onClick={() => navigate("/app/topup/result")}
-                            label="Done"
-                            loading={false}
+                            onClick={handleGetTopupStatus}
+                            label={loading ? "Memeriksa..." : "Cek Status Pembayaran"}
+                            loading={loading}
                         />
+
                     </div>
                 </div>
 

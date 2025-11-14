@@ -11,6 +11,7 @@ import OtpInputField from "../../components/input/OtpInputField";
 import CountdownTimer from "../../components/dashboard/CountdownTimer";
 import ButtonLink from "../../components/button/ButtonLink";
 import View from "../../components/view/View";
+import { useCountdown } from "../../hooks/useCountDown";
 
 export default function OtpRegisterPage() {
   return (
@@ -36,7 +37,7 @@ function SetOtpContent() {
   const [otp, setOtp] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [timer, setTimer] = useState(60); // 5 minutes in seconds
+  const { secondsLeft, reset } = useCountdown(30)
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -51,8 +52,11 @@ function SetOtpContent() {
       setRegistrationData({ stateToken: data.data.stateToken });
       navigate("/register/setpin");
     } catch (err) {
-      console.error(err);
-      setError(err.message || "Something went wrong.");
+      setError(
+        err.response?.data?.message ||
+        err.message ||
+        "Something went wrong."
+      );
     } finally {
       setLoading(false);
     }
@@ -70,11 +74,23 @@ function SetOtpContent() {
 
       setLoginData({ stateToken: response.data.data.stateToken });
       setOtp("");
-      setTimer(60); // Reset 5-minute timer
+      reset()
     } catch (err) {
-      console.error(err);
+      // get error code
+      errorCode = err.response?.data?.error.code
+
+      // error handle - expired
+      if (errorCode === "AUTH-2002") {
+        setError("OTP telah expired")
+        setOtp("")
+        reset("")
+      }
+
+      // else
       setError(
-        err.response?.data?.message || err.message || "Something went wrong."
+        err.response?.data?.error.message ||
+        err.message ||
+        "Something went wrong."
       );
     } finally {
       setLoading(false);
@@ -94,7 +110,7 @@ function SetOtpContent() {
           value={otp}
           onChange={(e) => setOtp(e.target.value)}
         />
-        <CountdownTimer initialSeconds={60} />
+        <CountdownTimer initialSeconds={secondsLeft} />
 
         {error && <p className="text-red-500 text-xs">{error}</p>}
 
@@ -103,11 +119,13 @@ function SetOtpContent() {
         </FullSubmitButton>
       </form>
 
-      <div className="text-center mt-4 text-xs md:text-sm text-gray-600 pb-6">
+      <div className="text-center mt-4 pb-6">
+        {secondsLeft === 0 && (
+          <ButtonLink onClick={handleResendOtp}>
+            Kirim Ulang OTP
+          </ButtonLink>
+        )}
 
-        <ButtonLink onClick={handleResendOtp} disabled={loading || timer > 0}>
-          {timer > 0 ? "" : "Resend OTP"}
-        </ButtonLink>
       </div>
     </div >
   );
