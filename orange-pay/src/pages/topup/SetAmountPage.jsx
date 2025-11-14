@@ -66,6 +66,7 @@ export default function SetAmountPage() {
       vaNumber: response.data.data.vaNumber,
       transactionRef: response.data.data.transactionRef,
       createdAt: response.data.data.createdAt,
+      transactionId: response.data.data.transactionId,
     });
 
     console.log("Saved to context:", {
@@ -75,6 +76,7 @@ export default function SetAmountPage() {
       vaNumber: response.data.data.vaNumber,
       transactionRef: response.data.data.transactionRef,
       createdAt: response.data.data.createdAt,
+      transactionId: response.data.data.transactionId,
     });
 
 
@@ -87,7 +89,7 @@ export default function SetAmountPage() {
 
   return (
     <View>
-      <WhiteHeader title="Set Topup Amount" to="/app/topup"/>
+      <WhiteHeader title="Set Topup Amount" to="/app/topup" />
       <ContentBox>
         <div className="flex flex-col">
           <div className=" pb-28 flex-1">
