@@ -8,7 +8,6 @@ import { useRegistrationContext } from "../../context/RegistrationContext";
 import WhiteCardContainer from "../../components/register/WhiteCardContainer";
 import { saveTokens } from "../../services/auth/authService";
 import api from "../../lib/api";
-import { v4 as uuidv4 } from "uuid";
 import View from "../../components/view/View";
 
 export default function SetPinPage() {
@@ -18,7 +17,7 @@ export default function SetPinPage() {
       <WhiteCardContainer>
         <SetPinContent />
       </WhiteCardContainer>
-    </View >
+    </View>
   );
 }
 
@@ -27,36 +26,77 @@ function SetPinContent() {
   const { userData } = useRegistrationContext();
 
   const [pin, setPin] = useState("");
+  const [firstPin, setFirstPin] = useState(null);
+  const [step, setStep] = useState("create"); // "create" | "confirm"
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [attempt, setAttempt] = useState(0);
 
   const submitPin = async () => {
     setAttempt((x) => x + 1);
+    setError("");
 
-    if (pin.length !== 6) { setError("PIN harus 6 digit"); return; }
-    if (!userData?.stateToken) { setError("Sesi registrasi tidak valid. Silakan ulangi."); return; }
+    if (pin.length !== 6) {
+      setError("PIN harus 6 digit");
+      return;
+    }
 
-    setError(""); setLoading(true);
+    // Step 1 — Create
+    if (step === "create") {
+      setFirstPin(pin);
+      setPin("");
+      setStep("confirm");
+      return;
+    }
 
+    // Step 2 — Confirm
+    if (pin !== firstPin) {
+      setError("PIN tidak cocok, silakan coba lagi.");
+      setPin("");
+      setFirstPin(null);
+      setStep("create");
+      return;
+    }
+
+    // Step 3 — Send to backend
+    if (!userData?.stateToken) {
+      setError("Sesi registrasi tidak valid. Silakan ulangi.");
+      return;
+    }
+
+    setLoading(true);
     try {
-      const pinRes = await api.post("/api/v1/auth/pin", { pin }, {
-        headers: { Authorization: `Bearer ${userData.stateToken}`, "Content-Type": "application/json" },
-      });
+      const pinRes = await api.post(
+        "/api/v1/auth/pin",
+        { pin },
+        {
+          headers: {
+            Authorization: `Bearer ${userData.stateToken}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
 
       const { accessToken, refreshToken } = pinRes.data?.data || {};
       if (!accessToken) throw new Error("Access token tidak ditemukan");
+
       saveTokens(accessToken, refreshToken);
       navigate("/app/dashboard");
     } catch (err) {
       console.error("Set PIN failed:", err);
-      setError(err?.response?.data?.message || err?.message || "Something went wrong.");
+      setError(err?.response?.data?.message || err?.message || "Terjadi kesalahan. Silakan coba lagi.");
+      setPin("");
+      setFirstPin(null);
+      setStep("create");
     } finally {
       setLoading(false);
     }
   };
 
-  const onFormSubmit = (e) => { e.preventDefault(); submitPin(); };
+  const onFormSubmit = (e) => {
+    e.preventDefault();
+    submitPin();
+  };
 
   const goBack = () => {
     if (window.history.length > 1) navigate(-1);
@@ -71,7 +111,7 @@ function SetPinContent() {
         onConfirm={submitPin}
         errorText={error}
         loading={loading}
-        title="Buat PIN Anda"
+        title={step === "create" ? "Buat PIN Anda" : "Konfirmasi PIN Anda"}
         attemptKey={attempt}
         onClearError={() => setError("")}
         onBack={goBack}
@@ -80,7 +120,7 @@ function SetPinContent() {
       {error && <p className="text-red-500 text-xs text-center mb-4">{error}</p>}
 
       <FullSubmitButton disabled={loading || pin.length !== 6}>
-        {loading ? "Menyimpan..." : "Simpan"}
+        {loading ? "Menyimpan..." : step === "create" ? "Lanjutkan" : "Simpan"}
       </FullSubmitButton>
     </form>
   );

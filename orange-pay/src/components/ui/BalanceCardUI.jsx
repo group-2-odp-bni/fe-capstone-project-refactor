@@ -463,7 +463,7 @@ export const CarouselViewport = forwardRef(function CarouselViewport(
       className="relative overflow-x-auto overflow-y-visible snap-x snap-mandatory scroll-smooth rounded-2xl select-none [-webkit-overflow-scrolling:touch]"
       style={{
         scrollbarWidth: "none",
-        touchAction: "pan-y",
+        touchAction: "auto",
         paddingRight: `${PEEK}px`,
       }}
       onScroll={onScroll}

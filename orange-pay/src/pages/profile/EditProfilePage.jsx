@@ -22,12 +22,7 @@ export default function EditProfilePage() {
     useEffect(() => {
         const getUserProfile = async () => {
             try {
-                const response = await axios.get("/api/v1/user/me", {
-                    headers: {
-                        Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-                    },
-                });
-
+                const response = await api.get("/api/v1/user/me");
                 const user = response.data.data;
                 const normalizedUser = {
                     name: user.name || "",
@@ -56,38 +51,54 @@ export default function EditProfilePage() {
         setError("");
         setLoading(true);
 
-        const changedFields = Object.keys(profileData).reduce((acc, key) => {
-            const current = profileData[key]?.toString().trim() || "";
-            const original = originalProfile[key]?.toString().trim() || "";
+        try {
+            const changedFields = Object.keys(profileData).reduce((acc, key) => {
+                const current = profileData[key]?.toString().trim() || "";
+                const original = originalProfile[key]?.toString().trim() || "";
+                if (current !== original) acc[key] = profileData[key];
+                return acc;
+            }, {});
 
-            if (current !== original) {
-                acc[key] = profileData[key];
+            if (Object.keys(changedFields).length === 0 && !imageFile) {
+                setError("Tidak ada perubahan untuk disimpan.");
+                setLoading(false);
+                return;
             }
-            return acc;
-        }, {});
 
-        if (Object.keys(changedFields).length === 0 && !imageFile) {
-            setError("Tidak ada perubahan untuk disimpan.");
+            // Remove non-editable flags
+            delete changedFields.phoneVerified;
+            delete changedFields.emailVerified;
+
+            // Update profile fields if any changed
+            if (Object.keys(changedFields).length > 0) {
+                await api.put("/api/v1/users/profile", changedFields);
+            }
+
+            // Upload new image if provided
+            if (imageFile) {
+                await handleSaveProfilePicture();
+            }
+
+            // Conditional navigation logic
+            const emailChanged = changedFields.hasOwnProperty("email");
+            const phoneChanged = changedFields.hasOwnProperty("phoneNumber");
+
+            if (emailChanged) {
+                navigate("/app/verify", { state: { type: "email", email: changedFields.email } });
+            } else if (phoneChanged) {
+                navigate("/app/verify", { state: { type: "phone" } });
+            } else {
+                navigate("/app/profile");
+            }
+
+        } catch (err) {
+            console.error("Failed to save profile:", err);
+            setError("Gagal menyimpan perubahan. Silakan coba lagi.");
+        } finally {
             setLoading(false);
-            return;
         }
+    };
 
-        delete changedFields.phoneVerified;
-        delete changedFields.emailVerified;
-
-        if (Object.keys(changedFields).length > 0) {
-            await api.put(
-                "/api/v1/users/profile",
-                changedFields,
-            )
-        };
-
-        if (imageFile) {
-            await handleSaveProfilePicture();
-        }
-
-        navigate("/app/profile");
-    }
 
 
     const handleSaveProfilePicture = async () => {

@@ -23,7 +23,7 @@ export default function RecentList() {
 
       <div
         onClick={() => navigate("/app/allhistory")}
-        className="rounded-[24px] border border-gray-200 bg-white shadow-sm cursor-pointer hover:shadow-md transition-shadow"
+        className="rounded-[24px] border border-gray-200 bg-white cursor-pointer transition-shadow"
       >
         <div className="p-4">
           {loading ? (
