@@ -71,6 +71,13 @@ export default function StepSelectContacts() {
   const { data, setData, setStep } = useTransfer();
   const [query, setQuery] = useState(data?.phone ?? "");
   const debouncedQuery = useDebounce(query, 600);
+
+  // keep a ref so event handler sees the latest query
+  const queryRef = useRef(query);
+  useEffect(() => {
+    queryRef.current = query;
+  }, [query]);
+
   const [savedContacts, setSavedContacts] = useState([]);
   const [favorites, setFavorites] = useState([]);
   const [results, setResults] = useState([]);
@@ -88,6 +95,107 @@ export default function StepSelectContacts() {
     setData({ senderWalletId: initialWalletId });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialWalletId]);
+
+  // reload function that forces network when needed
+  const reloadSavedContacts = async ({ force = false } = {}) => {
+    setLoading(true);
+    try {
+      // your hook supports { force } param
+      const saved = await (typeof fetchSavedContacts === "function"
+        ? fetchSavedContacts({ force })
+        : []);
+      const sArr = Array.isArray(saved) ? saved : [];
+      setSavedContacts(sArr);
+
+      const q = (queryRef.current ?? "").trim();
+      if (q === "") {
+        setResults(sArr);
+        setDbFound(null);
+      } else {
+        // prefer server-side search if available
+        if (typeof searchSavedContacts === "function") {
+          try {
+            const srv = await searchSavedContacts(q);
+            setResults(Array.isArray(srv) ? srv : []);
+          } catch {
+            // fallback local filter
+            const localFiltered = sArr.filter((c) => {
+              const n = (c.name || "").toLowerCase();
+              const p = (c.phone || "").toLowerCase();
+              return n.includes(q.toLowerCase()) || p.includes(q.toLowerCase());
+            });
+            setResults(localFiltered);
+          }
+        } else {
+          const localFiltered = sArr.filter((c) => {
+            const n = (c.name || "").toLowerCase();
+            const p = (c.phone || "").toLowerCase();
+            return n.includes(q.toLowerCase()) || p.includes(q.toLowerCase());
+          });
+          setResults(localFiltered);
+        }
+      }
+    } catch (err) {
+      setErrorMsg(err?.message || "Failed to load contacts");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // listen for external updates (fired e.g. from StepPin)
+  useEffect(() => {
+    const handler = (ev) => {
+      // if event carries detail (new items), merge them; otherwise force-reload from network
+      if (ev?.detail && Array.isArray(ev.detail)) {
+        // merge detail into current savedContacts (dedupe by phone/receiverUserId)
+        const incoming = ev.detail;
+        setSavedContacts((prev) => {
+          const map = new Map();
+          // add prev first so incoming can override
+          prev.forEach((c) => {
+            const key = c.receiverWalletId ?? c.receiverUserId ?? c.phone ?? JSON.stringify(c);
+            map.set(key, c);
+          });
+          incoming.forEach((c) => {
+            const key = c.receiverWalletId ?? c.receiverUserId ?? c.phone ?? JSON.stringify(c);
+            map.set(key, c);
+          });
+          const merged = Array.from(map.values());
+          // update results depending on current query
+          const q = (queryRef.current ?? "").trim();
+          if (q === "") setResults(merged);
+          else {
+            if (typeof searchSavedContacts === "function") {
+              searchSavedContacts(q).then((srv) => {
+                setResults(Array.isArray(srv) ? srv : []);
+              }).catch(() => {
+                const localFiltered = merged.filter((c) => {
+                  const n = (c.name || "").toLowerCase();
+                  const p = (c.phone || "").toLowerCase();
+                  return n.includes(q.toLowerCase()) || p.includes(q.toLowerCase());
+                });
+                setResults(localFiltered);
+              });
+            } else {
+              const localFiltered = merged.filter((c) => {
+                const n = (c.name || "").toLowerCase();
+                const p = (c.phone || "").toLowerCase();
+                return n.includes(q.toLowerCase()) || p.includes(q.toLowerCase());
+              });
+              setResults(localFiltered);
+            }
+          }
+          return merged;
+        });
+      } else {
+        // no detail — force reload from network
+        reloadSavedContacts({ force: true });
+      }
+    };
+    window.addEventListener("contacts:updated", handler);
+    return () => window.removeEventListener("contacts:updated", handler);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fetchSavedContacts, searchSavedContacts]);
 
   // 🧭 Load saved contacts AND favorites on mount
   useEffect(() => {
@@ -144,7 +252,7 @@ export default function StepSelectContacts() {
     return () => {
       abortRef.current = true;
     };
-  }, [debouncedQuery, savedContacts]);
+  }, [debouncedQuery, savedContacts, searchSavedContacts]);
 
   // 🔄 Background lookup (main DB) — only when no local results
   useEffect(() => {
@@ -171,7 +279,7 @@ export default function StepSelectContacts() {
       abortRef.current = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedQuery, results]);
+  }, [debouncedQuery, results, lookupMainByPhone]);
 
   /** 🔧 Enrich a contact with IDs if missing (does a quick inquiry). */
   const ensureReceiverIds = async (base) => {
@@ -279,6 +387,10 @@ export default function StepSelectContacts() {
   // ===== Favorites UI habit (from UI/UX snippet) =====
   const favoritesUI = Array.isArray(results) ? results.slice(0, 8) : [];
 
+  // stable key helper (use walletId -> userId -> phone)
+  const getKey = (c, idx) =>
+    c.receiverWalletId ?? c.receiverUserId ?? c.phone ?? `idx-${idx}`;
+
   return (
     <div className="pt-2">
       {/* 🔍 Search */}
@@ -334,7 +446,7 @@ export default function StepSelectContacts() {
             ) : (
               favoritesUI.map((f, i) => (
                 <FavoriteAvatar
-                  key={`${f.phone}-${i}`}
+                  key={getKey(f, i)}
                   name={f.name}
                   onClick={() => pick(f)}
                 />
@@ -356,7 +468,7 @@ export default function StepSelectContacts() {
             )
           ) : (
             results.map((c, idx) => (
-              <ContactListItem key={`${c.phone}-${idx}`} contact={c} onPick={pick} />
+              <ContactListItem key={getKey(c, idx)} contact={c} onPick={pick} />
             ))
           )}
         </div>
