@@ -9,15 +9,16 @@ export default function RecentList() {
 
   return (
     <section className="mt-6">
+      <Header title="BELINDA" centerTitle />
       <div
         onClick={() => navigate("/app/allhistory")}
         className="flex items-center justify-between cursor-pointer group"
       >
         <h3 className="font-semibold text-lg text-gray-900 mb-3 text-left group-hover:text-primary transition-colors">
-          Recent
+          Transaksi terakhir
         </h3>
         <span className="text-sm text-gray-500 group-hover:text-primary transition-colors">
-          See all →
+          Lihat semua →
         </span>
       </div>
 

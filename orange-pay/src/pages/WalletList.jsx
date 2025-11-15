@@ -1,16 +1,17 @@
 // src/components/dashboard/BalanceCard.jsx
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import useCardBalances from "../../hooks/api/useCardBalances";
-import ScrollProgress from "../ui/ScrollProgress";
-import AddWalletCard from "../ui/AddWalletCard";
+import useCardBalances from "../hooks/api/useCardBalances";
+import ScrollProgress from "../components/ui/ScrollProgress";
+import AddWalletCard from "../components/ui/AddWalletCard";
 import {
   GradientCardShell,
   CardTopBar,
   BalanceRow,
   CarouselViewport,
   CTASection,
-} from "../ui/BalanceCardUI";
+} from "../components/ui/BalanceCardUI";
+import Header from "../components/Header";
 
 export default function AtomicBalanceCard({
   initialWalletId = null,
@@ -268,6 +269,7 @@ export default function AtomicBalanceCard({
   }
   
   return (
+    
     <div className="w-full mx-auto md:px-1 mt-6">
       <div
         onClick={() => navigate("/app/walletlist")}

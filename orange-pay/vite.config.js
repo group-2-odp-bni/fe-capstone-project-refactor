@@ -54,6 +54,10 @@ export default defineConfig({
       //   secure: false,
       // },
     },
-    allowedHosts: []
+    host: true,
+    port: 5173,
+    allowedHosts: [
+      "app-dev.orangebybni.my.id"
+    ]
   },
 });
