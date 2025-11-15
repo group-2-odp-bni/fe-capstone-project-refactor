@@ -1,6 +1,6 @@
 // src/components/transfer/StepEnterAmount.jsx
 import React, { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { ChevronDownIcon } from "@heroicons/react/24/outline";
 import { useTransfer } from "../../context/TransferContext";
 import useCardBalances from "../../hooks/api/useCardBalances";
@@ -20,6 +20,7 @@ const formatAmountDisplay = (digits = "") => {
 export default function StepEnterAmount() {
   const { data, setData, setStep } = useTransfer();
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
 
   const {
     items: walletCards = [],
@@ -44,6 +45,38 @@ export default function StepEnterAmount() {
   const numericAmount = Number(normalizeToDigits(displayAmount) || 0);
   const sourceBalance =
     typeof data.sourceBalance === "number" ? data.sourceBalance : null;
+
+  // header/back guard: use walletsLoading to block back when loading wallets
+  const loading = Boolean(walletsLoading);
+
+  // Ensure browser back / hardware back while on Amount returns to Select step
+  useEffect(() => {
+    // push marker so popstate is triggered reliably
+    try {
+      window.history.pushState({ _transfer_amount_marker: true }, "");
+    } catch (e) {
+      /* ignore */
+    }
+
+    const onPop = (ev) => {
+      // avoid interfering when not in transfer route
+      // set flow step back to select and keep user on /app/transfer
+      if (loading) return; // don't navigate while loading
+      setStep("select");
+      try {
+        navigate("/app/transfer", { replace: true });
+      } catch (err) {
+        // ignore navigation errors
+      }
+    };
+
+    window.addEventListener("popstate", onPop);
+    return () => {
+      window.removeEventListener("popstate", onPop);
+      // don't try to manipulate history on unmount
+    };
+    // only run when component mounts/unmounts or when loading changes
+  }, [navigate, setStep, loading]);
 
   const canConfirm =
     numericAmount >= MIN_AMOUNT &&
@@ -103,6 +136,7 @@ export default function StepEnterAmount() {
         setSearchParams(next, { replace: true });
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [wallets, data.senderWalletId, data.sourceName, data.sourceBalance]);
 
   useEffect(() => {
@@ -213,9 +247,7 @@ export default function StepEnterAmount() {
           )}
 
           {showTooLarge && (
-            <div className="mt-2 text-sm text-red-600">
-              Insufficient balance
-            </div>
+            <div className="mt-2 text-sm text-red-600">Insufficient balance</div>
           )}
         </div>
 
@@ -249,9 +281,7 @@ export default function StepEnterAmount() {
             placeholder="Notes: (optional)"
             className="w-full p-3 border border-gray-200 rounded-lg resize-none h-20 focus:outline-none"
           />
-          <div className="text-xs text-gray-400 mt-1 text-right">
-            {noteLength}/25
-          </div>
+          <div className="text-xs text-gray-400 mt-1 text-right">{noteLength}/25</div>
         </div>
       </div>
 

@@ -62,7 +62,7 @@ function mapApiContact(payload = {}, fallbackPhoneE164 = "") {
     name: String(name || ""),
     phone: normalizePhone(String(phoneE164 || "")), // UI uses 08…
     receiverUserId,
-    receiverWalletId, 
+    receiverWalletId,
   };
 }
 
@@ -153,10 +153,7 @@ export default function StepVerifyContact() {
       if (!mountedRef.current) return;
 
       const payload =
-        (res?.contact && res.contact) ||
-        (res?.data && res.data) ||
-        res ||
-        {};
+        (res?.contact && res.contact) || (res?.data && res.data) || res || {};
 
       const mapped = mapApiContact(payload, phoneE164);
 
@@ -221,6 +218,56 @@ export default function StepVerifyContact() {
     setErrorMsg("");
   };
 
+  // ====== NEW onBack implementation (no UI here) ======
+  const TRANSFER_FLOW_KEY = "transferFlowState";
+  const safeParse = (raw) => {
+    try {
+      return raw ? JSON.parse(raw) : null;
+    } catch (e) {
+      return null;
+    }
+  };
+
+  const onBack = () => {
+    // 1) Try to restore persisted snapshot (if any)
+    try {
+      const raw = sessionStorage.getItem(TRANSFER_FLOW_KEY);
+      const snap = safeParse(raw);
+      if (snap && typeof snap === "object" && snap.data) {
+        // merge persisted data into context but preserve current senderWalletId if present
+        setData((prev) => ({
+          ...(prev || {}),
+          ...(snap.data || {}),
+          senderWalletId:
+            data?.senderWalletId ?? (snap.data && snap.data.senderWalletId) ?? null,
+        }));
+        setStep("select");
+        return;
+      }
+    } catch (err) {
+      // ignore and fall through to fallback reconstruction
+      // eslint-disable-next-line no-console
+      console.warn("StepVerifyContact.onBack: failed to parse session snapshot", err);
+    }
+
+    // 2) Fallback: rebuild minimal context from prefilled values
+    setData((prev) => ({
+      ...(prev || {}),
+      senderWalletId: data?.senderWalletId ?? prev?.senderWalletId ?? null,
+      phone: prefilled.phone || prev?.phone || "",
+      contactName: prefilled.name || prev?.contactName || "",
+      // clear receiver IDs because we're going back to selection
+      receiverUserId: null,
+      receiverWalletId: null,
+      accountId: null,
+      walletId: null,
+      verified: false,
+    }));
+
+    setStep("select");
+  };
+  // ====== end onBack ======
+
   const formattedPhone = formatPhoneDisplay(isEditing ? editValue : data?.phone || "");
 
   return (
@@ -228,9 +275,7 @@ export default function StepVerifyContact() {
       {/* === PHONE CARD === */}
       <div className="mb-4 border rounded-lg bg-white p-3 flex justify-between items-center">
         <div className="flex-1 min-w-0">
-          <div className="text-base font-medium text-gray-800 pb-1">
-            Verifikasi Nomor
-          </div>
+          <div className="text-base font-medium text-gray-800 pb-1">Verifikasi Nomor</div>
 
           {isEditing ? (
             <input
@@ -241,9 +286,7 @@ export default function StepVerifyContact() {
               placeholder="Masukkan nomor"
             />
           ) : (
-            <div className="text-base font-medium text-gray-800 truncate">
-              {formattedPhone || "—"}
-            </div>
+            <div className="text-base font-medium text-gray-800 truncate">{formattedPhone || "—"}</div>
           )}
         </div>
 
@@ -256,31 +299,13 @@ export default function StepVerifyContact() {
           >
             {isEditing ? (
               // check icon
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5 text-green-600"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M16.707 5.293a1 1 0 00-1.414 0L8 12.586 4.707 9.293a1 1 0 10-1.414 1.414l4 4a1 1 0 001.414 0l8-8a1 1 0 000-1.414z"
-                  clipRule="evenodd"
-                />
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-600" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 00-1.414 0L8 12.586 4.707 9.293a1 1 0 10-1.414 1.414l4 4a1 1 0 001.414 0l8-8a1 1 0 000-1.414z" clipRule="evenodd" />
               </svg>
             ) : (
               // x icon
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M10 8.586L4.707 3.293a1 1 0 00-1.414 1.414L8.586 10l-5.293 5.293a1 1 0 001.414 1.414L10 11.414l5.293 5.293a1 1 0 001.414-1.414L11.414 10l5.293-5.293a1 1 0 00-1.414-1.414L10 8.586z"
-                  clipRule="evenodd"
-                />
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 8.586L4.707 3.293a1 1 0 00-1.414 1.414L8.586 10l-5.293 5.293a1 1 0 001.414 1.414L10 11.414l5.293 5.293a1 1 0 001.414-1.414L11.414 10l5.293-5.293a1 1 0 00-1.414-1.414L10 8.586z" clipRule="evenodd" />
               </svg>
             )}
           </button>
@@ -288,18 +313,14 @@ export default function StepVerifyContact() {
       </div>
 
       {/* error text */}
-      {errorMsg ? (
-        <div className="text-xs text-red-500 mb-3 text-center">{errorMsg}</div>
-      ) : null}
+      {errorMsg ? <div className="text-xs text-red-500 mb-3 text-center">{errorMsg}</div> : null}
 
       {/* verify button */}
       <button
         onClick={runVerify}
         disabled={status === "checking"}
         className={`w-full py-3 rounded-lg text-white font-medium transition ${
-          status === "checking"
-            ? "bg-gray-300 text-gray-600 cursor-not-allowed"
-            : "bg-orange-500 hover:bg-orange-600"
+          status === "checking" ? "bg-gray-300 text-gray-600 cursor-not-allowed" : "bg-orange-500 hover:bg-orange-600"
         }`}
       >
         {status === "checking" ? "Checking…" : "Verify"}

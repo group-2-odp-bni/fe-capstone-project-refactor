@@ -48,23 +48,30 @@ export default function AtomicBalanceCard({
   const orderedItemsRaw = useMemo(() => reorderCards(items), [items]);
   const orderedBase = useMemo(() => reorderCards(baseCards), [baseCards]);
 
-  // Ensure there's always a single Add Wallet item at the end of orderedItems.
+  // detect if we actually have "real" wallet cards (non-add)
+  const hasRealWallets = useMemo(
+    () => Array.isArray(orderedItemsRaw) && orderedItemsRaw.some((it) => !it?.isAddCard),
+    [orderedItemsRaw]
+  );
+
+  // Build orderedItems: append an Add Wallet placeholder only when there are real wallets.
   const orderedItems = useMemo(() => {
     const arr = Array.isArray(orderedItemsRaw) ? [...orderedItemsRaw] : [];
     const hasAddCard = arr.some((it) => Boolean(it?.isAddCard));
-    if (!hasAddCard) {
-      // Synthetic add-card placeholder
-      arr.push({
-        id: "__add_wallet__",
-        isAddCard: true,
-        // optional: provide title/bg/accent so tabs/dots can style it if needed
-        title: "Add Wallet",
-        bg: "#fff",
-        accent: "#FFAE51",
-      });
+    if (hasRealWallets) {
+      if (!hasAddCard) {
+        arr.push({
+          id: "__add_wallet__",
+          isAddCard: true,
+          title: "Add Wallet",
+          bg: "#fff",
+          accent: "#FFAE51",
+        });
+      }
     }
+    // If no real wallets, we keep arr as-is (no auto-injected add card)
     return arr;
-  }, [orderedItemsRaw]);
+  }, [orderedItemsRaw, hasRealWallets]);
 
   // Make tabs come from orderedItems (ensures indices align)
   const tabs = useMemo(() => {
@@ -118,7 +125,6 @@ export default function AtomicBalanceCard({
     }
   }, [orderedItems.length, activeIndex, firstNormalIndex]);
 
-  // Allow landing on add-card: no special skipping logic here.
   const goTo = (i) => {
     if (!orderedItems.length) return;
     const clamp = (n) => Math.max(0, Math.min(orderedItems.length - 1, n));
@@ -188,6 +194,63 @@ export default function AtomicBalanceCard({
     sm: { bottom: 64, right: 120 },
     md: { bottom: 80, right: 160 },
   };
+
+  // ---------- RENDER ----------
+  // 1) Loading skeleton (carousel-like)
+  if (loading) {
+    return (
+      <div className="w-full mx-auto md:px-1 mt-6">
+        <h3 className="px-0 font-semibold text-lg text-gray-900 mb-3 md:px-0 text-left">
+          Your Wallet
+        </h3>
+
+        <div className="rounded-2xl overflow-hidden">
+          <div className="flex gap-4">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div
+                key={i}
+                className="rounded-[22px] bg-gray-100 animate-pulse"
+                style={{ flex: "0 0 70%", height: 160 }}
+              />
+            ))}
+          </div>
+        </div>
+
+        <div className="mt-4 max-w-[520px] mx-auto">
+          <div className="h-3 bg-gray-100 rounded w-3/5 animate-pulse" />
+        </div>
+      </div>
+    );
+  }
+
+  if (!hasRealWallets) {
+    return (
+      <div className="w-full mx-auto md:px-1 mt-6">
+        <h3 className="px-0 font-semibold text-lg text-gray-900 mb-3 text-left">
+          Your Wallet
+        </h3>
+  
+        <div className="rounded-[24px] overflow-hidden">
+          {/* Skeleton card matching actual GradientCardShell size */}
+          <div
+            className="rounded-[22px] bg-gray-100 animate-pulse"
+            style={{
+              width: "100%",
+              height: 180,     // same height as your real card viewport
+            }}
+          />
+        </div>
+  
+        {/* Bottom progress skeleton (matches your existing loading block) */}
+        <div className="mt-4 max-w-[520px] mx-auto">
+          <div className="h-3 bg-gray-100 rounded w-3/5 animate-pulse" />
+        </div>
+      </div>
+    );
+  }
+  
+  
+  
 
   return (
     <div className="w-full mx-auto md:px-1 mt-6">
@@ -278,20 +341,18 @@ export default function AtomicBalanceCard({
                       )`,
                     }}
                   />
-
                   <CardTopBar
                     title={card.title}
                     type={card.type}
                     isMain={card?.defaultForUser === true}
                     onBadgeClick={() => goTo(idx)}
                   />
-
-                  {card.walletName && (
-                    <div className="absolute top-4 right-4 z-10 text-white font-semibold text-sm md:text-base leading-none pointer-events-none">
-                      {card.walletName}
-                    </div>
-                  )}
-
+                  {card.walletName &&
+                    String(card.walletName).trim().toUpperCase() !== "MAIN" && (
+                      <div className="absolute top-4 right-4 z-10 text-white font-semibold text-sm md:text-base leading-none pointer-events-none">
+                        {card.walletName}
+                      </div>
+                    )}
                   <div className="relative z-10">
                     <BalanceRow
                       amount={amount}
