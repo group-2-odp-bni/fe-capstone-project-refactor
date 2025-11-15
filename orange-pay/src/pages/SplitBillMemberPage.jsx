@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import api from "../lib/api";
+import PaymentModal from "../components/ui/transfer/PaymentSplitBillModal";
 const fmt = (n) => {
   const num = Number(n || 0);
   return num.toLocaleString("id-ID", {
@@ -13,11 +14,19 @@ const currency = (n) => `Rp${fmt(n)}`;
 export default function SplitBillMemberPage() {
   const { id: splitId, memberId } = useParams();
   const navigate = useNavigate();
-
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [invoice, setInvoice] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [copySuccess, setCopySuccess] = useState(false);
+  const handlePaymentSuccess = () => {
+    setIsPaymentModalOpen(false);
+    setInvoice((prevInvoice) => ({
+      ...prevInvoice,
+      status: "PAID",
+    }));
+    alert("Pembayaran berhasil!");
+  };
   useEffect(() => {
     if (!splitId || !memberId) {
       setError("Split ID atau Member ID tidak valid.");
@@ -199,7 +208,6 @@ export default function SplitBillMemberPage() {
               </div>
             </div>
 
-            {/* ITEMS */}
             <div className="mb-6 pb-6 border-b border-gray-200">
               <div className="text-sm font-bold text-gray-900 mb-3">
                 🛒 Item Anda
@@ -226,12 +234,10 @@ export default function SplitBillMemberPage() {
               </div>
             </div>
 
-            {/* TODO: Tambahkan tombol Bayar di sini jika !isPaid */}
-            {/* Tombol ini akan memanggil POST /pay-intent */}
             {!isPaid && (
               <button
-                // onClick={handlePayIntent}
                 className="w-full py-3.5 rounded-xl text-white font-semibold text-[14px] bg-gradient-to-r from-[#FF9A25] to-[#FF7A25] hover:shadow-lg hover:shadow-[#FF9A25]/30 active:scale-[0.98] transition-all duration-200 mb-6"
+                onClick={() => setIsPaymentModalOpen(true)}
               >
                 Bayar Sekarang
               </button>
@@ -296,6 +302,14 @@ export default function SplitBillMemberPage() {
           </div>
         </div>
       </div>
+      {invoice && (
+        <PaymentModal
+          isOpen={isPaymentModalOpen}
+          onClose={() => setIsPaymentModalOpen(false)}
+          onPaymentSuccess={handlePaymentSuccess}
+          invoice={invoice}
+        />
+      )}
     </div>
   );
 }

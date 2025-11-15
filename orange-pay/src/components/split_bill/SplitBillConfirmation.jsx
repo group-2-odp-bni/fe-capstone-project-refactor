@@ -1084,23 +1084,24 @@ export default function SplitBillConfirmation({
 }
 
 /* ================= KOMPONEN: Animasi Success dengan Checkmark ================= */
-function HighFiveAnimation({ members = [] }) { 
+function HighFiveAnimation({ members = [] }) {
   const [stage, setStage] = useState(0);
+}
 function QuantitySelectorModal({ item, onClose, onConfirm }) {
   const [qty, setQty] = useState(1);
   const maxQty = item.maxQty;
 
   useEffect(() => {
-    setQty(1); 
+    setQty(1);
   }, [item]);
 
   const increment = () => setQty((q) => Math.min(q + 1, maxQty));
   const decrement = () => setQty((q) => Math.max(1, q - 1));
 
   const handleManualChange = (e) => {
-    const val = e.target.value.replace(/\D/g, ""); 
+    const val = e.target.value.replace(/\D/g, "");
     if (val === "") {
-      setQty(1); 
+      setQty(1);
     } else {
       setQty(Math.max(1, Math.min(Number(val), maxQty)));
     }
@@ -1181,5 +1182,4 @@ if (
   s.id = "sb-style-hide";
   s.innerHTML = style;
   document.head.appendChild(s);
-}
 }

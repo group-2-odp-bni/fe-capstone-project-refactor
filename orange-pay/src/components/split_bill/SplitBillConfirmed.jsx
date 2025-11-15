@@ -417,11 +417,10 @@ export default function SplitBillConfirmed({
   const perMemberVerifiedMap = useMemo(() => {
     const map = {};
     (displayData?.members || []).forEach((m) => {
-      // Gunakan 'memberId' sebagai kunci dan 'amount' sebagai total
       map[m.memberId] = {
         id: m.memberId,
         name: m.name,
-        total: roundIDR(m.amount), // <-- Ambil 'amount' dari API
+        total: roundIDR(m.amount),
       };
     });
     return map;
@@ -689,7 +688,6 @@ Silakan bayar sesuai nominal ya! 🙏
         </div>
       </div>
 
-{/* ✅ TAMBAH px-4 */}
       <div className="flex-1 overflow-auto bg-white">
         <div
           className={`max-w-md mx-auto transition-all duration-500 ${
@@ -880,32 +878,6 @@ Silakan bayar sesuai nominal ya! 🙏
                                       </div>
                                     </div>
                                     <div className="mt-2">
-                                      <button
-                                        onClick={() =>
-                                          toggleMemberDetail(member.memberId)
-                                        }
-                                        className="w-full flex items-center justify-between py-2 px-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition ignore-screenshot"
-                                      >
-                                        <span className="text-xs font-semibold text-gray-700">
-                                          Rincian pesanan
-                                        </span>
-                                        <svg
-                                          width="16"
-                                          height="16"
-                                          viewBox="0 0 24 24"
-                                          className="text-gray-400"
-                                        >
-                                          <path
-                                            d="M9 5l7 7-7 7"
-                                            stroke="currentColor"
-                                            strokeWidth="2"
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            fill="none"
-                                          />
-                                        </svg>
-                                      </button>
-                                      {/* ✅ TAMBAHAN: Button Link Invoice Member */}
                                       <button
                                         onClick={() => {
                                           const memberUrl = `${window.location.origin}/app/splitbill/${splitId}/member/${member.memberId}`;
@@ -1243,7 +1215,7 @@ Silakan bayar sesuai nominal ya! 🙏
                   }}
                 >
                   <img
-                    src="/public/Orangepay.svg" // same-origin → aman untuk html2canvas
+                    src="/public/Orangepay.svg"
                     alt="logo-orangepay"
                     width={128}
                     height={128}
