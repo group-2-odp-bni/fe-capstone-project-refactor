@@ -7,7 +7,7 @@ import TemplatePin from "../ui/TemplatePin";
 
 export default function StepPin() {
   // ----- hooks first -----
-  const { data, setStep, reset } = useTransfer();
+  const { data, setStep } = useTransfer();
   const { executeTransfer } = useTransferApi();
   const navigate = useNavigate();
 
@@ -44,6 +44,20 @@ export default function StepPin() {
     };
   };
 
+  // cleanup timer shake saat unmount
+  useEffect(() => {
+    return () => {
+      if (shakeTimeoutRef.current) clearTimeout(shakeTimeoutRef.current);
+    };
+  }, []);
+
+  // ✅ helper: reset error UI ketika user mengedit
+  const clearErrorOnEdit = () => {
+    setShaking(false);
+    setSuppressErrorUI(true);
+    setError("");
+  };
+
   // Error berubah → tampilkan & shake
   useEffect(() => {
     if (!error) return;
@@ -66,11 +80,13 @@ export default function StepPin() {
     if (pin.length === 0) setSuppressErrorUI(true);
   }, [pin]);
 
-  const clampNum = (raw) => (raw || "").toString().replace(/\D/g, "").slice(0, 6);
+  const clampNum = (raw) =>
+    (raw || "").toString().replace(/\D/g, "").slice(0, 6);
 
   // keyboard/paste handlers (hidden input)
   const onHiddenChange = (e) => {
     if (loading) return;
+    clearErrorOnEdit();
     setPin(clampNum(e.target.value));
   };
 
@@ -78,28 +94,33 @@ export default function StepPin() {
     if (loading) return;
     if (/^\d$/.test(e.key) && pin.length < 6) {
       e.preventDefault();
+      clearErrorOnEdit();
       setPin((p) => (p + e.key).slice(0, 6));
     } else if (e.key === "Backspace") {
       e.preventDefault();
+      clearErrorOnEdit();
       setPin((p) => p.slice(0, -1));
     } else if (e.key === "Enter" && pin.length === 6) {
       e.preventDefault();
       submitPinAndTransfer();
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      onBack();
     }
   };
 
   // keypad actions (TemplatePin)
   const onDigit = (d) => {
     if (loading || pin.length >= 6) return;
+    clearErrorOnEdit();
     setPin((p) => (p + d).slice(0, 6));
   };
 
   const onDelete = () => {
     if (loading || pin.length === 0) return;
     if (shakeTimeoutRef.current) clearTimeout(shakeTimeoutRef.current);
-    setPin("");
-    setShaking(false);
-    setSuppressErrorUI(true); // sembunyikan merah + pesan
+    clearErrorOnEdit();                    // reset merah + shake saat hapus
+    setPin((p) => p.slice(0, -1));        // ⬅️ hapus 1 digit terakhir
     hiddenRef.current?.focus();
   };
 
@@ -124,9 +145,8 @@ export default function StepPin() {
       setErrorAndShake("Recipient or amount missing");
       return;
     }
-
     if (!data.transactionId) {
-      setError("Missing transaction ID");
+      setErrorAndShake("Missing transaction ID");
       return;
     }
 

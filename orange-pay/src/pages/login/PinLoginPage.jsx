@@ -71,7 +71,6 @@ function PinLoginContent() {
         onConfirm={submitPin}
         errorText={error}
         loading={loading}
-        title="Masukkan PIN Anda"
         attemptKey={attempt}
         onClearError={() => setError("")}
         onBack={goBack}                 // ← aktif di login

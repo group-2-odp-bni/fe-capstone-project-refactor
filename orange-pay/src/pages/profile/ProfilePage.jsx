@@ -41,7 +41,6 @@ export default function ProfilePage() {
     };
 
     getUserProfile();
-    console.log("test")
     console.log(profileData.profileImageUrl)
   }, []);
 
