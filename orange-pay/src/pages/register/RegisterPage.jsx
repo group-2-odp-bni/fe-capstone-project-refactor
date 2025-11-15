@@ -7,11 +7,14 @@ import WhiteCardContainer from "../../components/register/WhiteCardContainer";
 import OrangePayLogo from "../../components/register/OrangePayLogo";
 import RegisterTextContainer from "../../components/register/RegisterTextContainer";
 import api from "../../lib/api";
-import { GoogleReCaptchaProvider, useGoogleReCaptcha } from "react-google-recaptcha-v3";
+import {
+  GoogleReCaptchaProvider,
+  useGoogleReCaptcha,
+} from "react-google-recaptcha-v3";
 import View from "../../components/view/View";
 import PhoneNumberInput from "../../components/login/PhoneNumberInput";
 import LoginTextContainer from "../../components/login/LoginTextContainer";
-
+import TermsModal from "../TermsAndPrivacy";
 
 export default function RegisterPage() {
   return (
@@ -27,7 +30,6 @@ export default function RegisterPage() {
         <RegisterContent />
       </View>
     </GoogleReCaptchaProvider>
-
   );
 }
 
@@ -36,6 +38,7 @@ function RegisterContent() {
   const { setRegistrationData } = useRegistrationContext();
   const { executeRecaptcha } = useGoogleReCaptcha();
   const inputRef = useRef(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Local form state
   const [formData, setFormData] = useState({
@@ -77,7 +80,6 @@ function RegisterContent() {
       const token = await executeRecaptcha("register");
       const phoneNumber = `0${formData.phoneNumber}`;
 
-
       //hit login
       const { data } = await api.post("/api/v1/auth/register", {
         phoneNumber: phoneNumber,
@@ -89,26 +91,26 @@ function RegisterContent() {
         phoneNumber: formData.phoneNumber,
       });
       navigate("/register/otp");
-
     } catch (err) {
-
-      console.log("error")
+      console.log("error");
 
       if (err.response) {
-        console.log(err.response)
+        console.log(err.response);
         const errorCode = err.response.data?.error?.code;
 
         if (errorCode === "AUTH-1002") {
           setError("Nomor Handphone Anda telah terdaftar");
         } else {
           // fallback message from backend
-          setError(err.response.data?.error?.message || "Terjadi kesalahan. Silakan coba lagi.");
+          setError(
+            err.response.data?.error?.message ||
+              "Terjadi kesalahan. Silakan coba lagi."
+          );
         }
       } else {
         // no response (e.g. network issue)
         setError("Tidak dapat terhubung ke server. Coba lagi nanti.");
       }
-      
     } finally {
       setLoading(false);
     }
@@ -119,12 +121,16 @@ function RegisterContent() {
       <OrangeHeader />
       <WhiteCardContainer>
         <OrangePayLogo />
+        <h2 className="mt-6 text-2xl font-bold text-center">
+          Daftar ke OrangePay
+        </h2>
+
         <RegisterTextContainer>
-          Masukkan nomor handphone Anda yang aktif untuk menikmati semua layanan kami
+          Masukkan nomor handphone Anda yang aktif untuk menikmati semua layanan
+          kami
         </RegisterTextContainer>
 
         <form onSubmit={handleSubmit} className="space-y-5 mt-6">
-
           <PhoneNumberInput
             value={formData.phoneNumber}
             onChange={handleChange}
@@ -135,12 +141,15 @@ function RegisterContent() {
 
           <LoginTextContainer>
             Dengan masuk atau mendaftar, Anda menyetujui
-            <span className="underline font-bold mx-1 text-gray-700">
+            <button
+              type="button"
+              onClick={() => setIsModalOpen(true)}
+              className="underline font-bold mx-1 text-gray-700 hover:text-orange-600"
+            >
               Syarat dan Kebijakan Privasi
-            </span>
+            </button>{" "}
             Anda.
           </LoginTextContainer>
-
 
           {error && <p className="text-red-500 text-xs">{error}</p>}
 
@@ -159,6 +168,7 @@ function RegisterContent() {
           </div>
         </form>
       </WhiteCardContainer>
+      <TermsModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
     </div>
   );
 }

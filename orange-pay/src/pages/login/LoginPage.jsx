@@ -1,5 +1,5 @@
 import React, { useState, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import Swal from "sweetalert2";
 import MobileShell from "../../components/layout/MobileShell";
@@ -11,9 +11,12 @@ import LoginTextContainer from "../../components/login/LoginTextContainer";
 import { FullSubmitButton } from "../../components/button/FullSubmitButton";
 import PhoneNumberInput from "../../components/login/PhoneNumberInput";
 import { useLoginContext } from "../../context/LoginContext";
-import { GoogleReCaptchaProvider, useGoogleReCaptcha } from "react-google-recaptcha-v3";
+import {
+  GoogleReCaptchaProvider,
+  useGoogleReCaptcha,
+} from "react-google-recaptcha-v3";
 import View from "../../components/view/View";
-
+import TermsModal from "../TermsAndPrivacy";
 export default function LoginPage() {
   return (
     <GoogleReCaptchaProvider
@@ -24,11 +27,9 @@ export default function LoginPage() {
         appendTo: "body",
       }}
     >
-
       <View>
         <LoginContextContent />
       </View>
-
     </GoogleReCaptchaProvider>
   );
 }
@@ -38,7 +39,7 @@ function LoginContextContent() {
   const inputRef = useRef(null);
   const { setLoginData } = useLoginContext();
   const { executeRecaptcha } = useGoogleReCaptcha();
-
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [formData, setFormData] = useState({
     phoneNumber: "",
   });
@@ -105,7 +106,7 @@ function LoginContextContent() {
     // safe loginData
     setLoginData({
       phoneNumber: fullPhone,
-    })
+    });
 
     // Konfirmasi sebelum kirim OTP
     const confirmResult = await Swal.fire({
@@ -163,8 +164,10 @@ function LoginContextContent() {
       <OrangeHeader />
       <WhiteCardContainer>
         <OrangePayLogo />
-        <h2 className="mt-6 text-2xl font-bold text-center">Welcome Back</h2>
-        <LoginTextContainer>Please sign in to continue</LoginTextContainer>
+        <h2 className="mt-6 text-2xl font-bold text-center">
+          Masuk ke OrangePay
+        </h2>
+        <LoginTextContainer>Silakan masuk untuk melanjutkan</LoginTextContainer>
 
         <form onSubmit={handleSubmit}>
           <PhoneNumberInput
@@ -176,17 +179,31 @@ function LoginContextContent() {
 
           <LoginTextContainer>
             Dengan masuk atau mendaftar, Anda menyetujui
-            <span className="underline font-bold mx-1 text-gray-700">
+            <button
+              type="button"
+              onClick={() => setIsModalOpen(true)}
+              className="underline font-bold mx-1 text-gray-700 hover:text-orange-600"
+            >
               Syarat dan Kebijakan Privasi
-            </span>
+            </button>
             Anda.
           </LoginTextContainer>
 
           <FullSubmitButton disabled={loading}>
             {loading ? "Mengirim OTP..." : "Kirim OTP via WhatsApp"}
           </FullSubmitButton>
+          <div className="text-center text-xs">
+            <span className="text-gray-500">Belum punya akun? </span>
+            <Link
+              to="/register"
+              className="text-[#1C6C79] font-semibold hover:underline"
+            >
+              Register
+            </Link>
+          </div>
         </form>
       </WhiteCardContainer>
+      <TermsModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
     </div>
   );
 }
