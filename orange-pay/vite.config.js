@@ -54,6 +54,6 @@ export default defineConfig({
       //   secure: false,
       // },
     },
-    allowedHosts: []
+    allowedHosts: [],
   },
 });
