@@ -1,10 +1,10 @@
 // src/context/TransferContext.jsx
 import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
 const TRANSFER_FLOW_KEY = "transferFlowState";
-const STEP_ORDER = ["select", "verify", "details", "amount", "confirm", "pin", "success"];
-
+// 'verify' intentionally NOT included here so it's not part of normal step order or back-navigation.
+const STEP_ORDER = ["select", "amount", "confirm", "pin", "success"];
 
 const TransferContext = createContext(null);
 
@@ -35,9 +35,30 @@ function saveToSession(state) {
   }
 }
 
+/**
+ * mapStepToPath
+ * - central mapping from logical step -> canonical route we want shown to user
+ * - keep in sync with your Route definitions
+ */
+const mapStepToPath = (stepName) => {
+  switch (stepName) {
+    case "pin":
+      return "/app/transfer/pin";
+    case "confirm":
+      return "/app/transfer";
+    case "success":
+      return "/app/transfer/success";
+    case "amount":
+      return "/app/transfer";
+    case "select":
+    default:
+      return "/app/transfer";
+  }
+};
+
 export const TransferProvider = ({ children }) => {
-  // --- ALL hooks must be inside the component body ---
   const location = useLocation();
+  const navigate = useNavigate();
   const prevPathRef = useRef(location.pathname);
 
   // suppression refs used to avoid immediate re-persist or route-sync loops
@@ -56,17 +77,17 @@ export const TransferProvider = ({ children }) => {
       note: "",
       // PIN is ephemeral and never persisted
       transactionId: null,
+      verified: false,
     },
   };
 
-  // 1) Try to rehydrate, but immediately drop it if it represents a finished flow (step === 'success')
+  // Rehydrate from session if present (but ignore if success/verify)
   const savedRaw = useMemo(() => loadFromSession(), []);
   const initialFlow = (() => {
     if (!savedRaw) return defaultFlow;
-    if (savedRaw && savedRaw.step === "success") {
+    if (savedRaw && (savedRaw.step === "success" || savedRaw.step === "verify")) {
       try {
         sessionStorage.removeItem(TRANSFER_FLOW_KEY);
-        console.debug("TransferContext: cleared saved success flow on init");
       } catch (e) {}
       return defaultFlow;
     }
@@ -78,39 +99,78 @@ export const TransferProvider = ({ children }) => {
 
   const [flow, setFlow] = useState(initialFlow);
 
-  // keep route-driven steps in sync for explicit subpaths (but allow suppression for one cycle)
+  // ---------------- NEW: remember last non-verify snapshot in memory ----------------
+  // This allows restoring a meaningful previous state when user wants to go back from "verify".
+  const lastNonVerifyRef = useRef(null);
+  // seed ref with initialFlow if it's non-verify
+  if (!lastNonVerifyRef.current && initialFlow && initialFlow.step !== "verify") {
+    lastNonVerifyRef.current = { ...initialFlow, data: { ...(initialFlow.data || {}) } };
+  }
+  // -------------------------------------------------------------------------------
+
+  /**
+   * Apply incoming navigation state exactly once (used by QuickTransfer or other callers).
+   * We clear the navigation state afterwards (replaceState) so it won't reapply on refresh/back.
+   */
+  useEffect(() => {
+    const navState = location.state;
+    if (!navState || typeof navState !== "object") return;
+
+    const normalizeStep = (s) => (s === "enter-amount" ? "amount" : s);
+    const incomingStep = normalizeStep(navState.step);
+    const incomingData = navState.data;
+
+    const valid = incomingStep && (incomingStep === "verify" || STEP_ORDER.includes(incomingStep));
+    if (!valid && !incomingData) return;
+
+    // avoid route-sync/persist fighting this programmatic application
+    skipPersistRef.current = true;
+    skipRouteSyncRef.current = true;
+
+    setFlow((prev) => ({
+      ...prev,
+      step: valid ? incomingStep : prev.step,
+      data: incomingData ? { ...prev.data, ...incomingData } : prev.data,
+    }));
+
+    // Clear navigation state so reloading/back won't reapply it
+    try {
+      window.history.replaceState({}, document.title, location.pathname);
+    } catch (_) {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.key]);
+
+  /**
+   * Keep route-driven steps in sync for explicit subpaths (only confirm/pin are mapped)
+   * We allow one-cycle suppression via skipRouteSyncRef.
+   */
   useEffect(() => {
     if (skipRouteSyncRef.current) {
       skipRouteSyncRef.current = false;
       return;
     }
     const p = location.pathname || "";
-    // keep only mappings for intermediate steps we actually want controlled by routes.
-    // Do NOT map "/success" -> "success" because success page must be independent from the context.
     if (p.endsWith("/pin") && flow.step !== "pin") {
       setFlow((f) => ({ ...f, step: "pin" }));
     } else if (p.endsWith("/confirm") && flow.step !== "confirm") {
       setFlow((f) => ({ ...f, step: "confirm" }));
     }
-    // add other route -> step mappings only if they are necessary for your UX.
-    // intentionally OMIT mapping for "/success".
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.pathname]);
-  
 
-  // persist to sessionStorage when flow changes, but NEVER persist PIN
+  /**
+   * Persist to sessionStorage when flow changes.
+   * Do NOT persist 'pin', 'verify', or 'success' snapshots.
+   */
   useEffect(() => {
     if (skipPersistRef.current) {
-      // consume the flag and skip one persist cycle
       skipPersistRef.current = false;
       return;
     }
-
     try {
       const clone = { step: flow.step, data: { ...flow.data } };
       if ("pin" in clone.data) delete clone.data.pin;
-      // Do not persist success-step snapshots: if flow.step === "success" skip saving
-      if (clone.step === "success") {
+      if (clone.step === "success" || clone.step === "verify") {
         try {
           sessionStorage.removeItem(TRANSFER_FLOW_KEY);
         } catch (e) {}
@@ -122,7 +182,20 @@ export const TransferProvider = ({ children }) => {
     }
   }, [flow]);
 
-  // Clear session when the user leaves /app/transfer/* routes.
+  /**
+   * Keep lastNonVerifyRef up to date whenever flow changes to a non-verify step.
+   * This ensures we can restore a meaningful snapshot when leaving verify.
+   */
+  useEffect(() => {
+    if (flow && flow.step !== "verify") {
+      // shallow-clone to avoid accidental mutation references
+      lastNonVerifyRef.current = { ...flow, data: { ...(flow.data || {}) } };
+    }
+  }, [flow.step, flow.data]);
+
+  /**
+   * Clear session when leaving transfer routes.
+   */
   useEffect(() => {
     const prev = prevPathRef.current || "";
     const current = location.pathname || "";
@@ -135,12 +208,13 @@ export const TransferProvider = ({ children }) => {
       } catch (e) {}
       setFlow(defaultFlow);
     }
-
     prevPathRef.current = current;
   }, [location.pathname]);
 
-  // When flow.step becomes success, clear persisted state and reset in-memory flow,
-  // but suppress route-sync and persist for a single cycle to avoid re-saving.
+  /**
+   * When flow reaches success, clear persisted state and reset in memory.
+   * Suppress a single cycle of route-sync & persist to avoid re-saving/resync.
+   */
   useEffect(() => {
     if (flow.step === "success") {
       try {
@@ -153,39 +227,106 @@ export const TransferProvider = ({ children }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [flow.step]);
 
-  // navigation helpers
+  // ---------------- navigation helpers ----------------
+
+  // Accept 'verify' as runtime-only step (not persisted)
   const setStep = (stepName) => {
-    if (!STEP_ORDER.includes(stepName)) {
+    if (stepName !== "verify" && !STEP_ORDER.includes(stepName)) {
       console.warn("TransferContext.setStep: unknown step", stepName);
       return;
     }
     setFlow((f) => ({ ...f, step: stepName }));
+    // also update URL to match the visible step (avoid history growth by replace)
+    if (stepName !== "verify") {
+      skipRouteSyncRef.current = true;
+      skipPersistRef.current = true;
+      try {
+        navigate(mapStepToPath(stepName), { replace: true });
+      } catch {}
+    }
   };
 
   const nextStep = () =>
     setFlow((prev) => {
       const idx = STEP_ORDER.indexOf(prev.step);
+      if (prev.step === "verify") {
+        // verify → amount
+        // when jumping programmatically, we also update URL
+        skipRouteSyncRef.current = true;
+        skipPersistRef.current = true;
+        try {
+          navigate(mapStepToPath("amount"), { replace: true });
+        } catch {}
+        return { ...prev, step: "amount" };
+      }
       const next = idx === -1 ? STEP_ORDER[0] : STEP_ORDER[Math.min(STEP_ORDER.length - 1, idx + 1)];
+      // update URL to match next step (but don't create new history entry)
+      skipRouteSyncRef.current = true;
+      skipPersistRef.current = true;
+      try {
+        navigate(mapStepToPath(next), { replace: true });
+      } catch {}
       return { ...prev, step: next };
     });
 
-    const prevStep = () =>
-      setFlow((prev) => {
-        const idx = STEP_ORDER.indexOf(prev.step);
-        let prevName = idx <= 0 ? STEP_ORDER[0] : STEP_ORDER[idx - 1];
-    
-        // If the previous step would be "verify" but the flow was already verified,
-        // skip the "verify" step and go back one more step.
-        // This ensures verify is one-time and not re-entered via "back".
-        if (prevName === "verify" && prev.data && prev.data.verified) {
-          const prevIdx = idx - 1; // index of current prevName (verify)
-          const skipIdx = Math.max(0, prevIdx - 1);
-          prevName = STEP_ORDER[skipIdx];
+  const prevStep = () =>
+    setFlow((prev) => {
+      const idx = STEP_ORDER.indexOf(prev.step);
+      const prevName = idx <= 0 ? STEP_ORDER[0] : STEP_ORDER[idx - 1];
+      skipRouteSyncRef.current = true;
+      skipPersistRef.current = true;
+      try {
+        navigate(mapStepToPath(prevName), { replace: true });
+      } catch {}
+      return { ...prev, step: prevName };
+    });
+
+  /**
+   * goBack()
+   * - Always prefer stepping the context back one logical step and update the URL.
+   * - Avoid relying on browser history because QuickTransfer often navigates directly into /app/transfer with state
+   *   (so browser history won't contain a prior transfer page).
+   *
+   * Special-case: if we're on the runtime-only 'verify' step, restore the lastNonVerify snapshot (in-memory)
+   * so the user returns to the real prior state.
+   */
+  const goBack = () => {
+    const curStep = (flow && flow.step) || "select";
+
+    // If we're in verify, restore the last non-verify snapshot if available
+    if (curStep === "verify") {
+      const last = lastNonVerifyRef.current;
+      if (last) {
+        skipRouteSyncRef.current = true;
+        skipPersistRef.current = true;
+        // restore the full snapshot (in-memory only)
+        setFlow(last);
+        try {
+          navigate(mapStepToPath(last.step), { replace: true });
+        } catch (err) {
+          console.warn("TransferContext.goBack navigate error:", err);
         }
-    
-        return { ...prev, step: prevName };
-      });
-    
+        return;
+      }
+      // If no last snapshot, fall through to default behavior (go to select)
+    }
+
+    const curIdx = STEP_ORDER.indexOf(curStep);
+    const prevName = curIdx <= 0 ? STEP_ORDER[0] : STEP_ORDER[curIdx - 1];
+
+    // Suppress route-sync & persist while we update both in-memory & route
+    skipRouteSyncRef.current = true;
+    skipPersistRef.current = true;
+
+    // Update in-memory immediately, then replace URL to the canonical path
+    setFlow((prev) => ({ ...prev, step: prevName }));
+    try {
+      navigate(mapStepToPath(prevName), { replace: true });
+    } catch (err) {
+      // swallow navigation errors but context is still stepped back
+      console.warn("TransferContext.goBack navigate error:", err);
+    }
+  };
 
   // merge-data setter (do NOT persist pin)
   const setData = (patch) => {
@@ -204,6 +345,47 @@ export const TransferProvider = ({ children }) => {
     setFlow(defaultFlow);
   };
 
+  // Helper: trigger a one-time verify step if there's no phone/account present.
+  // This does not get persisted and will not be considered part of normal navigation history.
+  const requireVerifyIfMissingNumber = () => {
+    const hasNumber = !!(flow.data && (flow.data.fromWalletPhone || flow.data.phone || flow.data.accountId));
+    if (!hasNumber) {
+      setFlow((prev) => ({ ...prev, step: "verify" }));
+      return true;
+    }
+    return false;
+  };
+
+  /**
+   * headerBack()
+   * - A safe back handler intended for the app header back button.
+   * - If the current location is inside the transfer flow, ensure we clear transfer state
+   *   and navigate to dashboard (deterministic).
+   * - Otherwise behave like a normal history back.
+   */
+  const headerBack = () => {
+    try {
+      const path = (location && location.pathname) || "";
+      if (path && path.startsWith("/app/transfer")) {
+        // clear transfer flow then go to dashboard (push so user has history)
+        try {
+          sessionStorage.removeItem(TRANSFER_FLOW_KEY);
+        } catch (_) {}
+        // ensure in-memory reset too
+        skipPersistRef.current = true;
+        skipRouteSyncRef.current = true;
+        setFlow(defaultFlow);
+        navigate("/app/dashboard");
+        return;
+      }
+      // Default behavior: go back in history
+      navigate(-1);
+    } catch (err) {
+      // Fallback: navigate to dashboard if something goes wrong
+      try { navigate("/app/dashboard"); } catch (_) {}
+    }
+  };
+
   const contextValue = {
     flow,
     step: flow.step,
@@ -212,8 +394,11 @@ export const TransferProvider = ({ children }) => {
     setStep,
     nextStep,
     prevStep,
+    goBack,
     setData,
     reset,
+    requireVerifyIfMissingNumber,
+    headerBack,
   };
 
   return <TransferContext.Provider value={contextValue}>{children}</TransferContext.Provider>;

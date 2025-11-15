@@ -1,42 +1,43 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
 
-import PhoneLayoutBackground from "../../components/PhoneLayoutBackground";
-import MobileShell from "../../components/layout/MobileShell";
 import WhiteCardContainer from "../../components/register/WhiteCardContainer";
 import OrangeHeader from "../../components/register/OrangeHeader";
-import InputField from "../../components/register/RegisterGeneralInput";
 import { FullSubmitButton } from "../../components/button/FullSubmitButton";
 import OrangePayLogo from "../../components/register/OrangePayLogo";
 import RegisterTextContainer from "../../components/register/RegisterTextContainer";
 import { useLoginContext } from "../../context/LoginContext";
-
+import OtpInputField from "../../components/input/OtpInputField";
+import ButtonLink from "../../components/button/ButtonLink";
+import CountdownTimer from "../../components/dashboard/CountdownTimer";
+import View from "../../components/view/View";
+import { useCountdown } from "../../hooks/useCountDown";
 
 export default function OtpLoginPage() {
     return (
-        <PhoneLayoutBackground>
-            <MobileShell>
-                <OrangeHeader />
-                <WhiteCardContainer>
-                    <OrangePayLogo />
-                    <RegisterTextContainer>
-                        Kode OTP telah dikirim ke WhatsApp Anda. Masukkan kode di bawah untuk melanjutkan.
-                    </RegisterTextContainer>
-                    <SetOtpContent />
-                </WhiteCardContainer>
-            </MobileShell>
-        </PhoneLayoutBackground>
+        <View>
+            <OrangeHeader />
+            <WhiteCardContainer>
+                <OrangePayLogo />
+                <RegisterTextContainer>
+                    Kode OTP telah dikirim ke WhatsApp Anda. Masukkan kode di bawah untuk
+                    melanjutkan.
+                </RegisterTextContainer>
+                <SetOtpContent />
+            </WhiteCardContainer>
+        </View>
     );
 }
 
 function SetOtpContent() {
     const navigate = useNavigate();
     const { loginData, setLoginData } = useLoginContext();
-    console.log(loginData.phoneNumber);
 
     const [otp, setOtp] = useState("");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
+    const { secondsLeft, reset } = useCountdown(30);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -44,34 +45,59 @@ function SetOtpContent() {
         setLoading(true);
 
         try {
-            console.log("--- sending OTP verification ---");
-            console.log(`phone number : ${loginData.phoneNumber}`);
-            console.log(`otp : ${otp}`);
-
-            const response = await fetch("/api/v1/auth/verify", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    phoneNumber: loginData.phoneNumber,
-                    otp: otp,
-                }),
+            const response = await axios.post("/api/v1/auth/verify", {
+                phoneNumber: loginData.phoneNumber,
+                otp,
             });
 
-            if (!response.ok) {
-                throw new Error("Failed to send request");
+            setLoginData({ stateToken: response.data.data.stateToken });
+            navigate("/login/pin");
+        } catch (err) {
+            setError(
+                err.response?.data?.message ||
+                err.message ||
+                "Something went wrong."
+            );
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleResendOtp = async () => {
+        setError("");
+        setLoading(true);
+
+        //get recaptcha token
+        const recaptchaToken = localStorage.getItem("_grecaptcha")
+
+        try {
+            const response = await axios.post("/api/v1/auth/resend-otp", {
+                phoneNumber: loginData.phoneNumber,
+                captchaToken: recaptchaToken,
+        
+            });
+
+            setLoginData({ stateToken: response.data.data.stateToken });
+            setOtp("");
+            reset();
+        } catch (err) {
+
+            // get error code
+            errorCode = err.response?.data?.error.code 
+
+            // error handle - expired
+            if(errorCode ==="AUTH-2002"){
+                setError("OTP telah expired")
+                setOtp("")
+                reset("")
             }
 
-            const data = await response.json();
-
-            // save the state token for next step (PIN verification)
-            setLoginData({ stateToken: data.data.stateToken });
-
-            // move to next step
-            navigate("/login/pin");
-
-        } catch (err) {
-            console.error(err);
-            setError(err.message || "Something went wrong.");
+            // else
+            setError(
+                err.response?.data?.error.message ||
+                err.message ||
+                "Something went wrong."
+            );
         } finally {
             setLoading(false);
         }
@@ -80,7 +106,9 @@ function SetOtpContent() {
     return (
         <div>
             <form onSubmit={handleSubmit} className="space-y-5 mt-6">
-                <InputField
+
+                {/* OTP field */}
+                <OtpInputField
                     id="otp"
                     name="otp"
                     label="OTP :"
@@ -91,6 +119,8 @@ function SetOtpContent() {
                     onChange={(e) => setOtp(e.target.value)}
                 />
 
+                <CountdownTimer initialSeconds={secondsLeft} />
+
                 {error && <p className="text-red-500 text-xs">{error}</p>}
 
                 <FullSubmitButton disabled={loading}>
@@ -98,15 +128,13 @@ function SetOtpContent() {
                 </FullSubmitButton>
             </form>
 
-            <div className="text-center mt-4 text-xs md:text-sm text-gray-600 pb-6">
-                Salah nomor?{" "}
-                <button
-                    type="button"
-                    className="text-[#1C6C79] font-semibold hover:underline"
-                    onClick={() => navigate("/login")}
-                >
-                    Ubah nomor
-                </button>
+            {/* Resend OTP */}
+            <div className="text-center mt-4 pb-6">
+                {secondsLeft === 0 && (
+                    <ButtonLink onClick={handleResendOtp}>
+                        Kirim Ulang OTP
+                    </ButtonLink>
+                )}
             </div>
         </div>
     );

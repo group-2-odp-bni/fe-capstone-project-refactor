@@ -1,6 +1,7 @@
 import React, { useState, useRef } from "react";
-import { useNavigate } from "react-router-dom";
-
+import { Link, useNavigate } from "react-router-dom";
+import axios from "axios";
+import Swal from "sweetalert2";
 import MobileShell from "../../components/layout/MobileShell";
 import PhoneLayoutBackground from "../../components/PhoneLayoutBackground";
 import OrangePayLogo from "../../components/register/OrangePayLogo";
@@ -10,14 +11,26 @@ import LoginTextContainer from "../../components/login/LoginTextContainer";
 import { FullSubmitButton } from "../../components/button/FullSubmitButton";
 import PhoneNumberInput from "../../components/login/PhoneNumberInput";
 import { useLoginContext } from "../../context/LoginContext";
-
+import {
+  GoogleReCaptchaProvider,
+  useGoogleReCaptcha,
+} from "react-google-recaptcha-v3";
+import View from "../../components/view/View";
+import TermsModal from "../TermsAndPrivacy";
 export default function LoginPage() {
   return (
-    <PhoneLayoutBackground>
-      <MobileShell bg="bg-white">
+    <GoogleReCaptchaProvider
+      reCaptchaKey={import.meta.env.VITE_RECAPTCHA_SITE_KEY}
+      scriptProps={{
+        async: true,
+        defer: true,
+        appendTo: "body",
+      }}
+    >
+      <View>
         <LoginContextContent />
-      </MobileShell>
-    </PhoneLayoutBackground>
+      </View>
+    </GoogleReCaptchaProvider>
   );
 }
 
@@ -25,7 +38,8 @@ function LoginContextContent() {
   const navigate = useNavigate();
   const inputRef = useRef(null);
   const { setLoginData } = useLoginContext();
-
+  const { executeRecaptcha } = useGoogleReCaptcha();
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [formData, setFormData] = useState({
     phoneNumber: "",
   });
@@ -35,47 +49,111 @@ function LoginContextContent() {
 
   /** Handle phone number input changes */
   const handleChange = (e) => {
-    const value = e.target.value;
+    const v = e.target.value.replace(/\D/g, ""); // hanya angka
 
-    // Allow only numeric input
-    if (!/^[0-9]*$/.test(value)) {
-      setError("Nomor hanya boleh berisi angka");
-      return;
+    if (v && !v.startsWith("8")) {
+      setError("Nomor harus dimulai dengan 8");
+    } else if (v.length > 0 && v.length < 9) {
+      setError("Nomor minimal 9 digit setelah +62");
+    } else {
+      setError("");
     }
 
-    setError("");
-    setFormData((prev) => ({ ...prev, phoneNumber: value }));
+    // Update state utama
+    setFormData((prev) => ({ ...prev, phoneNumber: v }));
   };
 
   /** Handle form submit */
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError("");
-    setLoading(true);
 
+    if (!executeRecaptcha) {
+      setError("reCAPTCHA belum siap. Coba beberapa detik lagi.");
+      setLoading(false);
+      return;
+    }
+
+    const { phoneNumber } = formData;
+    if (!phoneNumber) {
+      Swal.fire({
+        icon: "warning",
+        title: "Nomor belum diisi",
+        text: "Silakan masukkan nomor telepon terlebih dahulu.",
+      });
+      return;
+    }
+
+    if (!phoneNumber.startsWith("8")) {
+      Swal.fire({
+        icon: "warning",
+        title: "Nomor tidak valid",
+        text: "Nomor harus dimulai dengan angka 8.",
+      });
+      return;
+    }
+
+    if (phoneNumber.length < 9) {
+      Swal.fire({
+        icon: "warning",
+        title: "Nomor terlalu pendek",
+        text: "Nomor minimal 9 digit setelah +62.",
+      });
+      return;
+    }
+
+    const fullPhone = `+62${phoneNumber}`;
+
+    // safe loginData
+    setLoginData({
+      phoneNumber: fullPhone,
+    });
+
+    // Konfirmasi sebelum kirim OTP
+    const confirmResult = await Swal.fire({
+      title: "Kirim OTP?",
+      text: `OTP akan dikirim ke nomor ${fullPhone}. Lanjutkan?`,
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonColor: "#f97316",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Ya, kirim OTP",
+      cancelButtonText: "Batal",
+    });
+
+    if (!confirmResult.isConfirmed) return;
+
+    setLoading(true);
     try {
-      const response = await fetch("/api/v1/auth/request", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          phoneNumber: `+62${formData.phoneNumber}`,
-        }),
+      //get google captcha token
+      const token = await executeRecaptcha("register");
+
+      //hit login
+      const response = await axios.post("/api/v1/auth/login", {
+        phoneNumber: fullPhone,
+        captchaToken: token,
       });
 
-      if (!response.ok) throw new Error("Failed to send request");
+      setLoginData({ phoneNumber: fullPhone });
 
-      const data = await response.json();
+      Swal.fire({
+        icon: "success",
+        title: "OTP Dikirim!",
+        text: "Silakan periksa WhatsApp Anda untuk kode OTP.",
+        timer: 2000,
+        showConfirmButton: false,
+      });
 
-      // Save phone number into LoginContext
-      setLoginData({ phoneNumber: `+62${formData.phoneNumber}` });
-
-      console.log("Login OTP request success:", data);
-
-      // Navigate to OTP verification
       navigate("/login/otp");
     } catch (err) {
       console.error(err);
-      setError(err.message || "Something went wrong.");
+      Swal.fire({
+        icon: "error",
+        title: "Gagal Mengirim OTP",
+        text:
+          err.response?.data?.message ||
+          err.message ||
+          "Terjadi kesalahan saat mengirim OTP.",
+      });
     } finally {
       setLoading(false);
     }
@@ -86,11 +164,10 @@ function LoginContextContent() {
       <OrangeHeader />
       <WhiteCardContainer>
         <OrangePayLogo />
-
-        <h2 className="mt-6 text-2xl font-bold text-center">Welcome Back</h2>
-        <LoginTextContainer>
-          Please sign in to continue
-        </LoginTextContainer>
+        <h2 className="mt-6 text-2xl font-bold text-center">
+          Masuk ke OrangePay
+        </h2>
+        <LoginTextContainer>Silakan masuk untuk melanjutkan</LoginTextContainer>
 
         <form onSubmit={handleSubmit}>
           <PhoneNumberInput
@@ -102,17 +179,31 @@ function LoginContextContent() {
 
           <LoginTextContainer>
             Dengan masuk atau mendaftar, Anda menyetujui
-            <span className="underline font-bold mx-1 text-gray-700">
+            <button
+              type="button"
+              onClick={() => setIsModalOpen(true)}
+              className="underline font-bold mx-1 text-gray-700 hover:text-orange-600"
+            >
               Syarat dan Kebijakan Privasi
-            </span>
+            </button>
             Anda.
           </LoginTextContainer>
 
           <FullSubmitButton disabled={loading}>
             {loading ? "Mengirim OTP..." : "Kirim OTP via WhatsApp"}
           </FullSubmitButton>
+          <div className="text-center text-xs">
+            <span className="text-gray-500">Belum punya akun? </span>
+            <Link
+              to="/register"
+              className="text-[#1C6C79] font-semibold hover:underline"
+            >
+              Register
+            </Link>
+          </div>
         </form>
       </WhiteCardContainer>
+      <TermsModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
     </div>
   );
 }

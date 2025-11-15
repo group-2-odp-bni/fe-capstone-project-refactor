@@ -1,8 +1,9 @@
 // src/components/transfer/StepSuccess.jsx
 import React, { useEffect, useState, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import useTransferApi from "../../hooks/api/useTransferApi";
+import useTransferApi from "../../hooks/api/useTransfer";
 import { useTransfer } from "../../context/TransferContext";
+import { Copy } from "lucide-react";
 /**
  * StepSuccess — receipt screen styled to match the provided design.
  * - Fetches receipt by ?tx=... (or location.state)
@@ -128,7 +129,7 @@ export default function StepSuccess() {
       {/* top area with big green circle */}
       <div className="w-full flex flex-col items-center pt-6 pb-4">
         {/* back arrow is in header outside this component, so we only render the graphic */}
-          <div className="w-20 h-20 rounded-full bg-white flex items-center justify-center shadow-inner">
+          <div className="w-30 h-30 rounded-full bg-white flex items-center justify-center">
             {/* check icon */}
                 <svg width="159" height="159" viewBox="0 0 159 159" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M79.5 159C123.407 159 159 123.407 159 79.5C159 35.5934 123.407 0 79.5 0C35.5934 0 0 35.5934 0 79.5C0 123.407 35.5934 159 79.5 159Z" fill="#34C759"/>
@@ -136,28 +137,43 @@ export default function StepSuccess() {
                 <path d="M79.5064 36.4175C90.5172 36.4175 101.528 40.6244 109.955 49.0448C113.96 53.041 117.138 57.788 119.306 63.0139C121.474 68.2398 122.59 73.8421 122.59 79.4999C122.59 85.1577 121.474 90.7599 119.306 95.9858C117.138 101.212 113.96 105.959 109.955 109.955C105.959 113.96 101.212 117.138 95.9858 119.306C90.7598 121.474 85.1576 122.59 79.4998 122.59C73.842 122.59 68.2398 121.474 63.0139 119.306C57.7879 117.138 53.041 113.96 49.0447 109.955C45.0396 105.959 41.8621 101.212 39.6941 95.9858C37.5261 90.7599 36.4102 85.1577 36.4102 79.4999C36.4102 73.8421 37.5261 68.2398 39.6941 63.0139C41.8621 57.788 45.0396 53.041 49.0447 49.0448C53.0397 45.0367 57.7876 41.8578 63.0153 39.6908C68.243 37.5237 73.8474 36.4113 79.5064 36.4175ZM99.1164 66.2432C98.4893 66.3033 97.8921 66.5399 97.394 66.9256L73.1862 85.0781L61.9701 73.8686C59.5387 71.3379 54.7488 76.1211 57.2862 78.5525L70.5362 91.8025C71.1106 92.3457 71.8552 92.6734 72.6437 92.7302C73.4322 92.7869 74.2161 92.5692 74.8623 92.1139L101.362 72.2389C103.588 70.6157 102.217 66.2896 99.4609 66.2499C99.3484 66.2441 99.2356 66.2441 99.1231 66.2499L99.1164 66.2432Z" fill="white"/>
                 </svg>
           </div>
-        <div className="mt-4 text-sm text-gray-700">Transfer Successful!</div>
+        <div className="mt-4 text-sm text-gray-900">Transfer Successful!</div>
       </div>
 
       {/* floating card */}
       <div className="w-full max-w-md px-5 mt-3">
-        <div className="bg-white rounded-3xl shadow-2xl p-6">
+        <div className="bg-white rounded-3xl border border-gray-200 p-6">
+          <div className="w-full flex items-center justify-center">
+            <img src="/Orangepay.svg" alt="OrangePay" className="pb-8 pt-2" />
+          </div>
           <div className="text-center mb-4">
             <div className="text-sm text-gray-500 font-medium">Detail Transaction</div>
           </div>
 
           {/* Amount */}
           <div className="text-center mb-6">
-            <div className="text-2xl font-semibold">{formattedAmount}</div>
+            <div className="text-3xl font-bold">{formattedAmount}</div>
           </div>
 
           {/* Recipient box */}
           <div className="mb-5">
             <div className="border border-gray-200 rounded-xl p-3">
-              <div className="font-left font-medium text-gray-800">{receipt.receiver}</div>
-              <div className="text-xs text-gray-500 mt-1">{receipt.phone}</div>
+
+              <div className="flex justify-between">
+                <div>
+                  <div className="font-left font-bold text-gray-800">
+                    {receipt.counterpartyName}
+                  </div>
+                  <div className="text-xs text-gray-500 mt-1">
+                    {receipt.counterpartyPhone}
+                  </div>
+                </div>
+              </div>
+
             </div>
           </div>
+
+
           {/* metadata: Ref ID on right icon */}
           <div className="mt-4 space-y-2 text-sm text-gray-600">
             <div className="flex justify-between pb-1">
@@ -205,16 +221,6 @@ export default function StepSuccess() {
                 <span className="text-gray-800 text-right">{receipt.type}</span>
             </div>
             </div>
-        </div>
-
-        {/* bottom button */}
-        <div className="mt-6">
-          <button
-            onClick={() => navigate("/app/dashboard")}
-            className="w-full py-3 rounded-xl bg-black text-white"
-          >
-            Back to Dashboard
-          </button>
         </div>
       </div>
 

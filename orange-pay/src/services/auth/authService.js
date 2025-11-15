@@ -1,89 +1,74 @@
+import axios from "axios";
 const ACCESS_TOKEN_KEY = "accessToken";
 const REFRESH_TOKEN_KEY = "refreshToken";
 
-// Helper to get token from localStorage
 export const getAccessToken = () => localStorage.getItem(ACCESS_TOKEN_KEY);
 export const getRefreshToken = () => localStorage.getItem(REFRESH_TOKEN_KEY);
 
-// Save tokens after login or registration
 export const saveTokens = (accessToken, refreshToken) => {
-  localStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
-  localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
+  if (accessToken) localStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
+  if (refreshToken) localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
 };
 
-// Clear tokens when user logs out
 export const clearTokens = () => {
   localStorage.removeItem(ACCESS_TOKEN_KEY);
   localStorage.removeItem(REFRESH_TOKEN_KEY);
 };
 
-// Validate access token by calling backend or decoding locally
+export function decodeJwtPayload(token) {
+  const parts = token.split(".");
+  if (parts.length !== 3) throw new Error("Invalid JWT");
+  const payloadBase64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+  const json = atob(payloadBase64);
+  return JSON.parse(json);
+}
+
 export const validateAccessToken = async () => {
   const token = getAccessToken();
-  if (!token) {
-    console.warn("No access token found");
-    return false;
-  }
-
+  if (!token) return false;
   try {
-    // Decode payload (middle part of JWT)
-    const [, payloadBase64] = token.split(".");
-    const payloadJson = atob(payloadBase64.replace(/-/g, "+").replace(/_/g, "/"));
-    const payload = JSON.parse(payloadJson);
-
+    const payload = decodeJwtPayload(token);
     const now = Math.floor(Date.now() / 1000);
-
-    // check token expired date
     if (payload.exp && payload.exp < now) {
-      console.warn("Access token expired. Trying to refresh...");
       return await refreshAccessToken();
     }
 
-    // check issuer
     if (payload.iss !== "auth-service" || payload.type !== "access") {
-      console.warn("Invalid token issuer or type");
       return false;
     }
-
     return true;
-  } catch (err) {
-    console.error("Token validation failed:", err);
+  } catch (e) {
+    console.warn("Token validation failed:", e?.message || e);
     return false;
   }
 };
 
-// Refresh access token using refresh token
 export const refreshAccessToken = async () => {
   const refreshToken = getRefreshToken();
   if (!refreshToken) return false;
 
   try {
-    const response = await fetch("/api/v1/auth/refresh", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ refreshToken }),
-    });
+    const res = await axios.post("/api/v1/auth/refresh", { refreshToken });
 
-    if (!response.ok) {
+    const p = res?.data || {};
+    const nextAccess = p?.accessToken ?? p?.data?.accessToken ?? null;
+    const nextRefresh =
+      p?.refreshToken ?? p?.data?.refreshToken ?? refreshToken;
+
+    if (!nextAccess) {
       clearTokens();
       return false;
     }
 
-    const data = await response.json();
-    if (data?.accessToken) {
-      saveTokens(data.accessToken, data.refreshToken || refreshToken);
-      return true;
-    }
-
-    return false;
+    saveTokens(nextAccess, nextRefresh);
+    return true;
   } catch (err) {
-    console.error("Token refresh failed:", err);
+    console.error("Token refresh failed:", err?.message || err);
     clearTokens();
     return false;
   }
 };
 
-// Check if authenticated (wrapper)
 export const isAuthenticated = async () => {
   return await validateAccessToken();
 };

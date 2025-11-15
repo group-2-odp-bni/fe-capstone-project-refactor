@@ -27,15 +27,15 @@ export default function MonthChips({ activeMonth, onChange }) {
   const trackCls =
     "mx-auto flex items-center justify-start md:justify-center " +
     "overflow-x-auto md:overflow-visible scrollbar-hide " +
-    "rounded-full bg-white border border-gray-200 shadow-sm " +
+    "rounded-full bg-white border border-gray-200 " +
     "px-[6px] py-1 md:px-3 md:py-1.5 lg:px-4 lg:py-2 " +
-    "gap-2 md:gap-3 lg:gap-3.5";
+    "gap-2 md:gap-3 lg:gap-3.5" ;
 
   return (
     <div className="relative w-full">
       {/* gradient fade kiri/kanan (mobile only) */}
-      <div className="pointer-events-none absolute inset-y-0 left-0 w-6 bg-gradient-to-r from-white to-transparent rounded-l-2xl md:hidden" />
-      <div className="pointer-events-none absolute inset-y-0 right-0 w-6 bg-gradient-to-l from-white to-transparent rounded-r-2xl md:hidden" />
+      {/* <div className="pointer-events-none absolute inset-y-0 left-0 w-6 bg-gradient-to-r from-white to-transparent rounded-l-2xl md:hidden" />
+      <div className="pointer-events-none absolute inset-y-0 right-0 w-6 bg-gradient-to-l from-white to-transparent rounded-r-2xl md:hidden" /> */}
 
       <div className={trackCls}>
         {MONTHS.map((m, idx) => {

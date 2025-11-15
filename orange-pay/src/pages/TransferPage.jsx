@@ -3,16 +3,14 @@ import React from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import Header from "../components/Header";
 import { useTransfer } from "../context/TransferContext";
-
 import TransferStepGuard from "../components/transfer/TransferStepGuard";
-
 import StepSelectContacts from "../components/transfer/StepSelectContacts";
 import StepVerifyContact from "../components/transfer/StepVerifyContact";
-import StepContactDetails from "../components/transfer/StepContactDetails";
 import StepEnterAmount from "../components/transfer/StepEnterAmount";
 import StepConfirm from "../components/transfer/StepConfirm";
 import StepPin from "../components/transfer/StepPin";
 import StepSuccess from "../components/transfer/StepSuccess";
+import View from "../components/view/View";
 
 export default function TransferPage() {
   const { step, prevStep, reset, goBack } = useTransfer();
@@ -21,42 +19,57 @@ export default function TransferPage() {
 
   const headerTitle = {
     select: "Transfer",
-    details: "Transfer",
     amount: "Transfer",
     confirm: "Transfer",
     pin: "Enter PIN",
     success: "Transfer",
   }[step] || "Transfer";
 
+  // If the URL is /app/transfer/success then render StepSuccess regardless of context.step
+  const path = location.pathname || "";
+  const isSuccessPath = path.endsWith("/success");
+
   const handleBack = () => {
-    // If we're at the first step, clear flow and go back to dashboard
-    if (step === "select") {
+    const inTransferPath = path.startsWith("/app/transfer");
+
+    // If we're on the success route (deterministic end), always clear flow and go to dashboard.
+    if (inTransferPath && isSuccessPath) {
       reset();
       navigate("/app/dashboard");
       return;
     }
 
-    // Otherwise prefer history-aware goBack; fallback to prevStep.
-    if (typeof goBack === "function") {
+    // If we're at the first step, prefer navigating browser history first.
+    if (step === "select") {
+      // try history back; if no previous entry, fallback to reset + dashboard
+      if (window.history.length > 1) {
+        navigate(-1);
+        return;
+      }
+      reset();
+      navigate("/app/dashboard");
+      return;
+    }
+
+    // If we're inside transfer path for other steps, prefer in-flow goBack (keeps user inside flow)
+    if (inTransferPath && typeof goBack === "function") {
       goBack();
       return;
     }
+
+    // fallback to prevStep (in-memory step change)
     if (typeof prevStep === "function") {
       prevStep();
       return;
     }
 
-    // As a last fallback, clear and navigate
+    // Last fallback: clear and navigate
     reset();
     navigate("/app/dashboard");
   };
 
-  // If the URL is /app/transfer/success then render StepSuccess regardless of context.step
-  const path = location.pathname || "";
-  const isSuccessPath = path.endsWith("/success");
-
   return (
-    <div className="p-6">
+    <View>
       <Header title={headerTitle} onBack={handleBack} showBack centerTitle />
 
       {isSuccessPath ? (
@@ -67,12 +80,6 @@ export default function TransferPage() {
           {step === "select" && <StepSelectContacts />}
 
           {step === "verify" && <StepVerifyContact />}
-
-          {step === "details" && (
-            <TransferStepGuard require={{ requireData: ["phone"], step: "details" }}>
-              <StepContactDetails />
-            </TransferStepGuard>
-          )}
 
           {step === "amount" && (
             <TransferStepGuard require={{ requireData: ["phone"], step: "amount" }}>
@@ -99,6 +106,6 @@ export default function TransferPage() {
           )}
         </>
       )}
-    </div>
+    </View>
   );
 }

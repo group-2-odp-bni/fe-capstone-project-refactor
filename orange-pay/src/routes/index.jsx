@@ -14,37 +14,67 @@ import OtpRegisterPage from "../pages/register/SetOtpPage";
 import SetPinPage from "../pages/register/SetPinPage";
 import WelcomePage from "../pages/WelcomePage";
 import LoginPage from "../pages/login/LoginPage";
-import ProfilePage from "../pages/ProfilePage";
-
-
-import OtpStage from "../components/login/OtpStage";
-import PinStage from "../components/login/PinStage";
-import ResetPhone from "../components/login/ResetPhone";
-import ResetOtp from "../components/login/ResetOtp";
+import SplitBillPage from "../pages/SplitBillPage";
+import SplitBillConfirmedPage from "../pages/SplitBillConfirmedPage";
+import SplitBillMemberPage from "../pages/SplitBillMemberPage";
+import SplitBillReviewPage from "../pages/SplitBillReviewPage";
 import ResetSetPin from "../components/login/ResetSetPin";
 import ResetPin from "../components/login/ResetPin";
 import ResetPinOtp from "../components/login/ResetPinOtp";
 import DashboardPage from "../pages/DashboardPage";
 import HistoryTransactionPage from "../pages/HistoryTransactionPage";
-import TopUpPage from "../pages/TopUpPage";
-import { isAuthenticated } from "../services/authService";
 import { RegistrationProvider } from "../context/RegistrationContext";
 import AddWalletPage from "../pages/AddWalletPage";
-import AddBalanceFromWalletPage from "../pages/AddBalanceFromWalletPageNew";
+import AllHistoryPage from "../pages/AllHistory";
+import WalletList from "../pages/WalletList";
 
+// add balance
+import ConfirmAddBalancePage from "../pages/addBalance/ConfirmAddBalancePage";
+import AddBalancePage from "../pages/addBalance/AddBalancePage";
+import { AddBalanceProvider } from "../context/AddBalanceContext";
+
+// import ReceiptPage from "../pages/ReceiptPage";
+import ReceiptPage from "../pages/ReceiptPage";
+import InviteClaimPage from "../pages/InviteClaimsPage";
 
 /* login flow context & step guard */
 import { LoginProvider } from "../context/LoginContext";
 import RequireLoginStep from "./RequireLoginStep";
+import ForgetPinPage from "../pages/forgetPin/ForgetPinPage"
+import ResetPinPage from "../pages/forgetPin/ResetPinPage";
 
 /* transfer flow */
 import { TransferProvider } from "../context/TransferContext";
 import TransferPage from "../pages/TransferPage";
-import RequireRegisterStep from "./RequireRegisterStep";
+import AssignMemberPage from "../pages/AssignMemberPage";
 import ProtectedRoute from "./ProtectedRoute";
 import { validateAccessToken } from "../services/auth/authService";
 import OtpLoginPage from "../pages/login/OtpLoginPage";
 import PinLoginPage from "../pages/login/PinLoginPage";
+
+/* profile */
+import { ProfileProvider } from "../context/ProfileContext";
+import ProfilePage from "../pages/profile/ProfilePage";
+import EditProfilePage from "../pages/profile/EditProfilePage";
+import VerifyProfileDataPage from "../pages/profile/VerifyProfileDataPage";
+
+/* account setting */
+import AccountLandingPage from "../pages/account/AccountLandingPage";
+
+/* transaction limit */
+import TransactionLimitPage from "../pages/transactionLimit/TransactionLimitPage";
+import { TransactionLimitProvider } from "../context/TransactionLimitContext";
+import TransactionLimitEditPage from "../pages/transactionLimit/TransactionLimitEditPage";
+
+/* topup */
+import { TopupProvider } from "../context/TopupContext";
+import SetAmountPage from "../pages/topup/SetAmountPage";
+import TopUpConfirmationPage from "../pages/topup/TopupConfirmationPage";
+import TopupResultPage from "../pages/topup/TopupResultPage";
+import TopUpPage from "../pages/topup/TopUpPage";
+
+/*reset pin */
+import ResetSetPinPage from "../pages/resetPin/ResetPinPage"
 
 export function PublicRoute({ children, redirectTo = "/app/dashboard" }) {
   const location = useLocation();
@@ -92,6 +122,38 @@ function NotFound() {
   return <div>404 Not Found</div>;
 }
 
+function ProfileLayout() {
+  return (
+    <ProfileProvider>
+      <Outlet />
+    </ProfileProvider>
+  );
+}
+
+function TopupLayout() {
+  return (
+    <TopupProvider>
+      <Outlet />
+    </TopupProvider>
+  );
+}
+
+function TransactionLimitLayout() {
+  return (
+    <TransactionLimitProvider>
+      <Outlet />
+    </TransactionLimitProvider>
+  );
+}
+
+function AddBalancelayout() {
+  return (
+    <AddBalanceProvider>
+      <Outlet />
+    </AddBalanceProvider>
+  );
+}
+
 /* ----------------- Routes ----------------- */
 export default function AppRoutes() {
   return (
@@ -115,8 +177,6 @@ export default function AppRoutes() {
           <Route index element={<RegisterPage />} />
           <Route path="otp" element={<OtpRegisterPage />} />
           <Route path="setpin" element={<SetPinPage />} />
-          {/* <Route path="otp" element={<RequireRegisterStep step="otp"><OtpRegisterPage /></RequireRegisterStep>} /> */}
-          {/* <Route path="setpin" element={<RequireRegisterStep step="setpin"><SetPinPage /></RequireRegisterStep>} /> */}
         </Route>
 
         {/* ---------- Login Flow (guest only) ---------- */}
@@ -130,28 +190,106 @@ export default function AppRoutes() {
             </PublicRoute>
           }
         >
-
           <Route index element={<LoginPage />} />
-          <Route path="reset" element={<ResetPin />} />
           <Route path="otp" element={<OtpLoginPage />} />
           <Route path="pin" element={<PinLoginPage />} />
+          <Route path="forget-pin">
+            <Route path="otp" element={<ForgetPinPage />} />
+            <Route path="pin" element={<ResetPinPage />} />
+          </Route>
 
-          <Route path="reset/otp" element={<RequireLoginStep step="otp"><ResetPinOtp /></RequireLoginStep>} />
-          <Route path="reset/pin" element={<RequireLoginStep step="pin"><ResetSetPin /></RequireLoginStep>} />
 
-          {/* <Route path="otp" element={<RequireLoginStep step="otp"><OtpStage /></RequireLoginStep>} /> */}
-          {/* <Route path="pin" element={<RequireLoginStep step="pin"><PinStage /></RequireLoginStep>} /> */}
+          <Route
+            path="reset/otp"
+            element={
+              <RequireLoginStep step="otp">
+                <ResetPinOtp />
+              </RequireLoginStep>
+            }
+          />
+          <Route
+            path="reset/pin"
+            element={
+              <RequireLoginStep step="pin">
+                <ResetSetPin />
+              </RequireLoginStep>
+            }
+          />
         </Route>
-
+        <Route path="/invites/claim" element={<ProtectedRoute />}>
+          <Route index element={<InviteClaimPage />} />
+        </Route>
         {/* ---------- Protected /app routes ---------- */}
         <Route path="/app/*" element={<ProtectedRoute />}>
           <Route path="dashboard" element={<DashboardPage />} />
+          <Route path="walletlist" element={<WalletList />} />
           <Route path="transactions" element={<HistoryTransactionPage />} />
-          <Route path="topup" element={<TopUpPage />} />
-          <Route path="profile" element={<ProfilePage />} />
+          <Route path="receipt/:trxId" element={<ReceiptPage />} />
+          {/* === TESTING ROUTE (tanpa param): buka /app/members-test === */}
+          <Route
+            path="members-test"
+            element={
+              <AssignMemberPage walletIdOverride="d69f4f9d-ec91-4d43-8db0-3006185c1090" />
+            }
+          />
+          <Route
+            path="wallets/:walletId/members"
+            element={<AssignMemberPage />}
+          />
+          {/* split bill */}
+          <Route path="splitbill/review" element={<SplitBillReviewPage />} />
+          <Route path="splitbill" element={<SplitBillPage />} />
+          <Route path="splitbill/:id" element={<SplitBillConfirmedPage />} />
+          <Route
+            path="splitbill/:id/member/:memberId"
+            element={<SplitBillMemberPage />}
+          />{" "}
+          {/* account page */}
+          <Route path="account" element={<AccountLandingPage />} />
+          {/* topup page */}
+          <Route path="topup" element={<TopupLayout />}>
+            <Route index element={<TopUpPage />} />
+            <Route path="setAmount" element={<SetAmountPage />} />
+            <Route path="confirm" element={<TopUpConfirmationPage />} />
+            <Route path="result" element={<TopupResultPage />} />
+          </Route>
+          {/* user profile page */}
+          <Route element={<ProfileLayout />}>
+            <Route path="profile" element={<ProfilePage />} />
+            <Route path="editProfile" element={<EditProfilePage />} />
+            <Route path="verify" element={<VerifyProfileDataPage />} />
+          </Route>
+
+          {/* reset pin page */}
+          <Route path="resetPin" element={<ResetSetPinPage />} />
+
+          {/* user transaction limit page */}
+          <Route element={<TransactionLimitLayout />}>
+            <Route path="transactionLimit" element={<TransactionLimitPage />} />
+            <Route
+              path="edittransactionLimit"
+              element={<TransactionLimitEditPage />}
+            />
+          </Route>
+          {/* add balance */}
+          <Route element={<AddBalancelayout />}>
+            <Route
+              path="wallets/confirm-add-balance"
+              element={<ConfirmAddBalancePage />}
+            />
+            <Route path="wallets/:walletId/add" element={<AddBalancePage />} />
+          </Route>
           <Route path="wallets">
             <Route path="new" element={<AddWalletPage />} />
+            <Route path=":walletId" element={<HistoryTransactionPage />} />{" "}
+            <Route path=":walletId/members" element={<AssignMemberPage />} />{" "}
+            <Route
+              path=":walletId/history"
+              element={<HistoryTransactionPage />}
+            />
+            <Route path=":walletId/transfer" element={<TransferPage />} />
           </Route>
+          <Route path="allhistory" element={<AllHistoryPage />} />
           {/* ----------- Transfer Flow ----------- */}
           <Route
             path="transfer/*"
@@ -165,15 +303,8 @@ export default function AppRoutes() {
               </TransferProvider>
             }
           />
-
           {/* ----------- Reset flow placeholder ----------- */}
           <Route path="reset">{/* add reset pages later */}</Route>
-        </Route>
-
-        {/* ---------- 404 ---------- */}
-        {/* Standalone protected route for Add Balance From Wallet (accessible at /add-balance-from-wallet) */}
-        <Route path="/add-balance-from-wallet" element={<ProtectedRoute />}>
-          <Route index element={<AddBalanceFromWalletPage />} />
         </Route>
 
         <Route path="*" element={<NotFound />} />

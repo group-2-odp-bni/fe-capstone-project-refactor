@@ -1,8 +1,0 @@
-export default function GoogleCaptcha(){
-    return(
-        <div>
-            <script src="https://www.google.com/recaptcha/api.js" async defer></script>
-            <div class="g-recaptcha" data-sitekey="your_site_key"></div>
-        </div>
-    );
-}

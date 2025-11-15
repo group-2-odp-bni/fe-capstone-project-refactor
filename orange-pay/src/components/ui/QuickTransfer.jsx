@@ -28,14 +28,12 @@ const getColorForName = (name = "") => {
 };
 
 export function ProfileCard({ children }) {
-  // keep card styling here; width is controlled by wrapper for flexibility
   return (
     <div
       className={[
         "rounded-[14px]",
         "bg-white",
         "border border-gray-200",
-        "shadow-[0_6px_18px_rgba(0,0,0,0.06)]",
         "p-3 flex flex-col items-center justify-center",
         "flex-none",
       ].join(" ")}
@@ -45,31 +43,61 @@ export function ProfileCard({ children }) {
   );
 }
 
-export function AvatarButton({ displayName = "", fullName = "", meta = {}, onClick }) {
+export function AvatarButton({
+  displayName = "",
+  fullName = "",
+  meta = {},
+  onClick,
+}) {
   const titleName = meta?.name || fullName || displayName || "—";
   const shownName = displayName || fullName || "—";
+  const isFavorite = !!meta?.isFavorite;          // <-- star toggle
+  const avatarUrl = meta?.avatarUrl || null;      // <-- optional avatar image
 
   return (
     <button
       type="button"
-      onClick={() => onClick({ name: titleName, phone: meta?.phone, accountId: meta?.accountId, fullName, displayName })}
+      onClick={() =>
+        onClick({
+          name: titleName,
+          phone: meta?.phone,
+          accountId: meta?.accountId,
+          fullName,
+          displayName,
+          meta,
+        })
+      }
       className="flex flex-col items-center space-y-3 group focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 rounded-xl min-w-0"
       aria-label={`Transfer cepat ke ${titleName}`}
       title={titleName}
     >
-      <div
-        className={[
-          "rounded-full flex items-center justify-center font-bold text-gray-700",
-          "w-12 h-12 text-lg",
-          "md:w-16 md:h-16 md:text-2xl",
-          "lg:w-20 lg:h-20 lg:text-3xl",
-          "transition-transform group-active:scale-95",
-          getColorForName(titleName),
-        ].join(" ")}
-        style={{ minWidth: 48, minHeight: 48 }}
-      >
-        {(titleName || "?").charAt(0).toUpperCase()}
+      <div className="relative">
+        {/* Avatar circle / image */}
+        <div
+          className={[
+            "rounded-full flex items-center justify-center font-bold text-gray-700 overflow-hidden",
+            "w-12 h-12 text-lg",
+            "md:w-16 md:h-16 md:text-2xl",
+            "lg:w-20 lg:h-20 lg:text-3xl",
+            "transition-transform group-active:scale-95",
+            avatarUrl ? "bg-gray-100" : getColorForName(titleName),
+          ].join(" ")}
+          style={{ minWidth: 48, minHeight: 48 }}
+        >
+          {avatarUrl ? (
+            <img
+              src={avatarUrl}
+              alt={titleName}
+              className="w-full h-full object-cover"
+              loading="lazy"
+              referrerPolicy="no-referrer"
+            />
+          ) : (
+            (titleName || "?").charAt(0).toUpperCase()
+          )}
+        </div>
       </div>
+
       <span className="text-xs sm:text-sm md:text-sm text-gray-800 font-medium truncate max-w-full">
         {shownName}
       </span>
@@ -87,26 +115,30 @@ export default function QuickTransferUI({
 }) {
   return (
     <div className="mt-6">
-      <h3 className="px-3 font-semibold text-lg text-gray-900 mb-3 text-left">
-        Quick Transfer
+      <h3 className="px-0 font-semibold text-lg text-gray-900 mb-3 text-left">
+        Transfer Cepat
       </h3>
 
       <div className="mb-1">
         {loading ? (
-          <div className="flex gap-4 px-3">
+          <div className="flex gap-4 px-0">
             {Array.from({ length: mobileVisible }).map((_, i) => (
-              <div key={i} className="flex flex-col items-center space-y-2" style={{ width: itemWidthMobile }}>
+              <div
+                key={i}
+                className="flex flex-col items-center space-y-2"
+                style={{ width: itemWidthMobile }}
+              >
                 <div className="w-14 h-14 md:w-16 md:h-16 bg-gray-200 animate-pulse rounded-full" />
                 <div className="w-12 h-3 md:w-14 bg-gray-200 animate-pulse rounded" />
               </div>
             ))}
           </div>
         ) : items.length === 0 ? (
-          <div className="text-sm text-gray-500 px-3">Belum ada penerima.</div>
+          <div className="text-sm text-gray-500 px-0">Belum ada penerima.</div>
         ) : (
           <>
             {/* MOBILE */}
-            <div className="block md:hidden px-3">
+            <div className="block md:hidden px-0">
               <div
                 className="flex gap-4 overflow-x-auto pb-0 pl-0 pr-3 scroll-smooth"
                 style={{
@@ -134,8 +166,8 @@ export default function QuickTransferUI({
             </div>
 
             {/* DESKTOP */}
-            <div className="hidden md:block">
-              <div className="px-3">
+            <div className="hidden md:block px-0">
+              <div className="px-0">
                 <div
                   className="flex gap-4 overflow-x-auto pb-3 pl-0 pr-3 scroll-smooth"
                   style={{
@@ -170,7 +202,6 @@ export default function QuickTransferUI({
       </div>
 
       <style>{`
-        /* hide native scrollbar if desired (keeps layout tidy) */
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
       `}</style>

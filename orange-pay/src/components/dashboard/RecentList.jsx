@@ -1,19 +1,34 @@
-import useRecentTransfer from "../../hooks/api/useRecentTransfer";
+import { useNavigate } from "react-router-dom";
+import useRecentTransfer from "../../hooks/api/useHistory";
 
 export default function RecentList() {
   const { users = [], loading } = useRecentTransfer();
+  const navigate = useNavigate();
 
   const formatRupiah = (v) => (v ?? 0).toLocaleString("id-ID");
 
   return (
     <section className="mt-6">
-      <h3 className="px-3 font-semibold text-lg text-gray-900 mb-3 text-left">
-        Recent
-      </h3>
+      <Header title="BELINDA" centerTitle />
+      <div
+        onClick={() => navigate("/app/allhistory")}
+        className="flex items-center justify-between cursor-pointer group"
+      >
+        <h3 className="font-semibold text-lg text-gray-900 mb-3 text-left group-hover:text-primary transition-colors">
+          Transaksi terakhir
+        </h3>
+        <span className="text-sm text-gray-500 group-hover:text-primary transition-colors">
+          Lihat semua →
+        </span>
+      </div>
 
-      <div className="rounded-[24px] border border-gray-200 bg-white shadow-sm">
+      <div
+        onClick={() => navigate("/app/allhistory")}
+        className="rounded-[24px] border border-gray-200 bg-white cursor-pointer transition-shadow"
+      >
         <div className="p-4">
           {loading ? (
+            // Skeleton loading
             <ul className="divide-y divide-gray-100">
               {Array.from({ length: 4 }).map((_, idx) => (
                 <li key={idx} className="py-3">
@@ -38,12 +53,25 @@ export default function RecentList() {
             <div className="max-h-[300px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
               <ul className="mt-2.5 divide-y divide-gray-200">
                 {users.map((user) => {
-                  const isIncome = user.type?.toLowerCase() === "terima";
-                  const sign = isIncome ? "+" : "−";
-                  const amountColor = isIncome ? "text-emerald-500" : "text-red-600";
+                  const isIncome =
+                    user.rawType === "TRANSFER_IN" ||
+                    user.rawType === "TOP_UP";
 
-                  // gunakan label yang sudah diformat dari hook
-                  const rightSub = `${user.dateLabel} · ${user.timeLabel}`;
+                  const sign = isIncome ? "+" : "−";
+                  const amountColor = isIncome ? "text-emerald-500" : "text-black-600";
+
+                  // Format label based on backend type
+                  const labelMap = {
+                    TRANSFER_IN: "Transfer In",
+                    TRANSFER_OUT: "Transfer Out",
+                    TOP_UP: "Top Up",
+                  };
+
+                  // formatted label
+                  const label =
+                    labelMap[user.rawType] ||
+                    user.rawType?.replace(/_/g, " ").toLowerCase().replace(/(^|\s)\S/g, c => c.toUpperCase()) ||
+                    "-";
 
                   return (
                     <li
@@ -51,22 +79,22 @@ export default function RecentList() {
                       className="py-2 first:pt-0 last:pb-0 hover:bg-gray-50/40 transition-colors"
                     >
                       <div className="flex items-center justify-between">
-                        {/* Left */}
                         <div className="min-w-0 pr-3 text-left">
                           <p className="text-sm font-semibold text-gray-900 truncate">
                             {user.name}
                           </p>
-                          <p className="text-xs text-gray-500 truncate">
-                            {isIncome ? "Transfer Masuk" : user.type?.toLowerCase() === "kirim" ? "Transfer" : (user.type ?? "-")}
-                          </p>
+
+                          {/* UPDATED LABEL HERE */}
+                          <p className="text-xs text-gray-500 truncate">{label}</p>
                         </div>
 
-                        {/* Right */}
                         <div className="text-right">
                           <p className={`text-sm ${amountColor}`}>
                             {sign} Rp{formatRupiah(user.amount)}
                           </p>
-                          <p className="text-[11px] text-gray-500">{rightSub}</p>
+                          <p className="text-[11px] text-gray-500">
+                            {user.dateLabel} · {user.timeLabel}
+                          </p>
                         </div>
                       </div>
                     </li>

@@ -1,16 +1,16 @@
 // src/pages/ProfilePage.jsx
 import React from "react";
-import { ProfileProvider, useProfile } from "../context/ProfileContext";
+import { ProfileProvider, useProfileContext } from "../context/ProfileContext";
 import ProfileCard from "../components/account/ProfileCard";
 // import AccountDetails from "../components/account/AccountDetails";
 // import EditAccountForm from "../components/account/EditAccountForm";
 
 function ProfileContent() {
-  const { view } = useProfile();
+  // const { view } = useProfile();
 
   // choose component by context view
-  if (view === "details") return <AccountDetails />;
-  if (view === "edit") return <EditAccountForm />;
+  // if (view === "details") return <AccountDetails />;
+  // if (view === "edit") return <EditAccountForm />;
 
   // default = profile card
   return <ProfileCard />;

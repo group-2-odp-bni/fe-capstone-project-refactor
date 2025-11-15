@@ -1,15 +1,26 @@
 import { useMemo, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import DynamicShell from "../components/layout/DynamicShell";
-import BackBar from "../components/add_wallet/BackBar";
 import WalletTypeOption from "../components/add_wallet/WalletTypeOption";
 import WalletCardPreview from "../components/add_wallet/WalletCardPreview";
+import View from "../components/view/View";
 import WalletColorPicker, {
   DEFAULT_GRADIENT,
 } from "../components/add_wallet/WalletColorPicker";
 import WalletNameField from "../components/add_wallet/WalletNameField";
 import CreateButton from "../components/add_wallet/CreateButton";
+import Header from "../components/Header";
 
+
+import api from "../lib/api";
+import { v4 as uuidv4 } from "uuid";
+
+function pickPrimaryColorFromGradient(gradientString) {
+  if (!gradientString) return "#000000";
+  const colorRegex = /#([0-9a-fA-F]{6}|[0-9a-fA-F]{3})/g;
+  const matches = gradientString.match(colorRegex);
+
+  return matches && matches.length > 0 ? matches[0] : "#000000";
+}
 export default function AddWalletPage() {
   const [step, setStep] = useState(1);
   const [type, setType] = useState("personal");
@@ -18,6 +29,21 @@ export default function AddWalletPage() {
   const [submitting, setSubmitting] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+
+  const handleBack = () => {
+    // If we're at the first step, clear flow and go back to dashboard
+    if (step === 1) {
+      // reset();
+      navigate("/app/dashboard");
+      return;
+    }
+
+    // If we're at the second step, go back to the previous step
+    if (step === 2) {
+      setStep(1);
+      return;
+    }
+  };
 
   const subtitle = useMemo(
     () =>
@@ -32,14 +58,18 @@ export default function AddWalletPage() {
   const handleCreate = async () => {
     if (!canContinue) return;
     try {
+      console.log("gradient", gradient);
       setSubmitting(true);
-      //   await createWalletApi({
-      //     type: type === "personal" ? "PERSONAL" : "SHARED",
-      //     name: name.trim(),
-      //     currency: "IDR",
-      //     color: gradient,
-      //     metadata: { theme: "gradient-v1" },
-      //   });
+      const payload = {
+        type: type === "personal" ? "PERSONAL" : "SHARED",
+        name: name.trim(),
+        metadata: {
+          colors: pickPrimaryColorFromGradient(gradient),
+        },
+      };
+      await api.post("/api/v1/wallets", payload, {
+        headers: { "Idempotency-Key": `wallet-create-${uuidv4()}` },
+      });
       const from = location.state?.from?.pathname || location.state?.from;
       navigate(from || "/app/dashboard", { replace: true });
     } catch (e) {
@@ -50,9 +80,9 @@ export default function AddWalletPage() {
   };
 
   return (
-    <DynamicShell>
-      <div className="mx-auto w-full max-w-md sm:max-w-lg">
-        <BackBar />
+    <View>
+      <Header title="Add New Wallet" onBack={handleBack} showBack centerTitle />
+        {/* <BackBar /> */}
         {step === 1 && (
           <section className="px-4 sm:px-6 pt-2 pb-6">
             <h2 className="text-sm text-gray-800 font-semibold mb-3">
@@ -96,7 +126,7 @@ export default function AddWalletPage() {
                 name={name}
                 balance={0}
                 gradient={gradient}
-                rightBadge={type === "personal" && name ? name : ""}
+                rightBadge={type === "personal" || type === "shared" && name ? name : ""}
               />
             </div>
 
@@ -119,7 +149,6 @@ export default function AddWalletPage() {
             </CreateButton>
           </section>
         )}
-      </div>
-    </DynamicShell>
+    </View>
   );
 }

@@ -1,35 +1,47 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { RegistrationProvider, useRegistrationContext } from "../../context/RegistrationContext";
-import PhoneLayoutBackground from "../../components/PhoneLayoutBackground";
+import { useRegistrationContext } from "../../context/RegistrationContext";
 import { FullSubmitButton } from "../../components/button/FullSubmitButton";
-import GoogleCaptcha from "../../components/recaptcha/GoogleCaptcha";
-
-import MobileShell from "../../components/layout/MobileShell";
-import InputField from "../../components/register/RegisterGeneralInput";
 import OrangeHeader from "../../components/register/OrangeHeader";
 import WhiteCardContainer from "../../components/register/WhiteCardContainer";
 import OrangePayLogo from "../../components/register/OrangePayLogo";
 import RegisterTextContainer from "../../components/register/RegisterTextContainer";
+import api from "../../lib/api";
+import {
+  GoogleReCaptchaProvider,
+  useGoogleReCaptcha,
+} from "react-google-recaptcha-v3";
+import View from "../../components/view/View";
+import PhoneNumberInput from "../../components/login/PhoneNumberInput";
+import LoginTextContainer from "../../components/login/LoginTextContainer";
+import TermsModal from "../TermsAndPrivacy";
 
 export default function RegisterPage() {
   return (
-    <PhoneLayoutBackground>
-      <MobileShell>
+    <GoogleReCaptchaProvider
+      reCaptchaKey={import.meta.env.VITE_RECAPTCHA_SITE_KEY}
+      scriptProps={{
+        async: true,
+        defer: true,
+        appendTo: "body",
+      }}
+    >
+      <View>
         <RegisterContent />
-      </MobileShell>
-    </PhoneLayoutBackground>
+      </View>
+    </GoogleReCaptchaProvider>
   );
 }
 
 function RegisterContent() {
   const navigate = useNavigate();
   const { setRegistrationData } = useRegistrationContext();
+  const { executeRecaptcha } = useGoogleReCaptcha();
+  const inputRef = useRef(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Local form state
   const [formData, setFormData] = useState({
-    fullName: "",
-    email: "",
     phoneNumber: "",
   });
 
@@ -37,8 +49,18 @@ function RegisterContent() {
   const [error, setError] = useState("");
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    const v = e.target.value.replace(/\D/g, ""); // hanya angka
+
+    if (v && !v.startsWith("8")) {
+      setError("Nomor harus dimulai dengan 8");
+    } else if (v.length > 0 && v.length < 9) {
+      setError("Nomor minimal 9 digit setelah +62");
+    } else {
+      setError("");
+    }
+
+    // Update state utama
+    setFormData((prev) => ({ ...prev, phoneNumber: v }));
   };
 
   const handleSubmit = async (e) => {
@@ -46,36 +68,49 @@ function RegisterContent() {
     setError("");
     setLoading(true);
 
+    if (!executeRecaptcha) {
+      setError("reCAPTCHA belum siap. Coba beberapa detik lagi.");
+      setLoading(false);
+      return;
+    }
+
     //hit api
     try {
-      const response = await fetch('/api/v1/auth/request', {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          phoneNumber: formData.phoneNumber,
-        }),
+      //get google captcha token
+      const token = await executeRecaptcha("register");
+      const phoneNumber = `0${formData.phoneNumber}`;
+
+      //hit login
+      const { data } = await api.post("/api/v1/auth/register", {
+        phoneNumber: phoneNumber,
+        captchaToken: token,
       });
-
-      if (!response.ok) {
-        throw new Error("Failed to send request");
-      }
-
-      const data = await response.json();
 
       //Save user info for later use
       setRegistrationData({
-        fullName: formData.fullName,
-        email: formData.email,
         phoneNumber: formData.phoneNumber,
       });
-
-      console.log("Registration initiated:", data);
-
-      // Navigate to OTP verification
       navigate("/register/otp");
     } catch (err) {
-      console.error(err);
-      setError(err.message || "Something went wrong.");
+      console.log("error");
+
+      if (err.response) {
+        console.log(err.response);
+        const errorCode = err.response.data?.error?.code;
+
+        if (errorCode === "AUTH-1002") {
+          setError("Nomor Handphone Anda telah terdaftar");
+        } else {
+          // fallback message from backend
+          setError(
+            err.response.data?.error?.message ||
+              "Terjadi kesalahan. Silakan coba lagi."
+          );
+        }
+      } else {
+        // no response (e.g. network issue)
+        setError("Tidak dapat terhubung ke server. Coba lagi nanti.");
+      }
     } finally {
       setLoading(false);
     }
@@ -86,46 +121,35 @@ function RegisterContent() {
       <OrangeHeader />
       <WhiteCardContainer>
         <OrangePayLogo />
+        <h2 className="mt-6 text-2xl font-bold text-center">
+          Daftar ke OrangePay
+        </h2>
+
         <RegisterTextContainer>
-          Masukkan nama dan email aktif Anda untuk menikmati semua layanan kami.
+          Masukkan nomor handphone Anda yang aktif untuk menikmati semua layanan
+          kami
         </RegisterTextContainer>
 
-
         <form onSubmit={handleSubmit} className="space-y-5 mt-6">
-          <InputField
-            id="fullName"
-            name="fullName"
-            label="Nama Lengkap :"
-            type="text"
-            placeholder="Masukkan nama lengkap"
-            required
-            value={formData.fullName}
-            onChange={handleChange}
-          />
-
-          <InputField
-            id="email"
-            name="email"
-            label="Alamat Email :"
-            type="email"
-            placeholder="Masukkan alamat email"
-            required
-            value={formData.email}
-            onChange={handleChange}
-          />
-
-          <InputField
-            id="phoneNumber"
-            name="phoneNumber"
-            label="Nomor Telepon :"
-            type="tel"
-            placeholder="Masukkan nomor telepon"
-            required
+          <PhoneNumberInput
             value={formData.phoneNumber}
             onChange={handleChange}
+            inputRef={inputRef}
+            err={error}
+            required
           />
 
-          {/* <GoogleCaptcha /> */}
+          <LoginTextContainer>
+            Dengan masuk atau mendaftar, Anda menyetujui
+            <button
+              type="button"
+              onClick={() => setIsModalOpen(true)}
+              className="underline font-bold mx-1 text-gray-700 hover:text-orange-600"
+            >
+              Syarat dan Kebijakan Privasi
+            </button>{" "}
+            Anda.
+          </LoginTextContainer>
 
           {error && <p className="text-red-500 text-xs">{error}</p>}
 
@@ -144,7 +168,7 @@ function RegisterContent() {
           </div>
         </form>
       </WhiteCardContainer>
-
+      <TermsModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
     </div>
   );
 }

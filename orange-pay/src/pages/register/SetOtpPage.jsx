@@ -1,31 +1,31 @@
 import React, { useState } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
-
-import PhoneLayoutBackground from "../../components/PhoneLayoutBackground";
-import MobileShell from "../../components/layout/MobileShell";
+import { useNavigate } from "react-router-dom";
 import WhiteCardContainer from "../../components/register/WhiteCardContainer";
 import OrangeHeader from "../../components/register/OrangeHeader";
-import InputField from "../../components/register/RegisterGeneralInput";
 import { FullSubmitButton } from "../../components/button/FullSubmitButton";
 import { useRegistrationContext } from "../../context/RegistrationContext";
 import OrangePayLogo from "../../components/register/OrangePayLogo";
 import RegisterTextContainer from "../../components/register/RegisterTextContainer";
+import api from "../../lib/api";
+import OtpInputField from "../../components/input/OtpInputField";
+import CountdownTimer from "../../components/dashboard/CountdownTimer";
+import ButtonLink from "../../components/button/ButtonLink";
+import View from "../../components/view/View";
+import { useCountdown } from "../../hooks/useCountDown";
 
 export default function OtpRegisterPage() {
-
   return (
-    <PhoneLayoutBackground>
-      <MobileShell>
-        <OrangeHeader />
-        <WhiteCardContainer>
-          <OrangePayLogo />
-          <RegisterTextContainer>
-            Kode OTP telah dikirim ke WhatsApp Anda. Masukkan kode di bawah untuk melanjutkan.
-          </RegisterTextContainer>
-          <SetOtpContent />
-        </WhiteCardContainer>
-      </MobileShell>
-    </PhoneLayoutBackground>
+    <View>
+      <OrangeHeader />
+      <WhiteCardContainer>
+        <OrangePayLogo />
+        <RegisterTextContainer>
+          Kode OTP telah dikirim ke WhatsApp Anda. Masukkan kode di bawah
+          untuk melanjutkan.
+        </RegisterTextContainer>
+        <SetOtpContent />
+      </WhiteCardContainer>
+    </View>
   );
 }
 
@@ -34,11 +34,10 @@ function SetOtpContent() {
   const { userData, setRegistrationData } = useRegistrationContext();
   console.log(userData.phoneNumber);
 
-
   const [otp, setOtp] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-
+  const { secondsLeft, reset } = useCountdown(30)
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -46,48 +45,66 @@ function SetOtpContent() {
     setLoading(true);
 
     try {
-      console.log("--- sent request ---")
-      console.log(`phone number : ${userData.phoneNumber}`)
-      console.log(`otp : ${otp}`)
-
-
-      const response = await fetch('/api/v1/auth/verify', {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          phoneNumber: userData.phoneNumber,
-          otp: otp,
-        }),
+      const { data } = await api.post("/api/v1/auth/verify", {
+        phoneNumber: userData.phoneNumber,
+        otp,
       });
-
-      if (!response.ok) {
-        throw new Error("Failed to send request");
-      }
-
-      //save the data
-      const data = await response.json();
       setRegistrationData({ stateToken: data.data.stateToken });
-
-      //log
-      console.log("otp successfully registered :", data);
-
-      //update next route
       navigate("/register/setpin");
-
     } catch (err) {
-      console.error(err);
-      setError(err.message || "Something went wrong.");
+      setError(
+        err.response?.data?.message ||
+        err.message ||
+        "Something went wrong."
+      );
     } finally {
       setLoading(false);
     }
 
+  };
 
+  const handleResendOtp = async () => {
+    setError("");
+    setLoading(true);
+
+    //get recaptcha token
+    const recaptchaToken = localStorage.getItem("_grecaptcha")
+
+    try {
+      const response = await axios.post("/api/v1/auth/resend-otp", {
+        phoneNumber: userData.phoneNumber,
+        captchaToken: recaptchaToken,
+      });
+
+      setLoginData({ stateToken: response.data.data.stateToken });
+      setOtp("");
+      reset()
+    } catch (err) {
+      // get error code
+      errorCode = err.response?.data?.error.code
+
+      // error handle - expired
+      if (errorCode === "AUTH-2002") {
+        setError("OTP telah expired")
+        setOtp("")
+        reset("")
+      }
+
+      // else
+      setError(
+        err.response?.data?.error.message ||
+        err.message ||
+        "Something went wrong."
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div>
       <form onSubmit={handleSubmit} className="space-y-5 mt-6">
-        <InputField
+        <OtpInputField
           id="otp"
           name="otp"
           label="OTP :"
@@ -97,32 +114,23 @@ function SetOtpContent() {
           value={otp}
           onChange={(e) => setOtp(e.target.value)}
         />
+        <CountdownTimer initialSeconds={secondsLeft} />
 
         {error && <p className="text-red-500 text-xs">{error}</p>}
 
         <FullSubmitButton disabled={loading}>
           {loading ? "Mengirim..." : "Lanjut"}
         </FullSubmitButton>
-
-
-
-
-
-
-
       </form>
 
-      <div className="text-center mt-4 text-xs md:text-sm text-gray-600 pb-6">
-        Salah nomor?{" "}
-        <button
-          type="button"
-          className="text-[#1C6C79] font-semibold hover:underline"
-          onClick={() => navigate("/register")}
-        >
-          Ubah nomor
-        </button>
-      </div>
-    </div>
-  );
+      <div className="text-center mt-4 pb-6">
+        {secondsLeft === 0 && (
+          <ButtonLink onClick={handleResendOtp}>
+            Kirim Ulang OTP
+          </ButtonLink>
+        )}
 
+      </div>
+    </div >
+  );
 }
