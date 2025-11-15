@@ -2,14 +2,14 @@ import { useNavigate } from "react-router-dom";
 import View from "../../components/view/View";
 import WhiteHeader from "../../components/register/WhiteHeader";
 import ContentBox from "../../components/common/ContentBox";
-
+import Header from "../../components/Header";
 export default function TopUpPage() {
   const navigate = useNavigate()
 
 
   return (
     <View>
-      <WhiteHeader title="Topup" />
+      <Header title="Topup" />
       <ContentBox>
         <div className="p-4">
           <p className="text-sm text-gray-600 mb-4 font-semibold mb-6">
