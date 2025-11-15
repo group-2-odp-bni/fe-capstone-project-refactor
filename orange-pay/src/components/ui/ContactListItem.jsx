@@ -1,5 +1,7 @@
 // src/components/ui/ContactListItem.jsx
-export default function ContactListItem({ contact = {}, onPick = () => {}, className = "" }) {
+import React from "react";
+
+export default React.memo(function ContactListItem({ contact = {}, onPick = () => {}, className = "" }) {
   const name = contact.name || "Unknown";
   const phone = contact.phone || "";
   const firstWord = (name || "").split(" ")[0] || "";
@@ -27,3 +29,4 @@ export default function ContactListItem({ contact = {}, onPick = () => {}, class
     </button>
   );
 }
+)

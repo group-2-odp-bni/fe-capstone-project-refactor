@@ -9,7 +9,7 @@ export default function SplashPage() {
 
   useEffect(() => {
     const fadeTimer = setTimeout(() => setFadeOut(true), 2300);
-    const goTimer = setTimeout(() => navigate("/welcome"), 3000);
+    const goTimer = setTimeout(() => navigate("/app/dashboard"), 3000);
     return () => {
       clearTimeout(fadeTimer);
       clearTimeout(goTimer);

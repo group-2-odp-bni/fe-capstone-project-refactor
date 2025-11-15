@@ -25,24 +25,32 @@ export default function TransferPage() {
   }[step] || "Transfer";
 
   const handleBack = () => {
-    // If we're at the first step, clear flow and go back to dashboard
+    // If we're at the first step, prefer navigating browser history first.
     if (step === "select") {
+      // try history back; if no previous entry, fallback to reset + dashboard
+      if (window.history.length > 1) {
+        // go back in browser history
+        navigate(-1);
+        return;
+      }
       reset();
       navigate("/app/dashboard");
       return;
     }
-
-    // Otherwise prefer history-aware goBack; fallback to prevStep.
+  
+    // Otherwise prefer in-flow goBack (will both change step and call navigate(-1))
     if (typeof goBack === "function") {
       goBack();
       return;
     }
+  
+    // fallback to prevStep (in-memory step change)
     if (typeof prevStep === "function") {
       prevStep();
       return;
     }
-
-    // As a last fallback, clear and navigate
+  
+    // Last fallback: clear and navigate
     reset();
     navigate("/app/dashboard");
   };
