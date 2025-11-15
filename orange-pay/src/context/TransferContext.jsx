@@ -45,7 +45,7 @@ const mapStepToPath = (stepName) => {
     case "pin":
       return "/app/transfer/pin";
     case "confirm":
-      return "/app/transfer/confirm";
+      return "/app/transfer";
     case "success":
       return "/app/transfer/success";
     case "amount":
@@ -356,6 +356,36 @@ export const TransferProvider = ({ children }) => {
     return false;
   };
 
+  /**
+   * headerBack()
+   * - A safe back handler intended for the app header back button.
+   * - If the current location is inside the transfer flow, ensure we clear transfer state
+   *   and navigate to dashboard (deterministic).
+   * - Otherwise behave like a normal history back.
+   */
+  const headerBack = () => {
+    try {
+      const path = (location && location.pathname) || "";
+      if (path && path.startsWith("/app/transfer")) {
+        // clear transfer flow then go to dashboard (push so user has history)
+        try {
+          sessionStorage.removeItem(TRANSFER_FLOW_KEY);
+        } catch (_) {}
+        // ensure in-memory reset too
+        skipPersistRef.current = true;
+        skipRouteSyncRef.current = true;
+        setFlow(defaultFlow);
+        navigate("/app/dashboard");
+        return;
+      }
+      // Default behavior: go back in history
+      navigate(-1);
+    } catch (err) {
+      // Fallback: navigate to dashboard if something goes wrong
+      try { navigate("/app/dashboard"); } catch (_) {}
+    }
+  };
+
   const contextValue = {
     flow,
     step: flow.step,
@@ -368,6 +398,7 @@ export const TransferProvider = ({ children }) => {
     setData,
     reset,
     requireVerifyIfMissingNumber,
+    headerBack,
   };
 
   return <TransferContext.Provider value={contextValue}>{children}</TransferContext.Provider>;
