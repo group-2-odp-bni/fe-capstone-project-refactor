@@ -39,6 +39,8 @@ import InviteClaimPage from "../pages/InviteClaimsPage";
 /* login flow context & step guard */
 import { LoginProvider } from "../context/LoginContext";
 import RequireLoginStep from "./RequireLoginStep";
+import ForgetPinPage from "../pages/forgetPin/ForgetPinPage"
+import ResetPinPage from "../pages/forgetPin/ResetPinPage";
 
 /* transfer flow */
 import { TransferProvider } from "../context/TransferContext";
@@ -188,9 +190,13 @@ export default function AppRoutes() {
           }
         >
           <Route index element={<LoginPage />} />
-          <Route path="reset" element={<ResetPin />} />
           <Route path="otp" element={<OtpLoginPage />} />
           <Route path="pin" element={<PinLoginPage />} />
+          <Route path="forget-pin">
+            <Route path="otp" element={<ForgetPinPage />} />
+            <Route path="pin" element={<ResetPinPage />} />
+          </Route>
+
 
           <Route
             path="reset/otp"

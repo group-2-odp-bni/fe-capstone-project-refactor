@@ -67,10 +67,10 @@ export default function PinStage() {
         </div>
         {err ? <p className="text-red-500 text-sm mt-4">{err}</p> : null}
         <button
-          onClick={() => nav("/login/reset")}
+          onClick={() => nav("/login/forget-pin/otp")}
           className="text-orange-600 text-sm underline mt-6"
         >
-          Forgot PIN
+          Forget PIN
         </button>
       </div>
 

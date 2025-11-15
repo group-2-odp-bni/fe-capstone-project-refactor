@@ -2,8 +2,6 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import CenteredNumberInputPad from "../../components/register/CenteredNumberInputPad";
-import PhoneLayoutBackground from "../../components/PhoneLayoutBackground";
-import MobileShell from "../../components/layout/MobileShell";
 import PageHeader from "../../components/page_header/PageHeader";
 import { FullSubmitButton } from "../../components/button/FullSubmitButton";
 import WhiteCardContainer from "../../components/register/WhiteCardContainer";
@@ -58,7 +56,7 @@ function PinLoginContent() {
   };
 
   const handleForgotPin = () => {
-    navigate("/auth/forgot-pin", { state: { phone: loginData?.phone ?? null } });
+    navigate("/login/forget-pin/otp", { state: { phone: loginData?.phone ?? null } });
   };
 
   const onFormSubmit = (e) => { e.preventDefault(); submitPin(); };
