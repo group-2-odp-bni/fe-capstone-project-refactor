@@ -116,7 +116,7 @@ export default function QuickTransferUI({
   return (
     <div className="mt-6">
       <h3 className="px-0 font-semibold text-lg text-gray-900 mb-3 text-left">
-        Quick Transfer
+        Transfer Cepat
       </h3>
 
       <div className="mb-1">

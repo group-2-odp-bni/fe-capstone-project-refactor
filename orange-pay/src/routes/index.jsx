@@ -26,6 +26,7 @@ import HistoryTransactionPage from "../pages/HistoryTransactionPage";
 import { RegistrationProvider } from "../context/RegistrationContext";
 import AddWalletPage from "../pages/AddWalletPage";
 import AllHistoryPage from "../pages/AllHistory";
+import WalletList from "../pages/WalletList";
 
 // add balance
 import ConfirmAddBalancePage from "../pages/addBalance/ConfirmAddBalancePage";
@@ -221,6 +222,7 @@ export default function AppRoutes() {
         {/* ---------- Protected /app routes ---------- */}
         <Route path="/app/*" element={<ProtectedRoute />}>
           <Route path="dashboard" element={<DashboardPage />} />
+          <Route path="walletlist" element={<WalletList />} />
           <Route path="transactions" element={<HistoryTransactionPage />} />
           <Route path="receipt/:trxId" element={<ReceiptPage />} />
           {/* === TESTING ROUTE (tanpa param): buka /app/members-test === */}
