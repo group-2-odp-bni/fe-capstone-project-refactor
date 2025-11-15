@@ -70,6 +70,9 @@ import TopUpConfirmationPage from "../pages/topup/TopupConfirmationPage";
 import TopupResultPage from "../pages/topup/TopupResultPage";
 import TopUpPage from "../pages/topup/TopUpPage";
 
+/*reset pin */
+import ResetSetPinPage from "../pages/resetPin/ResetPinPage"
+
 export function PublicRoute({ children, redirectTo = "/app/dashboard" }) {
   const location = useLocation();
   const [checking, setChecking] = React.useState(true);
@@ -248,6 +251,10 @@ export default function AppRoutes() {
             <Route path="editProfile" element={<EditProfilePage />} />
             <Route path="verify" element={<VerifyProfileDataPage />} />
           </Route>
+
+          {/* reset pin page */}
+          <Route path="resetPin" element={<ResetSetPinPage />} />
+
           {/* user transaction limit page */}
           <Route element={<TransactionLimitLayout />}>
             <Route path="transactionLimit" element={<TransactionLimitPage />} />

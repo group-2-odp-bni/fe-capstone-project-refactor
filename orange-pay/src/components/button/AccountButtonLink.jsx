@@ -5,7 +5,7 @@ export default function AccountButtonLink({ onClick, children, className = "" })
         <button
             type="button"
             onClick={onClick}
-            className={`w-full flex justify-between items-center px-4 py-3 mb-3 
+            className={`w-full flex justify-between items-center px-5 py-2 mb-0
                   text-left rounded-xl text-sm
                   bg-transparent hover:bg-gray-100 
                   transition-colors duration-200 ${className}`}
