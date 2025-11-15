@@ -102,6 +102,11 @@ function LoginContextContent() {
 
     const fullPhone = `+62${phoneNumber}`;
 
+    // safe loginData
+    setLoginData({
+      phoneNumber: fullPhone,
+    })
+
     // Konfirmasi sebelum kirim OTP
     const confirmResult = await Swal.fire({
       title: "Kirim OTP?",

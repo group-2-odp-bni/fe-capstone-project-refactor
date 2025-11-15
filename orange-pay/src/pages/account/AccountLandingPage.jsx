@@ -17,7 +17,7 @@ export default function AccountLandingPage() {
 
     return (
         <View>
-            <WhiteHeader title="Account" to="/app/dashboard"/>
+            <WhiteHeader title="Account" to="/app/dashboard" />
             <ContentBox className="border border-gray-300">
                 <div className="">
 
@@ -29,6 +29,11 @@ export default function AccountLandingPage() {
                             onClick={() => navigate("/app/profile")}
                         >
                             Lihat Profil
+                        </AccountButtonLink>
+                        <AccountButtonLink
+                            onClick={() => navigate("/app/resetPin")}
+                        >
+                            Reset Pin
                         </AccountButtonLink>
 
 
