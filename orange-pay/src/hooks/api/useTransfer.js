@@ -145,41 +145,82 @@ export default function useTransferApi() {
   /** SAVED: GET /api/v1/quick-transfers/top?limit=200 (cached + ETag) */
   const fetchSavedContacts = async ({ force = false, limit = 200 } = {}) => {
     const cached = readQTCached();
-
-    // Serve fresh cache
+  
+    // Serve fresh cache immediately (stale-while-revalidate)
     if (!force && cached && isFresh(cached.ts, QT_TTL_MS)) {
+      // populate in-memory and return mapped cached items right away
       qtMemory = { ts: cached.ts, items: cached.items };
-      return cached.items.map(mapQuickTransferToContact);
+      const mappedCached = cached.items.map(mapQuickTransferToContact);
+  
+      // Kick off background revalidation (do not await)
+      (async () => {
+        try {
+          const headers = {};
+          if (cached?.etag) headers["If-None-Match"] = cached.etag;
+  
+          const resp = await api.get("/api/v1/quick-transfers/top", {
+            params: { limit },
+            headers,
+            validateStatus: (s) => (s >= 200 && s < 300) || s === 304,
+          });
+  
+          // if 304 -> nothing changed
+          if (resp.status === 304) {
+            // update memory ts to now so TTL is refreshed (optional)
+            qtMemory = { ts: now(), items: cached.items };
+            writeQTCached({ items: cached.items, etag: cached.etag });
+            return;
+          }
+  
+          // got fresh data -> replace cache + memory
+          const rawList = Array.isArray(resp?.data?.data)
+            ? resp.data.data
+            : Array.isArray(resp?.data)
+            ? resp.data
+            : [];
+  
+          const etag = resp.headers?.etag || null;
+          writeQTCached({ items: rawList, etag });
+          qtMemory = { ts: now(), items: rawList };
+        } catch (err) {
+          // ignore background errors; keep cache as-is
+          // optionally log in dev
+          // console.debug("qt revalidate failed", err);
+        }
+      })();
+  
+      return mappedCached;
     }
-
-    // Conditional GET with ETag (if provided)
+  
+    // Otherwise (force or cache stale/missing) do the normal conditional GET and wait
     const headers = {};
     if (cached?.etag) headers["If-None-Match"] = cached.etag;
-
+  
     try {
       const resp = await api.get("/api/v1/quick-transfers/top", {
         params: { limit },
         headers,
         validateStatus: (s) => (s >= 200 && s < 300) || s === 304,
       });
-
+  
       if (resp.status === 304 && cached) {
         qtMemory = { ts: cached.ts, items: cached.items };
         return cached.items.map(mapQuickTransferToContact);
       }
-
+  
       const rawList = Array.isArray(resp?.data?.data)
         ? resp.data.data
         : Array.isArray(resp?.data)
         ? resp.data
         : [];
-
+  
       const etag = resp.headers?.etag || null;
       writeQTCached({ items: rawList, etag });
       qtMemory = { ts: now(), items: rawList };
-
+  
       return rawList.map(mapQuickTransferToContact);
     } catch {
+      // fallback to cached if available
       if (cached?.items) {
         qtMemory = { ts: cached.ts, items: cached.items };
         return cached.items.map(mapQuickTransferToContact);

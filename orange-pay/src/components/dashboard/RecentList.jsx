@@ -11,7 +11,7 @@ export default function RecentList() {
     <section className="mt-6">
       <div
         onClick={() => navigate("/app/allhistory")}
-        className=" flex items-center justify-between cursor-pointer group"
+        className="flex items-center justify-between cursor-pointer group"
       >
         <h3 className="font-semibold text-lg text-gray-900 mb-3 text-left group-hover:text-primary transition-colors">
           Recent
@@ -27,6 +27,7 @@ export default function RecentList() {
       >
         <div className="p-4">
           {loading ? (
+            // Skeleton loading
             <ul className="divide-y divide-gray-100">
               {Array.from({ length: 4 }).map((_, idx) => (
                 <li key={idx} className="py-3">
@@ -51,10 +52,25 @@ export default function RecentList() {
             <div className="max-h-[300px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
               <ul className="mt-2.5 divide-y divide-gray-200">
                 {users.map((user) => {
-                  const isIncome = user.type === "terima";
+                  const isIncome =
+                    user.rawType === "TRANSFER_IN" ||
+                    user.rawType === "TOP_UP";
+
                   const sign = isIncome ? "+" : "−";
                   const amountColor = isIncome ? "text-emerald-500" : "text-black-600";
-                  const rightSub = `${user.dateLabel} · ${user.timeLabel}`;
+
+                  // Format label based on backend type
+                  const labelMap = {
+                    TRANSFER_IN: "Transfer In",
+                    TRANSFER_OUT: "Transfer Out",
+                    TOP_UP: "Top Up",
+                  };
+
+                  // formatted label
+                  const label =
+                    labelMap[user.rawType] ||
+                    user.rawType?.replace(/_/g, " ").toLowerCase().replace(/(^|\s)\S/g, c => c.toUpperCase()) ||
+                    "-";
 
                   return (
                     <li
@@ -66,20 +82,18 @@ export default function RecentList() {
                           <p className="text-sm font-semibold text-gray-900 truncate">
                             {user.name}
                           </p>
-                          <p className="text-xs text-gray-500 truncate">
-                            {isIncome
-                              ? "Income"
-                              : user.type?.toLowerCase() === "terima" 
-                              ? "Expense"
-                              : user.type ?? "-"}
-                          </p>
+
+                          {/* UPDATED LABEL HERE */}
+                          <p className="text-xs text-gray-500 truncate">{label}</p>
                         </div>
 
                         <div className="text-right">
                           <p className={`text-sm ${amountColor}`}>
                             {sign} Rp{formatRupiah(user.amount)}
                           </p>
-                          <p className="text-[11px] text-gray-500">{rightSub}</p>
+                          <p className="text-[11px] text-gray-500">
+                            {user.dateLabel} · {user.timeLabel}
+                          </p>
                         </div>
                       </div>
                     </li>

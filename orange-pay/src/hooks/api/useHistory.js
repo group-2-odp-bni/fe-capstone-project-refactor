@@ -64,12 +64,6 @@ export default function useRecentTransfer({
 
 /* ---------------- Receipt hook (single transaction) ---------------- */
 
-/**
- * Fetches a single transaction (receipt) by id.
- * Endpoint: GET /api/v1/transactions/{trxId}
- * Returns: { trx, loading, error, refetch }
- * Mapped fields match ReceiptCard needs.
- */
 export function useReceiptById(trxId) {
   const [trx, setTrx] = useState(null);
   const [loading, setLoading] = useState(Boolean(trxId));
@@ -150,15 +144,26 @@ function mapTxnRowToUI(tx = {}) {
   // amount
   const amount = Number(tx.amount ?? tx.nominal ?? tx.value ?? 0);
 
-  // type -> "kirim"/"terima"
-  const rawType = String(tx.type || tx.transactionType || "").toUpperCase(); // e.g. "TOP_UP"
-  const norm = rawType.replace(/_/g, ""); // "TOPUP"
+  // type detection (incoming vs outgoing)
+  const rawType = String(tx.type || tx.transactionType || "").toUpperCase(); // e.g. "TOP_UP" or "TRANSFER_IN"
+  const norm = rawType.replace(/_/g, ""); // "TOPUP" or "TRANSFERIN"
+
+  // Treat TOP_UP and TRANSFER_IN as income. Everything else is treated as outgoing.
   const isIncome =
-    norm === "TOPUP" || /CREDIT|INCOME|RECEIVE|INCOMING/.test(rawType);
+    norm === "TOPUP" || // TOP_UP
+    rawType.endsWith("_IN") || // TRANSFER_IN, PAYMENT_IN, etc.
+    /CREDIT|INCOME|RECEIVE|INCOMING/.test(rawType);
+
+  // normalized type label for your UI: "terima" | "kirim"
   const type = isIncome ? "terima" : "kirim";
 
   // user-facing description
-  const description = tx.displaySubtitle || (isIncome ? "Top Up" : "Transfer");
+  let description = tx.displaySubtitle || "";
+  if (!description) {
+    if (norm === "TOPUP") description = "Top Up";
+    else if (rawType.endsWith("_IN")) description = "Income";
+    else description = "Transfer";
+  }
 
   // timestamps
   const ts =
@@ -183,9 +188,9 @@ function mapTxnRowToUI(tx = {}) {
     phone: normalizePhoneLocal(phone),
     amount,
     type,        // "kirim" | "terima"
-    isIncome,    // handy for UI
+    isIncome,    // handy for UI (+/-)
     rawType,     // for debugging/analytics if needed
-    description, // "Top Up" / "Transfer"
+    description, // "Top Up" / "Income" / "Transfer"
     dateLabel,
     timeLabel,
   };

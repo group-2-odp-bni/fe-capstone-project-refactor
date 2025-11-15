@@ -1,74 +1,36 @@
 import React, { useMemo } from "react";
-import useRecentTransfer from "../../hooks/api/useHistory"; // <-- use your hook
+import useRecentTransfer from "../../hooks/api/useHistory";
 
 export default function TransactionList({ walletId = null, onTransactionClick = null }) {
-  // useRecentTransfer returns { users, loading, error }
-  const { users = [], loading, error } = useRecentTransfer({
-    // you can pass filters here if needed
-    // page: 0, size: 20, startDate, endDate, sortBy, direction, status
-    // walletId isn't part of this hook's params, so we ignore it here
-  });
+  const { users = [], loading, error } = useRecentTransfer();
 
   const formatRupiah = (v) => (v ?? 0).toLocaleString("id-ID");
 
-  // normalize -> match the fields your component expects downstream
   const normalized = useMemo(() => {
     if (!Array.isArray(users) || users.length === 0) return [];
 
-    const fmtDate = (d) =>
-      new Intl.DateTimeFormat("id-ID", {
-        timeZone: "Asia/Jakarta",
-        day: "numeric",
-        month: "short",
-        year: "numeric",
-      }).format(d);
-
-    const fmtTime = (d) =>
-      new Intl.DateTimeFormat("id-ID", {
-        timeZone: "Asia/Jakarta",
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: false,
-      })
-        .format(d)
-        .replace(".", ":");
-
-    // The hook already returns dateLabel/timeLabel, so we use those directly.
-    // createdAt may not exist in hook items; we keep order as-is.
     return users.map((t, idx) => {
-      // Try to build a Date if present; else keep a synthetic to avoid NaN sort
-      const synthetic = new Date(Date.now() - idx * 1000); // preserve original order
-      const d = t.createdAt ? new Date(t.createdAt) : synthetic;
+      const d = t.createdAt ? new Date(t.createdAt) : new Date(Date.now() - idx * 1000);
 
       return {
-        // Keep compatibility
-        id: t.trxId ?? t.id ?? `trx-${idx}-${d.getTime()}`,
+        id: t.trxId ?? t.id ?? `trx-${idx}`,
         trxId: t.trxId ?? t.id ?? null,
 
-        // The hook doesn’t provide wallet info, so keep nulls
-        walletId: t.walletId ?? null,
-        walletName: t.walletName ?? null,
-        walletType: t.walletType ?? null,
-
-        // Names/phones from hook
-        name: t.receiver ?? t.name ?? "-",
+        name: t.name ?? "-",
         receiverPhone: t.receiverPhone ?? t.phone ?? null,
 
         amount: Number(t.amount) || 0,
-        type: t.type ?? null,       // "kirim" | "terima" from hook
-        status: t.status ?? null,   // not provided by hook; stays null if missing
-        notes: t.notes ?? "",       // not provided by hook; stays ""
+        rawType: t.rawType ?? null, // <-- the key type from backend
+
+        // use the hook labels
+        dateLabel: t.dateLabel,
+        timeLabel: t.timeLabel,
 
         createdAt: d,
-        // Prefer labels from hook; fallback to formatting d
-        dateLabel: t.dateLabel ?? fmtDate(d),
-        timeLabel: t.timeLabel ?? fmtTime(d),
       };
     });
-    // no sort here: keep API order (already DESC by createdAt)
   }, [users]);
 
-  // group by dateLabel into sections
   const sections = useMemo(() => {
     const map = new Map();
     for (const item of normalized) {
@@ -78,6 +40,16 @@ export default function TransactionList({ walletId = null, onTransactionClick = 
     }
     return Array.from(map.entries()).map(([date, items]) => ({ date, items }));
   }, [normalized]);
+
+  const typeLabel = (raw) => {
+    const map = {
+      TRANSFER_IN: "Transfer In",
+      TRANSFER_OUT: "Transfer Out",
+      TOP_UP: "Top Up",
+    };
+    if (map[raw]) return map[raw];
+    return raw?.replace(/_/g, " ").toLowerCase().replace(/(^|\s)\S/g, (c) => c.toUpperCase());
+  };
 
   if (loading) {
     return (
@@ -111,51 +83,43 @@ export default function TransactionList({ walletId = null, onTransactionClick = 
     );
   }
 
-  if (!normalized || normalized.length === 0) {
-    return (
-      <div className="p-6 text-center text-sm text-gray-500">
-        Belum ada transaksi.
-      </div>
-    );
+  if (!normalized.length) {
+    return <div className="p-6 text-center text-sm text-gray-500">Belum ada transaksi.</div>;
   }
 
   return (
-    <div className="">
+    <div>
       {sections.map((section) => (
         <div key={section.date} className="px-3 py-3">
-          {/* Section date header */}
           <div className="text-sm text-gray-400 font-medium uppercase tracking-wide">
             {section.date}
           </div>
 
           <ul className="space-y-2">
             {section.items.map((t) => {
-              const isIncome = String(t.type ?? "").toLowerCase() === "terima";
+              const isIncome = t.rawType === "TRANSFER_IN" || t.rawType === "TOP_UP";
               const sign = isIncome ? "+" : "−";
-              const amountColor = isIncome ? "text-emerald-500" : "text-black-400";
+              const amountColor = isIncome ? "text-emerald-500" : "text-black-600";
 
               return (
                 <li key={t.id}>
                   <button
                     onClick={() => onTransactionClick?.(t)}
-                    className="w-full flex justify-between py-2 bg-white border-b border-gray-200"
-                    aria-label={`Open receipt for ${t.name}`}
+                    className="w-full flex justify-between py-3 bg-white border-b border-gray-200 hover:bg-gray-50 transition"
                   >
-                    {/* Left info */}
                     <div className="min-w-0 pr-3 text-left">
-                      <p className="text-l font-semibold text-gray-900 truncate">
+                      <p className="text-base font-semibold text-gray-900 truncate">
                         {t.name}
                       </p>
-                      <p className="text-sm text-gray-500 truncate">{t.receiverPhone}</p>
+                      <p className="text-xs text-gray-500 truncate">{typeLabel(t.rawType)}</p>
                     </div>
 
-                    {/* Right info */}
                     <div className="text-right">
-                      <p className={`text-l font-semibold ${amountColor}`}>
+                      <p className={`text-base font-semibold ${amountColor}`}>
                         {sign} Rp{formatRupiah(t.amount)}
                       </p>
-                      <p className="text-sm text-gray-400">
-                        {t.dateLabel} {t.timeLabel}
+                      <p className="text-[11px] text-gray-400">
+                        {t.timeLabel}
                       </p>
                     </div>
                   </button>

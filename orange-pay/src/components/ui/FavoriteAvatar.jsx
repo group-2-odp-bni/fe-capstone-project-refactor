@@ -7,7 +7,7 @@ import React from "react";
  * - onClick: function
  * - size: "sm" | "md" | "lg" (optional)
  */
-export default function FavoriteAvatar({ name = "", onClick = () => {}, size = "md" }) {
+export default React.memo(function FavoriteAvatar({ name = "", onClick = () => {}, size = "md" }) {
   const firstName = (name || "").split(" ")[0] || "";
   const initial = (firstName[0] || "").toUpperCase() || "U";
 
@@ -35,4 +35,4 @@ export default function FavoriteAvatar({ name = "", onClick = () => {}, size = "
       </div>
     </button>
   );
-}
+})
