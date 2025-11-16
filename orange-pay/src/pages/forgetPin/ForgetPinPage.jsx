@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import View from "../../components/view/View";
 import OtpInputField from "../../components/input/OtpInputField";
 import CountdownTimer from "../../components/dashboard/CountdownTimer";
-import { useCountdown } from "../../hooks/useCountDown";
+import { useCountdown } from "../../hooks/useCountdown";
 import { FullSubmitButton } from "../../components/button/FullSubmitButton";
 import ButtonLink from "../../components/button/ButtonLink";
 import { useLoginContext } from "../../context/LoginContext";
