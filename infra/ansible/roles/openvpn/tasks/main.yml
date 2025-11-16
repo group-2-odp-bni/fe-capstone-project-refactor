@@ -1,0 +1,102 @@
+- name: Install OpenVPN and Easy-RSA
+  apt:
+    name:
+      - openvpn
+      - easy-rsa
+      - iptables-persistent
+    state: present
+    update_cache: yes
+
+- name: Enable IP forwarding
+  replace:
+    path: /etc/sysctl.conf
+    regexp: "^#?net.ipv4.ip_forward=.*"
+    replace: "net.ipv4.ip_forward=1"
+
+- name: Apply sysctl immediately
+  command: sysctl -p
+  changed_when: false
+
+- name: Prepare Easy-RSA PKI
+  file:
+    path: /etc/openvpn/easy-rsa
+    state: directory
+
+- name: Check Easy-RSA skeleton already copied
+  stat:
+    path: /etc/openvpn/easy-rsa/easyrsa
+  register: easyrsa_exists
+
+- name: Copy Easy-RSA skeleton (recursive, remote→remote)
+  copy:
+    src: /usr/share/easy-rsa/
+    dest: /etc/openvpn/easy-rsa/
+    remote_src: yes
+    mode: "0755"
+  when: not easyrsa_exists.stat.exists
+
+- name: Initialize PKI
+  command: bash -lc "cd /etc/openvpn/easy-rsa && ./easyrsa --batch init-pki"
+  args:
+    creates: /etc/openvpn/easy-rsa/pki
+
+- name: Build CA
+  command: bash -lc "cd /etc/openvpn/easy-rsa && ./easyrsa --batch build-ca nopass"
+  args:
+    creates: /etc/openvpn/easy-rsa/pki/ca.crt
+
+- name: Build server certificate
+  command: bash -lc "cd /etc/openvpn/easy-rsa && ./easyrsa --batch build-server-full server nopass"
+  args:
+    creates: /etc/openvpn/easy-rsa/pki/issued/server.crt
+
+- name: Generate DH parameters
+  command: bash -lc "cd /etc/openvpn/easy-rsa && ./easyrsa gen-dh"
+  args:
+    creates: /etc/openvpn/easy-rsa/pki/dh.pem
+
+- name: Generate tls-crypt key
+  command: openvpn --genkey --secret /etc/openvpn/tc.key
+  args:
+    creates: /etc/openvpn/tc.key
+
+- name: Render server.conf
+  template:
+    src: server.conf.j2
+    dest: /etc/openvpn/server.conf
+    mode: "0644"
+
+- name: Enable and start OpenVPN service
+  systemd:
+    name: openvpn@server
+    enabled: true
+    state: started
+- name: Build client certificate
+  command: bash -lc "cd /etc/openvpn/easy-rsa && ./easyrsa --batch build-client-full {{ ovpn_client_name }} nopass"
+  args:
+    creates: "/etc/openvpn/easy-rsa/pki/issued/{{ ovpn_client_name }}.crt"
+
+- name: Read certs and keys
+  slurp:
+    src: "{{ item }}"
+  loop:
+    - "/etc/openvpn/easy-rsa/pki/ca.crt"
+    - "/etc/openvpn/easy-rsa/pki/issued/{{ ovpn_client_name }}.crt"
+    - "/etc/openvpn/easy-rsa/pki/private/{{ ovpn_client_name }}.key"
+    - "/etc/openvpn/tc.key"
+  register: vpn_keys
+
+- name: Prepare key variables
+  set_fact:
+    ca_raw: "{{ vpn_keys.results[0].content | b64decode }}"
+    crt_raw: "{{ vpn_keys.results[1].content | b64decode }}"
+    key_raw: "{{ vpn_keys.results[2].content | b64decode }}"
+    tc_raw: "{{ vpn_keys.results[3].content | b64decode }}"
+
+- name: Render client.ovpn
+  template:
+    src: client.ovpn.j2
+    dest: "/home/{{ ansible_user }}/{{ ovpn_client_name }}.ovpn"
+    mode: "0600"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"

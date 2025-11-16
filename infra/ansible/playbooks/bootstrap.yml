@@ -1,0 +1,7 @@
+- hosts: web
+  become: true
+  vars:
+    domain_name: app.orangebybni.my.id
+  roles:
+    - common
+    - nginx
