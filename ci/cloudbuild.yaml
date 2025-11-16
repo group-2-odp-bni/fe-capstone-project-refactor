@@ -30,8 +30,7 @@ steps:
     id: deploy
     waitFor: ["build-fe"]
     entrypoint: bash
-    secretEnv:
-      - SSH_KEY
+    secretEnv: ["SSH_KEY"]
     args:
       - -ceu
       - |
@@ -45,35 +44,34 @@ steps:
 
         echo ">>> create release dir: $RELEASE_DIR"
 
-        ssh -i /tmp/id_ed25519 -o StrictHostKeyChecking=no "$_SSH_USER@$_FE_VM_IP" \
-          "mkdir -p $RELEASE_DIR && chown -R $_SSH_USER:$_SSH_USER /var/www/app"
+        ssh -i /tmp/id_ed25519 -o StrictHostKeyChecking=no "${_SSH_USER}@${_FE_VM_IP}" \
+          "mkdir -p $RELEASE_DIR && chown -R ${_SSH_USER}:${_SSH_USER} /var/www/app"
 
         echo ">>> upload artefacts"
         rsync -avz --delete \
           -e "ssh -i /tmp/id_ed25519 -o StrictHostKeyChecking=no" \
-          orange-pay/dist/ "$_SSH_USER@$_FE_VM_IP:$RELEASE_DIR/"
+          orange-pay/dist/ "${_SSH_USER}@${_FE_VM_IP}:$RELEASE_DIR/"
 
         echo ">>> switch symlink & reload nginx"
-        ssh -i /tmp/id_ed25519 -o StrictHostKeyChecking=no "$_SSH_USER@$_FE_VM_IP" \
+        ssh -i /tmp/id_ed25519 -o StrictHostKeyChecking=no "${_SSH_USER}@${_FE_VM_IP}" \
           "ln -sfn $RELEASE_DIR /var/www/app/current && sudo systemctl reload nginx"
 
   - name: "curlimages/curl"
     id: purge-cf
     waitFor: ["deploy"]
     entrypoint: bash
-    secretEnv:
-      - CF_API_TOKEN
+    secretEnv: ["CF_API_TOKEN"]
     args:
       - -ceu
       - |
-        if [ "$_PURGE_CF" = "true" ] && [ -n "$_CF_ZONE_ID" ]; then
-          echo ">>> Purging Cloudflare cache for zone $_CF_ZONE_ID"
-          curl -fsS -X POST "https://api.cloudflare.com/client/v4/zones/$_CF_ZONE_ID/purge_cache" \
+        if [ "${_PURGE_CF}" = "true" ] && [ -n "${_CF_ZONE_ID}" ]; then
+          echo ">>> Purging Cloudflare cache for zone ${_CF_ZONE_ID}"
+          curl -fsS -X POST "https://api.cloudflare.com/client/v4/zones/${_CF_ZONE_ID}/purge_cache" \
             -H "Authorization: Bearer $CF_API_TOKEN" \
             -H "Content-Type: application/json" \
             --data '{"purge_everything":true}'
         else
-          echo ">>> Skip purge (PURGE_CF=$_PURGE_CF, CF_ZONE_ID=$_CF_ZONE_ID)"
+          echo ">>> Skip purge (PURGE_CF=${_PURGE_CF}, CF_ZONE_ID=${_CF_ZONE_ID})"
         fi
 
 timeout: 1200s
