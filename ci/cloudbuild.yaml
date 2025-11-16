@@ -25,8 +25,9 @@ steps:
       - -ceu
       - |
         cd orange-pay
-        rm -rf node_modules package-lock.json
-        npm ci --no-optional
+        # Pastikan package-lock.json TIDAK dihapus!
+        rm -rf node_modules
+        npm ci --omit=optional
         npx vite build --mode production
 
   - name: "gcr.io/google.com/cloudsdktool/cloud-sdk"
@@ -40,25 +41,24 @@ steps:
         apt-get update -qq && apt-get install -y rsync openssh-client
 
         echo ">>> Setting up SSH key from secret"
-        echo "$$SSH_KEY" > /tmp/id_ed25519
+        printf '%s' "$$SSH_KEY" > /tmp/id_ed25519
         chmod 600 /tmp/id_ed25519
 
         DEPLOY_TIMESTAMP="$(date +%s)"
-        RELEASE_DIR="/var/www/app/releases/$${DEPLOY_TIMESTAMP}"
+        RELEASE_DIR="/var/www/app/releases/${DEPLOY_TIMESTAMP}"
 
-        echo ">>> Create release directory: $${RELEASE_DIR}"
-
+        echo ">>> Create release directory: ${RELEASE_DIR}"
         ssh -i /tmp/id_ed25519 -o StrictHostKeyChecking=no "${_SSH_USER}@${_FE_VM_IP}" \
-          "mkdir -p $${RELEASE_DIR} && chown -R ${_SSH_USER}:${_SSH_USER} /var/www/app"
+          "mkdir -p ${RELEASE_DIR} && sudo chown -R ${_SSH_USER}:${_SSH_USER} /var/www/app"
 
         echo ">>> Upload artefacts to VM"
         rsync -avz --delete \
           -e "ssh -i /tmp/id_ed25519 -o StrictHostKeyChecking=no" \
-          orange-pay/dist/ "${_SSH_USER}@${_FE_VM_IP}:$${RELEASE_DIR}/"
+          orange-pay/dist/ "${_SSH_USER}@${_FE_VM_IP}:${RELEASE_DIR}/"
 
         echo ">>> Switch symlink and reload nginx"
         ssh -i /tmp/id_ed25519 -o StrictHostKeyChecking=no "${_SSH_USER}@${_FE_VM_IP}" \
-          "ln -sfn $${RELEASE_DIR} /var/www/app/current && sudo systemctl reload nginx"
+          "ln -sfn ${RELEASE_DIR} /var/www/app/current && sudo systemctl reload nginx"
 
         echo ">>> Cleanup SSH key"
         rm -f /tmp/id_ed25519
