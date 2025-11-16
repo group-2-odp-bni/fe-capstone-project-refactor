@@ -76,7 +76,7 @@ steps:
           set -euo pipefail
           sudo mkdir -p $${RELEASE_DIR}
           sudo tar -C $${RELEASE_DIR} -xzf /tmp/dist.tgz
-          sudo chown -R $${_SSH_USER}:${_SSH_USER} $${RELEASE_DIR} || true
+          sudo chown -R ${_SSH_USER}:${_SSH_USER} $${RELEASE_DIR} || true
           sudo ln -sfn $${RELEASE_DIR} /var/www/app/current
           sudo systemctl reload nginx || sudo systemctl reload caddy || true
         "
