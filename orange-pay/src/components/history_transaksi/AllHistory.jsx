@@ -1,16 +1,21 @@
 import React, { useMemo } from "react";
 import useRecentTransfer from "../../hooks/api/useHistory";
-
-export default function TransactionList({ walletId = null, onTransactionClick = null }) {
+import { useNavigate } from "react-router-dom";
+export default function TransactionList({
+  walletId = null,
+  onTransactionClick = null,
+}) {
   const { users = [], loading, error } = useRecentTransfer();
-
+  const navigate = useNavigate();
   const formatRupiah = (v) => (v ?? 0).toLocaleString("id-ID");
 
   const normalized = useMemo(() => {
     if (!Array.isArray(users) || users.length === 0) return [];
 
     return users.map((t, idx) => {
-      const d = t.createdAt ? new Date(t.createdAt) : new Date(Date.now() - idx * 1000);
+      const d = t.createdAt
+        ? new Date(t.createdAt)
+        : new Date(Date.now() - idx * 1000);
 
       return {
         id: t.trxId ?? t.id ?? `trx-${idx}`,
@@ -20,9 +25,7 @@ export default function TransactionList({ walletId = null, onTransactionClick = 
         receiverPhone: t.receiverPhone ?? t.phone ?? null,
 
         amount: Number(t.amount) || 0,
-        rawType: t.rawType ?? null, // <-- the key type from backend
-
-        // use the hook labels
+        rawType: t.rawType ?? null,
         dateLabel: t.dateLabel,
         timeLabel: t.timeLabel,
 
@@ -48,7 +51,10 @@ export default function TransactionList({ walletId = null, onTransactionClick = 
       TOP_UP: "Top Up",
     };
     if (map[raw]) return map[raw];
-    return raw?.replace(/_/g, " ").toLowerCase().replace(/(^|\s)\S/g, (c) => c.toUpperCase());
+    return raw
+      ?.replace(/_/g, " ")
+      .toLowerCase()
+      .replace(/(^|\s)\S/g, (c) => c.toUpperCase());
   };
 
   if (loading) {
@@ -56,7 +62,10 @@ export default function TransactionList({ walletId = null, onTransactionClick = 
       <div className="p-4">
         <div className="space-y-3">
           {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="flex items-center justify-between animate-pulse">
+            <div
+              key={i}
+              className="flex items-center justify-between animate-pulse"
+            >
               <div className="flex-1 pr-3">
                 <div className="h-4 w-32 bg-gray-200 rounded mb-1" />
                 <div className="h-3 w-24 bg-gray-100 rounded" />
@@ -84,7 +93,50 @@ export default function TransactionList({ walletId = null, onTransactionClick = 
   }
 
   if (!normalized.length) {
-    return <div className="p-6 text-center text-sm text-gray-500">Belum ada transaksi.</div>;
+    return (
+      <div className="py-16 px-6 flex flex-col items-center justify-center text-center">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+          strokeWidth="1.5"
+          stroke="currentColor"
+          className="w-12 h-12 text-gray-400"
+          aria-hidden="true"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"
+          />
+        </svg>
+
+        <h3 className="mt-4 text-lg font-semibold text-gray-800">
+          Belum Ada Transaksi
+        </h3>
+
+        <p className="mt-1 text-sm text-gray-500">
+          Riwayat transaksi Anda akan muncul di sini setelah Anda melakukan
+          transaksi pertama.
+        </p>
+
+        <div className="mt-6 flex items-center space-x-4">
+          <button
+            onClick={() => navigate("/app/transfer")}
+            className="px-5 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-orange-300 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 transition-colors"
+          >
+            Buat Transfer
+          </button>
+
+          <button
+            onClick={() => navigate("/app/topup")}
+            className="px-5 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-orange-300 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 transition-colors"
+          >
+            Tambah Saldo
+          </button>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -97,9 +149,12 @@ export default function TransactionList({ walletId = null, onTransactionClick = 
 
           <ul className="space-y-2">
             {section.items.map((t) => {
-              const isIncome = t.rawType === "TRANSFER_IN" || t.rawType === "TOP_UP";
+              const isIncome =
+                t.rawType === "TRANSFER_IN" || t.rawType === "TOP_UP";
               const sign = isIncome ? "+" : "−";
-              const amountColor = isIncome ? "text-emerald-500" : "text-black-600";
+              const amountColor = isIncome
+                ? "text-emerald-500"
+                : "text-black-600";
 
               return (
                 <li key={t.id}>
@@ -111,16 +166,16 @@ export default function TransactionList({ walletId = null, onTransactionClick = 
                       <p className="text-base font-semibold text-gray-900 truncate">
                         {t.name}
                       </p>
-                      <p className="text-xs text-gray-500 truncate">{typeLabel(t.rawType)}</p>
+                      <p className="text-xs text-gray-500 truncate">
+                        {typeLabel(t.rawType)}
+                      </p>
                     </div>
 
                     <div className="text-right">
                       <p className={`text-base font-semibold ${amountColor}`}>
                         {sign} Rp{formatRupiah(t.amount)}
                       </p>
-                      <p className="text-[11px] text-gray-400">
-                        {t.timeLabel}
-                      </p>
+                      <p className="text-[11px] text-gray-400">{t.timeLabel}</p>
                     </div>
                   </button>
                 </li>

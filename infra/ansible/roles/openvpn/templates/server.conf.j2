@@ -1,0 +1,26 @@
+port 1194
+proto udp
+dev tun
+user nobody
+group nogroup
+persist-key
+persist-tun
+
+ca /etc/openvpn/easy-rsa/pki/ca.crt
+cert /etc/openvpn/easy-rsa/pki/issued/server.crt
+key /etc/openvpn/easy-rsa/pki/private/server.key
+dh /etc/openvpn/easy-rsa/pki/dh.pem
+tls-crypt /etc/openvpn/tc.key
+
+server 10.9.0.0 255.255.255.0
+topology subnet
+ifconfig-pool-persist /var/log/openvpn/ipp.txt
+
+push "redirect-gateway def1 bypass-dhcp"
+push "dhcp-option DNS 1.1.1.1"
+
+keepalive 10 120
+cipher AES-256-GCM
+auth SHA256
+verb 3
+explicit-exit-notify 1

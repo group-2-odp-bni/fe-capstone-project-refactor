@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import useRecentTransfer from "../../hooks/api/useHistory";
-
+import Header from "../Header";
 export default function RecentList() {
   const { users = [], loading } = useRecentTransfer();
   const navigate = useNavigate();
@@ -9,7 +9,7 @@ export default function RecentList() {
 
   return (
     <section className="mt-6">
-      <Header title="BELINDA" centerTitle />
+      <Header title="Riwayat Transaksi" centerTitle showBack={false} />
       <div
         onClick={() => navigate("/app/allhistory")}
         className="flex items-center justify-between cursor-pointer group"
@@ -54,11 +54,12 @@ export default function RecentList() {
               <ul className="mt-2.5 divide-y divide-gray-200">
                 {users.map((user) => {
                   const isIncome =
-                    user.rawType === "TRANSFER_IN" ||
-                    user.rawType === "TOP_UP";
+                    user.rawType === "TRANSFER_IN" || user.rawType === "TOP_UP";
 
                   const sign = isIncome ? "+" : "−";
-                  const amountColor = isIncome ? "text-emerald-500" : "text-black-600";
+                  const amountColor = isIncome
+                    ? "text-emerald-500"
+                    : "text-black-600";
 
                   // Format label based on backend type
                   const labelMap = {
@@ -70,7 +71,10 @@ export default function RecentList() {
                   // formatted label
                   const label =
                     labelMap[user.rawType] ||
-                    user.rawType?.replace(/_/g, " ").toLowerCase().replace(/(^|\s)\S/g, c => c.toUpperCase()) ||
+                    user.rawType
+                      ?.replace(/_/g, " ")
+                      .toLowerCase()
+                      .replace(/(^|\s)\S/g, (c) => c.toUpperCase()) ||
                     "-";
 
                   return (
@@ -85,7 +89,9 @@ export default function RecentList() {
                           </p>
 
                           {/* UPDATED LABEL HERE */}
-                          <p className="text-xs text-gray-500 truncate">{label}</p>
+                          <p className="text-xs text-gray-500 truncate">
+                            {label}
+                          </p>
                         </div>
 
                         <div className="text-right">

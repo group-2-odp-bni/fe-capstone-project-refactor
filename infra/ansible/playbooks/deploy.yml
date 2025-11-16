@@ -1,0 +1,39 @@
+- hosts: web
+  become: true
+  vars:
+    web_root: "/var/www/app"
+    release_dir: "{{ web_root }}/releases/{{ ansible_date_time.epoch }}"
+    current_link: "{{ web_root }}/current"
+  tasks:
+    - name: Create release dir
+      file:
+        path: "{{ release_dir }}"
+        state: directory
+        owner: web
+        group: web
+        mode: "0755"
+
+    - name: Rsync build artefacts
+      synchronize:
+        mode: push
+        src: "{{ local_build_path | default('dist/') }}/"
+        dest: "{{ release_dir }}/"
+        archive: yes
+        compress: yes
+        rsync_opts: ["--delete"]
+        ssh_args: "-i {{ lookup('env','HOME') }}/.ssh/id_ed25519_orange_fe -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+      delegate_to: localhost
+      remote_user: web
+      become: false
+
+    - name: Atomic symlink switch
+      file:
+        src: "{{ release_dir }}"
+        dest: "{{ current_link }}"
+        state: link
+        force: true
+
+    - name: Reload nginx
+      systemd:
+        name: nginx
+        state: reloaded
