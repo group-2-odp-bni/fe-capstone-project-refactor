@@ -26,9 +26,14 @@ steps:
       - |
         cd orange-pay
         rm -rf node_modules
-        npm ci
-        export ROLLUP_DISABLE_NATIVE=1
-        export ROLLUP_USE_NATIVE=false
+        echo ">>> Debug npm/node"
+        node -v
+        npm -v
+        echo "omit=$(npm config get omit) ignore-optional=$(npm config get ignore-optional)"
+        [ -f .npmrc ] && (echo ">>> .npmrc:"; cat .npmrc) || true
+        env | grep -Ei 'NPM_CONFIG_(OMIT|IGNORE_OPTIONAL)' || true
+        npm ci --include=optional || npm ci
+        npm i -D @rollup/rollup-linux-x64-gnu || true
         npx vite build --mode production
 
   - name: "gcr.io/google.com/cloudsdktool/cloud-sdk"
