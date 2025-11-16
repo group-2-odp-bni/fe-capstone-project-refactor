@@ -29,7 +29,7 @@ steps:
         chmod 600 /tmp/id_ed25519
 
         TIMESTAMP="$(date +%s)"
-        RELEASE_DIR="/var/www/app/releases/${TIMESTAMP}"
+        RELEASE_DIR="/var/www/app/releases/$${TIMESTAMP}" # <-- PERUBAHAN DI SINI
 
         echo ">>> create release dir: $RELEASE_DIR"
         ssh -i /tmp/id_ed25519 -o StrictHostKeyChecking=no ${_SSH_USER}@${_FE_VM_IP} \
