@@ -20,17 +20,14 @@ steps:
   - name: "gcr.io/google.com/cloudsdktool/cloud-sdk"
     id: deploy
     entrypoint: bash
-    secretEnv: ["SSH_KEY"]
     args:
       - -ceu
       - |
         apt-get update -qq && apt-get install -y rsync openssh-client
 
-        # tulis private key
         printf '%s' "$SSH_KEY" > /tmp/id_ed25519
         chmod 600 /tmp/id_ed25519
 
-        # gunakan satu TIMESTAMP konsisten untuk rsync & symlink
         TIMESTAMP="$(date +%s)"
         RELEASE_DIR="/var/www/app/releases/${TIMESTAMP}"
 
@@ -50,7 +47,6 @@ steps:
   - name: "curlimages/curl"
     id: purge-cf
     entrypoint: bash
-    secretEnv: ["CF_API_TOKEN"]
     args:
       - -ceu
       - |
