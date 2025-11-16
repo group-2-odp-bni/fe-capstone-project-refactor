@@ -1,10 +1,10 @@
 substitutions:
-  _FE_VM_IP: "34.58.80.35"
+  _FE_VM_NAME: "fe-web-01"
+  _FE_VM_ZONE: "us-central1-c"
   _SSH_USER: "web"
   _PURGE_CF: "true"
   _CF_ZONE_ID: "<ISI_ZONE_ID_KAMU>"
   _DOMAIN_NAME: "app.orangebybni.my.id"
-  _SSH_KEY_SECRET: "fe-ssh-private-key"
   _CF_TOKEN_SECRET: "cf-api-token"
 
 options:
@@ -12,8 +12,6 @@ options:
 
 availableSecrets:
   secretManager:
-    - versionName: projects/$PROJECT_ID/secrets/${_SSH_KEY_SECRET}/versions/latest
-      env: "SSH_KEY"
     - versionName: projects/$PROJECT_ID/secrets/${_CF_TOKEN_SECRET}/versions/latest
       env: "CF_API_TOKEN"
 
@@ -57,35 +55,31 @@ steps:
     id: deploy
     waitFor: ["build-fe"]
     entrypoint: bash
-    secretEnv: ["SSH_KEY"]
     args:
       - -ceu
       - |
-        apt-get update -qq && apt-get install -y rsync openssh-client
+        set -euo pipefail
+        VM_NAME="${_FE_VM_NAME}"
+        VM_ZONE="${_FE_VM_ZONE}"
+        DEPLOY_TIMESTAMP="$(date %s)"
+        RELEASE_DIR="/var/www/app/releases/${DEPLOY_TIMESTAMP}"
 
-        echo ">>> Setting up SSH key from secret"
-        echo "$$SSH_KEY" > /tmp/id_ed25519
-        chmod 600 /tmp/id_ed25519
+        echo ">>> Arsipkan artefak build"
+        tar -C orange-pay/dist -czf /workspace/dist.tgz .
 
-        DEPLOY_TIMESTAMP="$(date +%s)"
-        RELEASE_DIR="/var/www/app/releases/$${DEPLOY_TIMESTAMP}"
+        echo ">>> Upload via IAP (tanpa SSH key & tanpa port 22 publik)"
+        gcloud compute scp /workspace/dist.tgz "${VM_NAME}:/tmp/dist.tgz" \
+          --zone="${VM_ZONE}" --tunnel-through-iap
 
-        echo ">>> Create release directory: $${RELEASE_DIR}"
-        ssh -i /tmp/id_ed25519 -o StrictHostKeyChecking=no "${_SSH_USER}@${_FE_VM_IP}" \
-          "mkdir -p $${RELEASE_DIR} && chown -R ${_SSH_USER}:${_SSH_USER} /var/www/app"
-
-        echo ">>> Upload artefacts to VM"
-        rsync -avz --delete \
-          -e "ssh -i /tmp/id_ed25519 -o StrictHostKeyChecking=no" \
-          orange-pay/dist/ "${_SSH_USER}@${_FE_VM_IP}:$${RELEASE_DIR}/"
-
-        echo ">>> Switch symlink and reload nginx"
-        ssh -i /tmp/id_ed25519 -o StrictHostKeyChecking=no "${_SSH_USER}@${_FE_VM_IP}" \
-          "ln -sfn $${RELEASE_DIR} /var/www/app/current && sudo systemctl reload nginx"
-
-        echo ">>> Cleanup SSH key"
-        rm -f /tmp/id_ed25519
-
+        echo ">>> Ekstrak & switch symlink di VM"
+        gcloud compute ssh "${VM_NAME}" --zone="${VM_ZONE}" --tunnel-through-iap --command "
+          set -euo pipefail
+          sudo mkdir -p ${RELEASE_DIR}
+          sudo tar -C ${RELEASE_DIR} -xzf /tmp/dist.tgz
+          sudo chown -R ${_SSH_USER}:${_SSH_USER} ${RELEASE_DIR} || true
+          sudo ln -sfn ${RELEASE_DIR} /var/www/app/current
+          sudo systemctl reload nginx || sudo systemctl reload caddy || true
+        "
   - name: "curlimages/curl"
     id: purge-cf
     waitFor: ["deploy"]
