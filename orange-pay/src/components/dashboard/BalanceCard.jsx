@@ -254,9 +254,18 @@ export default function AtomicBalanceCard({
 
   return (
     <div className="w-full mx-auto md:px-1 mt-6">
-      <h3 className="px-0 font-semibold text-lg text-gray-900 mb-3 md:px-0 text-left">
-        Your Wallet
-      </h3>
+      <div
+        onClick={() => navigate("/app/allhistory")}
+        className="flex items-center justify-between cursor-pointer group"
+      >
+        <h3 className="font-semibold text-lg text-gray-900 mb-3 text-left group-hover:text-primary transition-colors">
+          Recent
+        </h3>
+        <span className="text-sm text-gray-500 group-hover:text-primary transition-colors">
+          See all →
+        </span>
+      </div>
+
 
       <div className="flex flex-wrap items-center justify-center gap-2">
         {tabs.map((c, i) => (
