@@ -36,8 +36,10 @@ steps:
         echo ">>> Installing Linux-safe bindings for native modules..."
         npm i -D @rollup/rollup-linux-x64-gnu || true
         npm i -D @swc/core-linux-x64-gnu || true
-        npm i -D lightningcss-wasm || true
+        npm i -D lightningcss-linux-x64-gnu lightningcss-wasm
         export LIGHTNINGCSS_USE_WASM=1
+        export ROLLUP_DISABLE_NATIVE=1
+        export ROLLUP_USE_NATIVE=false
         npm rebuild esbuild || true
         echo ">>> Start production build"
         npx vite build --mode production
