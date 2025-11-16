@@ -25,7 +25,7 @@ steps:
       - |
         apt-get update -qq && apt-get install -y rsync openssh-client
 
-        printf '%s' "$SSH_KEY" > /tmp/id_ed25519
+        printf '%s' "$$SSH_KEY" > /tmp/id_ed25519
         chmod 600 /tmp/id_ed25519
 
         TIMESTAMP="$(date +%s)"
@@ -53,7 +53,7 @@ steps:
         if [ "${_PURGE_CF}" = "true" ] && [ -n "${_CF_ZONE_ID}" ]; then
           echo ">>> Purging Cloudflare cache for zone ${_CF_ZONE_ID}"
           curl -fsS -X POST "https://api.cloudflare.com/client/v4/zones/${_CF_ZONE_ID}/purge_cache" \
-            -H "Authorization: Bearer ${CF_API_TOKEN}" \
+            -H "Authorization: Bearer $${CF_API_TOKEN}" \
             -H "Content-Type: application/json" \
             --data '{"purge_everything":true}'
         else
