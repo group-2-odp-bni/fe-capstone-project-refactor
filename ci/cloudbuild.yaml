@@ -61,23 +61,23 @@ steps:
         set -euo pipefail
         VM_NAME="${_FE_VM_NAME}"
         VM_ZONE="${_FE_VM_ZONE}"
-        DEPLOY_TIMESTAMP="$(date %s)"
-        RELEASE_DIR="/var/www/app/releases/${DEPLOY_TIMESTAMP}"
+        DEPLOY_TIMESTAMP="$(date +%s)"
+        RELEASE_DIR="/var/www/app/releases/$${DEPLOY_TIMESTAMP}"
 
         echo ">>> Arsipkan artefak build"
         tar -C orange-pay/dist -czf /workspace/dist.tgz .
 
         echo ">>> Upload via IAP (tanpa SSH key & tanpa port 22 publik)"
-        gcloud compute scp /workspace/dist.tgz "${VM_NAME}:/tmp/dist.tgz" \
-          --zone="${VM_ZONE}" --tunnel-through-iap
+        gcloud compute scp /workspace/dist.tgz "$${VM_NAME}:/tmp/dist.tgz" \
+          --zone="$${VM_ZONE}" --tunnel-through-iap
 
         echo ">>> Ekstrak & switch symlink di VM"
-        gcloud compute ssh "${VM_NAME}" --zone="${VM_ZONE}" --tunnel-through-iap --command "
+        gcloud compute ssh "$${VM_NAME}" --zone="$${VM_ZONE}" --tunnel-through-iap --command "
           set -euo pipefail
-          sudo mkdir -p ${RELEASE_DIR}
-          sudo tar -C ${RELEASE_DIR} -xzf /tmp/dist.tgz
-          sudo chown -R ${_SSH_USER}:${_SSH_USER} ${RELEASE_DIR} || true
-          sudo ln -sfn ${RELEASE_DIR} /var/www/app/current
+          sudo mkdir -p $${RELEASE_DIR}
+          sudo tar -C $${RELEASE_DIR} -xzf /tmp/dist.tgz
+          sudo chown -R $${_SSH_USER}:${_SSH_USER} $${RELEASE_DIR} || true
+          sudo ln -sfn $${RELEASE_DIR} /var/www/app/current
           sudo systemctl reload nginx || sudo systemctl reload caddy || true
         "
   - name: "curlimages/curl"
