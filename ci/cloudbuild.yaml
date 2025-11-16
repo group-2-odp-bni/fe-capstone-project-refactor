@@ -29,20 +29,20 @@ steps:
         chmod 600 /tmp/id_ed25519
 
         TIMESTAMP="$(date +%s)"
-        RELEASE_DIR="/var/www/app/releases/$${TIMESTAMP}" # <-- PERUBAHAN DI SINI
+        RELEASE_DIR="/var/www/app/releases/$${TIMESTAMP}"
 
-        echo ">>> create release dir: $RELEASE_DIR"
+        echo ">>> create release dir: $$RELEASE_DIR" 
         ssh -i /tmp/id_ed25519 -o StrictHostKeyChecking=no ${_SSH_USER}@${_FE_VM_IP} \
-          "mkdir -p $RELEASE_DIR && chown -R ${_SSH_USER}:${_SSH_USER} /var/www/app"
+          "mkdir -p $$RELEASE_DIR && chown -R ${_SSH_USER}:${_SSH_USER} /var/www/app" 
 
         echo ">>> upload artefacts"
         rsync -avz --delete \
           -e "ssh -i /tmp/id_ed25519 -o StrictHostKeyChecking=no" \
-          orange-pay/dist/ ${_SSH_USER}@${_FE_VM_IP}:${RELEASE_DIR}/
+          orange-pay/dist/ ${_SSH_USER}@${_FE_VM_IP}:$${RELEASE_DIR}/
 
         echo ">>> switch symlink & reload nginx"
         ssh -i /tmp/id_ed25519 -o StrictHostKeyChecking=no ${_SSH_USER}@${_FE_VM_IP} \
-          "ln -sfn ${RELEASE_DIR} /var/www/app/current && sudo systemctl reload nginx"
+          "ln -sfn $${RELEASE_DIR} /var/www/app/current && sudo systemctl reload nginx" 
 
   - name: "curlimages/curl"
     id: purge-cf
