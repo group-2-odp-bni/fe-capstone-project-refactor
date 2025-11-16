@@ -6,17 +6,17 @@ export default defineConfig({
   server: {
     proxy: {
       "/api/v1/split-bill": {
-        target: "https://api-dev.orangebybni.my.id:8086",
+        target: "https://ml-dev.orangebybni.my.id",
+        changeOrigin: true,
+        secure: false,
+      },
+      "/s/": {
+        target: "https://ml-dev.orangebybni.my.id",
         changeOrigin: true,
         secure: false,
       },
       "/api/v1": {
         target: "https://api-dev.orangebybni.my.id",
-        changeOrigin: true,
-        secure: false,
-      },
-      "/s/": {
-        target: "https://api-dev.orangebybni.my.id:8086",
         changeOrigin: true,
         secure: false,
       },

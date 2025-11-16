@@ -1,0 +1,8 @@
+- hosts: web
+  become: true
+  vars:
+    ovpn_client_name: dev1
+    ovpn_server_public_dns: vpn.orangebybni.my.id
+  roles:
+    - common
+    - openvpn
