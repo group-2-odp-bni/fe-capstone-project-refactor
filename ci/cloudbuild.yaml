@@ -18,14 +18,14 @@ availableSecrets:
       env: "CF_API_TOKEN"
 
 steps:
-  - name: "node:20-alpine"
+  - name: "node:20"
     id: build-fe
-    entrypoint: sh
+    entrypoint: bash
     args:
       - -ceu
       - |
         cd orange-pay
-        apk add --no-cache git python3 make g++ curl wget openssl
+        export ROLLUP_USE_NATIVE=false
         npm ci
         npm run build
 
