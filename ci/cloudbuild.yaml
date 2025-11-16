@@ -83,11 +83,12 @@ steps:
   - name: "curlimages/curl"
     id: purge-cf
     waitFor: ["deploy"]
-    entrypoint: bash
+    entrypoint: sh
     secretEnv: ["CF_API_TOKEN"]
     args:
-      - -ceu
+      - -c
       - |
+        set -eu
         if [ "${_PURGE_CF}" = "true" ] && [ -n "${_CF_ZONE_ID}" ] && [ "${_CF_ZONE_ID}" != "<ISI_ZONE_ID_KAMU>" ]; then
           echo ">>> Purging Cloudflare cache for zone ${_CF_ZONE_ID}"
           curl -fsS -X POST "https://api.cloudflare.com/client/v4/zones/${_CF_ZONE_ID}/purge_cache" \
