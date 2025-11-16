@@ -25,9 +25,9 @@ steps:
       - -ceu
       - |
         cd orange-pay
-        export ROLLUP_USE_NATIVE=false
-        npm ci
-        npm run build
+        rm -rf node_modules package-lock.json
+        npm ci --no-optional
+        npx vite build --mode production
 
   - name: "gcr.io/google.com/cloudsdktool/cloud-sdk"
     id: deploy
