@@ -68,11 +68,11 @@ steps:
         tar -C orange-pay/dist -czf /workspace/dist.tgz .
 
         echo ">>> Upload via IAP (tanpa SSH key & tanpa port 22 publik)"
-        gcloud compute scp /workspace/dist.tgz "$${VM_NAME}:/tmp/dist.tgz" \
+        gcloud compute scp /workspace/dist.tgz "${_SSH_USER}@$${VM_NAME}:/tmp/dist.tgz" \
           --zone="$${VM_ZONE}" --tunnel-through-iap
 
         echo ">>> Ekstrak & switch symlink di VM"
-        gcloud compute ssh "$${VM_NAME}" --zone="$${VM_ZONE}" --tunnel-through-iap --command "
+        gcloud compute ssh "${_SSH_USER}@$${VM_NAME}" --zone="$${VM_ZONE}" --tunnel-through-iap --command "
           set -euo pipefail
           sudo mkdir -p $${RELEASE_DIR}
           sudo tar -C $${RELEASE_DIR} -xzf /tmp/dist.tgz
