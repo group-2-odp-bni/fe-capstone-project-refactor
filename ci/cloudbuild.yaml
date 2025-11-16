@@ -34,6 +34,7 @@ steps:
         env | grep -Ei 'NPM_CONFIG_(OMIT|IGNORE_OPTIONAL)' || true
         npm ci --include=optional || npm ci
         npm i -D @rollup/rollup-linux-x64-gnu || true
+        npm i -D @swc/core-linux-x64-gnu || true
         npx vite build --mode production
 
   - name: "gcr.io/google.com/cloudsdktool/cloud-sdk"
