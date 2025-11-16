@@ -35,6 +35,9 @@ steps:
         npm ci --include=optional || npm ci
         npm i -D @rollup/rollup-linux-x64-gnu || true
         npm i -D @swc/core-linux-x64-gnu || true
+        npm i -D lightningcss-wasm || true
+        npm rebuild esbuild || true
+        echo ">>> Start production build"
         npx vite build --mode production
 
   - name: "gcr.io/google.com/cloudsdktool/cloud-sdk"
