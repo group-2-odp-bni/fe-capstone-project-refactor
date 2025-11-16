@@ -67,11 +67,9 @@ steps:
 timeout: 1200s
 
 secrets:
-  - secretManager:
-      secretName: fe-ssh-private-key
-      versionName: latest
-      env: SSH_KEY
-  - secretManager:
-      secretName: cf-api-token
-      versionName: latest
-      env: CF_API_TOKEN
+  - secretName: fe-ssh-private-key
+    versionName: latest
+    env: SSH_KEY
+  - secretName: cf-api-token
+    versionName: latest
+    env: CF_API_TOKEN
