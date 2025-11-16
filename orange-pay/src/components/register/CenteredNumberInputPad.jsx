@@ -55,7 +55,9 @@ export default function CenteredNumberInputPad({
   }, [loading, errorText]);
 
   useEffect(() => {
-    if (value.length === 0) setSuppressErrorUI(true);
+    if (value.length === 0 && !errorText) {
+      setSuppressErrorUI(true);
+    }
   }, [value]);
 
   const clamp = (s) => (s || "").toString().replace(/\D/g, "").slice(0, max);
@@ -97,8 +99,8 @@ export default function CenteredNumberInputPad({
   };
 
   const canConfirm = !loading && value.length === max;
-  const canDelete  = !loading && value.length > 0;
-  const showError  = !!errorText && !suppressErrorUI;
+  const canDelete = !loading && value.length > 0;
+  const showError = !!errorText && !suppressErrorUI;
 
   return (
     <TemplatePin

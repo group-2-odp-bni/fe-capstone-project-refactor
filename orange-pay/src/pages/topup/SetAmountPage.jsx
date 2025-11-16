@@ -12,7 +12,7 @@ import WhiteHeader from "../../components/register/WhiteHeader";
 import ContentBox from "../../components/common/ContentBox";
 
 export default function SetAmountPage() {
-  const navigate = useNavigate()
+  const navigate = useNavigate();
 
   const { setTopupData } = useTopupContext();
 
@@ -49,14 +49,11 @@ export default function SetAmountPage() {
     }
 
     // init topup
-    const response = await api.post(
-      "/api/v1/topup/initiate",
-      {
-        provider: "BNI_VA",
-        amount: Number(amount),
-        walletId: selectedWallet.id,
-      }
-    );
+    const response = await api.post("/api/v1/topup/initiate", {
+      provider: "BNI_VA",
+      amount: Number(amount),
+      walletId: selectedWallet.id,
+    });
 
     // save data
     setTopupData({
@@ -66,6 +63,7 @@ export default function SetAmountPage() {
       vaNumber: response.data.data.vaNumber,
       transactionRef: response.data.data.transactionRef,
       createdAt: response.data.data.createdAt,
+      transactionId: response.data.data.transactionId,
     });
 
     console.log("Saved to context:", {
@@ -75,10 +73,10 @@ export default function SetAmountPage() {
       vaNumber: response.data.data.vaNumber,
       transactionRef: response.data.data.transactionRef,
       createdAt: response.data.data.createdAt,
+      transactionId: response.data.data.transactionId,
     });
 
-
-    navigate("/app/topup/confirm")
+    navigate("/app/topup/confirm");
   };
 
   /** === Handle Picker === */
@@ -87,7 +85,7 @@ export default function SetAmountPage() {
 
   return (
     <View>
-      <WhiteHeader title="Set Topup Amount" to="/app/topup"/>
+      <WhiteHeader title="Tambah Saldo" to="/app/topup" />
       <ContentBox>
         <div className="flex flex-col">
           <div className=" pb-28 flex-1">
@@ -110,16 +108,13 @@ export default function SetAmountPage() {
               />
             </div>
 
-
             <div className="px-9 pt-8">
-
               {/* Footer */}
               <ConfirmButton
                 label="Confirm"
                 onClick={handleConfirmAmount}
                 loading={false}
               />
-
 
               {/* Wallet Picker Sheet */}
               {isSheetOpen && (
@@ -134,17 +129,8 @@ export default function SetAmountPage() {
               )}
             </div>
           </div>
-
-
-
-
-
         </div>
-
       </ContentBox>
-
-
     </View>
-
   );
 }

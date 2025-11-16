@@ -1,4 +1,4 @@
-import api from "../../lib/api";
+import axios from "axios";
 const ACCESS_TOKEN_KEY = "accessToken";
 const REFRESH_TOKEN_KEY = "refreshToken";
 
@@ -48,7 +48,7 @@ export const refreshAccessToken = async () => {
   if (!refreshToken) return false;
 
   try {
-    const res = await api.post("/api/v1/auth/refresh", { refreshToken });
+    const res = await axios.post("/api/v1/auth/refresh", { refreshToken });
 
     const p = res?.data || {};
     const nextAccess = p?.accessToken ?? p?.data?.accessToken ?? null;

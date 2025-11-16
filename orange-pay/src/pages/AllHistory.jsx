@@ -4,13 +4,12 @@ import TransactionList from "../components/history_transaksi/AllHistory";
 import Header from "../components/Header";
 
 export default function HistoryTransactionPage() {
-  const { walletId } = useParams(); // optional: /app/wallets/:walletId
+  const { walletId } = useParams();
   const navigate = useNavigate();
 
-  // Navigate to receipt page for the clicked transaction
   const handleTransactionClick = (tx) => {
     if (!tx) return;
-    const trxId = tx.trxId || tx.id; // prefer trxId from mock
+    const trxId = tx.trxId || tx.id;
     if (!trxId) return;
 
     const base = walletId
@@ -22,11 +21,13 @@ export default function HistoryTransactionPage() {
 
   return (
     <div className="min-h-screen bg-white p-6">
-      <Header title="Transfer History" subtitle="" showBack />
+      <Header title="Riwayat Transaksi" subtitle="" showBack />
 
       <main>
         <div className="mb-4">
-          <h2 className="pl-3 pt-3 text-black text-l font-bold">All transaction</h2>
+          <h2 className="pl-3 pt-3 text-black text-l font-bold">
+            Semua Transaksi
+          </h2>
         </div>
 
         <TransactionList

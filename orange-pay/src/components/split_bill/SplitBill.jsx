@@ -3,12 +3,28 @@ import { Link, useNavigate } from "react-router-dom";
 import Camera from "./CameraPage";
 import api from "../../lib/api";
 
+const ORANGE = "#f97316";
 const formatIDR = (n) =>
   new Intl.NumberFormat("id-ID", {
     style: "currency",
     currency: "IDR",
     maximumFractionDigits: 0,
   }).format(n || 0);
+
+const OWNED_STATUSES = [
+  { id: "ALL", label: "Semua Status" },
+  { id: "DRAFT", label: "Draft" },
+  { id: "SENT", label: "Terkirim" },
+  { id: "PARTIALLY_PAID", label: "Sebagian Terbayar" },
+  { id: "PAID", label: "Lunas" },
+  { id: "EXPIRED", label: "Kedaluwarsa" },
+];
+
+const ASSIGNED_STATUSES = [
+  { id: "ALL", label: "Semua Status" },
+  { id: "PENDING", label: "Belum Bayar" },
+  { id: "PAID", label: "Lunas" },
+];
 
 const StatusBadge = ({ status }) => {
   const map = {
@@ -21,11 +37,11 @@ const StatusBadge = ({ status }) => {
   };
   return (
     <span
-      className={`text-[11px] font-semibold px-2 py-1 rounded ${
+      className={`text-[11px] font-semibold px-2 py-1 rounded-full ${
         map[status] || "bg-gray-100 text-gray-700"
       }`}
     >
-      {status.replaceAll("_", " ")}
+      {String(status || "").replaceAll("_", " ")}
     </span>
   );
 };
@@ -36,21 +52,24 @@ function ProgressBar({ total, paid }) {
     Math.round(((paid || 0) / Math.max(1, total || 1)) * 100)
   );
   return (
-    <div className="w-full h-2 rounded bg-gray-100 overflow-hidden">
-      <div className="h-2 bg-emerald-500" style={{ width: `${pct}%` }} />
+    <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+      <div
+        className="h-2 bg-orange-500 transition-all duration-500"
+        style={{ width: `${pct}%` }}
+      />
     </div>
   );
 }
 
-function OwnedItem({ item, onRemind, onCopy }) {
+function OwnedItem({ item, onRemind }) {
   const created = new Date(item.createdAt).toLocaleString("id-ID", {
     dateStyle: "medium",
     timeStyle: "short",
   });
   const canRemind = item.status === "SENT" || item.status === "PARTIALLY_PAID";
   return (
-    <div className="p-4 rounded-xl bg-white shadow-sm border border-gray-100 hover:shadow transition">
-      <div className="flex items-start justify-between gap-3">
+    <div className="p-4 rounded-xl bg-white shadow hover:shadow-md border border-gray-100 transition-all duration-300">
+      <div className="flex items-start justify-between">
         <div>
           <div className="flex items-center gap-2 mb-1">
             <h4 className="font-semibold text-gray-900">{item.title}</h4>
@@ -61,8 +80,8 @@ function OwnedItem({ item, onRemind, onCopy }) {
           </p>
         </div>
         <div className="text-right">
-          <div className="text-sm text-gray-500">Total</div>
-          <div className="font-semibold">{formatIDR(item.total)}</div>
+          <p className="text-sm text-gray-500">Total</p>
+          <p className="font-bold text-gray-900">{formatIDR(item.total)}</p>
         </div>
       </div>
 
@@ -80,23 +99,18 @@ function OwnedItem({ item, onRemind, onCopy }) {
       <div className="mt-4 flex flex-wrap items-center gap-2">
         <Link
           to={`/app/splitbill/${item.billId}`}
-          className="px-3 py-2 rounded-lg bg-gray-900 text-white text-sm hover:opacity-90"
+          className="px-3 py-2 rounded-lg bg-orange-500 text-white text-sm font-medium hover:bg-orange-600 transition"
         >
           Buka
         </Link>
         <button
           onClick={() => onRemind(item.billId)}
           disabled={!canRemind || item.unpaidCount === 0}
-          className={`px-3 py-2 rounded-lg text-sm ${
+          className={`px-3 py-2 rounded-lg text-sm font-medium ${
             canRemind && item.unpaidCount > 0
-              ? "bg-amber-100 text-amber-800 hover:bg-amber-200"
+              ? "bg-orange-100 text-orange-800 hover:bg-orange-200"
               : "bg-gray-100 text-gray-400 cursor-not-allowed"
           }`}
-          title={
-            canRemind
-              ? "Kirim pengingat ke yang belum bayar"
-              : "Tidak bisa mengingatkan pada status ini"
-          }
         >
           Tagih yang belum {item.unpaidCount ? `(${item.unpaidCount})` : ""}
         </button>
@@ -104,53 +118,16 @@ function OwnedItem({ item, onRemind, onCopy }) {
     </div>
   );
 }
-function ConfirmationModal({ onConfirm, onCancel }) {
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleConfirm = () => {
-    setIsSubmitting(true);
-    onConfirm();
-  };
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-in fade-in-0 duration-200">
-      <div className="bg-white rounded-2xl shadow-2xl p-6 max-w-sm w-full m-4 animate-in zoom-in-95 duration-200">
-        <h3 className="text-lg font-semibold text-gray-900">
-          Kirim Pengingat?
-        </h3>
-        <p className="text-sm text-gray-600 mt-2">
-          Anda akan mengirim pengingat ke semua anggota yang belum bayar untuk
-          tagihan ini. Yakin?
-        </p>
-        <div className="flex justify-end gap-3 mt-6">
-          <button
-            onClick={onCancel}
-            disabled={isSubmitting}
-            className="px-4 py-2 rounded-lg bg-gray-100 text-gray-800 text-sm font-semibold hover:bg-gray-200 disabled:opacity-50"
-          >
-            Batal
-          </button>
-          <button
-            onClick={handleConfirm}
-            disabled={isSubmitting}
-            className="px-4 py-2 rounded-lg bg-amber-500 text-white text-sm font-semibold hover:bg-amber-600 disabled:opacity-50 disabled:bg-amber-400"
-          >
-            {isSubmitting ? "Mengirim..." : "Ya, Kirim"}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-function AssignedItem({ item, onCopy }) {
+function AssignedItem({ item }) {
   const created = new Date(item.createdAt).toLocaleString("id-ID", {
     dateStyle: "medium",
     timeStyle: "short",
   });
   const isPayable = item.myStatus === "PENDING";
   return (
-    <div className="p-4 rounded-xl bg-white shadow-sm border border-gray-100 hover:shadow transition">
-      <div className="flex items-start justify-between gap-3">
+    <div className="p-4 rounded-xl bg-white shadow hover:shadow-md border border-gray-100 transition-all duration-300">
+      <div className="flex items-start justify-between">
         <div>
           <div className="flex items-center gap-2 mb-1">
             <h4 className="font-semibold text-gray-900">{item.title}</h4>
@@ -161,28 +138,200 @@ function AssignedItem({ item, onCopy }) {
           </p>
         </div>
         <div className="text-right">
-          <div className="text-sm text-gray-500">Tagihan saya</div>
-          <div className="font-semibold">{formatIDR(item.myAmount)}</div>
+          <p className="text-sm text-gray-500">Tagihan saya</p>
+          <p className="font-bold text-gray-900">{formatIDR(item.myAmount)}</p>
         </div>
       </div>
 
       <div className="mt-4 flex items-center gap-2">
         <Link
           to={`/app/splitbill/${item.billId}/member/${item.memberId}`}
-          className={`px-3 py-2 rounded-lg text-sm ${
+          className={`px-3 py-2 rounded-lg text-sm font-medium ${
             isPayable
-              ? "bg-orange-500 text-white hover:opacity-90"
+              ? "bg-orange-500 text-white hover:bg-orange-600"
               : "bg-gray-100 text-gray-600"
-          }`}
+          } transition`}
         >
           {isPayable ? "Lihat & Bayar" : "Lihat"}
         </Link>
-        <button
-          onClick={() => onCopy(item.memberShortLink)}
-          className="px-3 py-2 rounded-lg bg-gray-100 text-gray-900 text-sm hover:bg-gray-200"
-        >
-          Copy link invoice
-        </button>
+      </div>
+    </div>
+  );
+}
+
+function Pager({
+  page, 
+  pagesDiscovered, 
+  hasNext, 
+  onPrev,
+  onNext,
+  onJump,
+}) {
+  const makeRange = () => {
+    const total = Math.max(pagesDiscovered, page);
+    const maxShown = 7;
+    if (total <= maxShown)
+      return Array.from({ length: total }, (_, i) => i + 1);
+    const start = Math.max(1, page - 2);
+    const end = Math.min(total, start + 4);
+    const arr = [];
+    if (start > 1) arr.push(1, "…");
+    for (let i = start; i <= end; i++) arr.push(i);
+    if (end < total) arr.push("…", total);
+    return arr;
+  };
+
+  const nums = makeRange();
+
+  return (
+    <div className="mt-4 flex items-center justify-center gap-2 select-none">
+      <button
+        onClick={onPrev}
+        disabled={page <= 1}
+        className={`px-3 py-1.5 rounded-md text-sm border transition ${
+          page > 1
+            ? "bg-white text-gray-800 border-gray-200 hover:bg-gray-50"
+            : "bg-gray-100 text-gray-400 border-gray-100 cursor-not-allowed"
+        }`}
+      >
+        ‹ Prev
+      </button>
+
+      <div className="flex items-center gap-1">
+        {nums.map((n, idx) =>
+          n === "…" ? (
+            <span key={`e-${idx}`} className="px-2 text-gray-400">
+              …
+            </span>
+          ) : (
+            <button
+              key={n}
+              onClick={() => onJump(n)}
+              className={`min-w-8 px-3 py-1.5 rounded-md text-sm font-medium transition ${
+                n === page
+                  ? "bg-orange-500 text-white shadow"
+                  : "bg-white text-gray-700 border border-gray-200 hover:bg-orange-50"
+              }`}
+            >
+              {n}
+            </button>
+          )
+        )}
+        {hasNext && (
+          <button
+            onClick={onNext}
+            className="px-3 py-1.5 rounded-md text-sm font-medium bg-orange-100 text-orange-700 hover:bg-orange-200 border border-orange-200"
+            title="Muat halaman berikutnya"
+          >
+            +1
+          </button>
+        )}
+      </div>
+
+      <button
+        onClick={onNext}
+        disabled={!hasNext}
+        className={`px-3 py-1.5 rounded-md text-sm border transition ${
+          hasNext
+            ? "bg-white text-gray-800 border-gray-200 hover:bg-gray-50"
+            : "bg-gray-100 text-gray-400 border-gray-100 cursor-not-allowed"
+        }`}
+      >
+        Next ›
+      </button>
+    </div>
+  );
+}
+
+function FilterBar({
+  tab,
+  ownedStatus,
+  assignedStatus,
+  setOwnedStatus,
+  setAssignedStatus,
+  q,
+  setQ,
+  from,
+  setFrom,
+  to,
+  setTo,
+  limit,
+  setLimit,
+}) {
+  const isOwned = tab === "owned";
+  const statusValue = isOwned ? ownedStatus : assignedStatus;
+  const setStatus = isOwned ? setOwnedStatus : setAssignedStatus;
+
+  return (
+    <div className="w-full bg-white border border-orange-100 rounded-xl shadow-sm p-3">
+      <div className="flex flex-col lg:flex-row gap-3 items-start lg:items-end justify-between">
+        <div className="flex flex-wrap items-end gap-3">
+          <div className="flex flex-col">
+            <label className="text-[11px] uppercase tracking-wide text-orange-600 font-semibold mb-1">
+              Status
+            </label>
+            <div className="flex items-center gap-2 overflow-x-auto max-w-[80vw] lg:max-w-none">
+              {(isOwned ? OWNED_STATUSES : ASSIGNED_STATUSES).map((s) => (
+                <button
+                  key={s.id}
+                  onClick={() => setStatus(s.id)}
+                  className={`px-3 py-1.5 rounded-full text-xs font-semibold transition ${
+                    statusValue === s.id
+                      ? "bg-orange-500 text-white shadow"
+                      : "bg-orange-50 text-orange-700 hover:bg-orange-100"
+                  }`}
+                >
+                  {s.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex flex-col">
+            <label className="text-[11px] uppercase tracking-wide text-orange-600 font-semibold mb-1">
+              Cari
+            </label>
+            <div className="flex items-center gap-2 border border-orange-200 rounded-lg px-3 py-1.5 bg-white">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="w-4 h-4 text-orange-500"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+              >
+                <path
+                  strokeWidth="2"
+                  d="m21 21-4.3-4.3M11 19a8 8 0 1 1 0-16 8 8 0 0 1 0 16Z"
+                />
+              </svg>
+              <input
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                placeholder="Judul/nota/owner…"
+                className="text-sm outline-none bg-transparent placeholder:text-gray-400 w-56"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-end gap-2">
+          <div className="flex flex-col">
+            <label className="text-[11px] uppercase tracking-wide text-orange-600 font-semibold mb-1">
+              Per halaman
+            </label>
+            <select
+              value={limit}
+              onChange={(e) => setLimit(Number(e.target.value))}
+              className="text-sm border border-orange-200 rounded-lg px-3 py-1.5 bg-white focus:ring-2 focus:ring-orange-300"
+            >
+              {[10, 20, 50].map((n) => (
+                <option key={n} value={n}>
+                  {n}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -191,42 +340,112 @@ function AssignedItem({ item, onCopy }) {
 export default function ReceiptUploadCard() {
   const [next, setNext] = useState(false);
   const [tab, setTab] = useState("owned");
-  const [loading, setLoading] = useState(true);
+
+  const [ownedStatus, setOwnedStatus] = useState("ALL");
+  const [assignedStatus, setAssignedStatus] = useState("ALL");
+  const [q, setQ] = useState("");
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
+  const [limit, setLimit] = useState(10);
+  const [loading, setLoading] = useState(false);
   const [owned, setOwned] = useState([]);
   const [assigned, setAssigned] = useState([]);
-  const navigate = useNavigate();
+
+  const [ownedCursor, setOwnedCursor] = useState(null);
+  const [ownedNextCursor, setOwnedNextCursor] = useState(null);
+  const [ownedStack, setOwnedStack] = useState([]);
+  const [assignedCursor, setAssignedCursor] = useState(null);
+  const [assignedNextCursor, setAssignedNextCursor] = useState(null);
+  const [assignedStack, setAssignedStack] = useState([]);
+
   const [confirmingBillId, setConfirmingBillId] = useState(null);
+  const navigate = useNavigate();
+
+  const resetOwnedPaging = () => {
+    setOwnedCursor(null);
+    setOwnedNextCursor(null);
+    setOwnedStack([]);
+  };
+  const resetAssignedPaging = () => {
+    setAssignedCursor(null);
+    setAssignedNextCursor(null);
+    setAssignedStack([]);
+  };
 
   useEffect(() => {
-    const fetchHistory = async () => {
+    if (tab === "owned") resetOwnedPaging();
+    if (tab === "assigned") resetAssignedPaging();
+  }, [tab, ownedStatus, assignedStatus, q, from, to, limit]);
+
+  useEffect(() => {
+    let alive = true;
+    const fetchIt = async () => {
       setLoading(true);
       try {
-        const [ownedRes, assignedRes] = await Promise.all([
-          api.get("/api/v1/split-bill/history?view=owned&limit=50"),
-          api.get("/api/v1/split-bill/history?view=assigned&limit=50"),
-        ]);
+        const params = new URLSearchParams({
+          view: tab,
+          limit: String(limit),
+          ...(tab === "owned"
+            ? ownedStatus !== "ALL"
+              ? { status: ownedStatus }
+              : {}
+            : assignedStatus !== "ALL"
+            ? { status: assignedStatus }
+            : {}),
+          ...(q ? { q } : {}),
+          ...(from ? { from } : {}),
+          ...(to ? { to } : {}),
+          ...(tab === "owned"
+            ? ownedCursor
+              ? { cursor: ownedCursor }
+              : {}
+            : assignedCursor
+            ? { cursor: assignedCursor }
+            : {}),
+        }).toString();
 
-        if (ownedRes.data && !ownedRes.data.error) {
-          setOwned(ownedRes.data.data.items || []);
+        const res = await api.get(`/api/v1/split-bill/history?${params}`);
+        const data = res?.data?.data || {};
+        const items = data.items || [];
+        const nextC = data.nextCursor || null;
+
+        if (!alive) return;
+
+        if (tab === "owned") {
+          setOwned(items);
+          setOwnedNextCursor(nextC);
         } else {
-          setOwned([]);
+          setAssigned(items);
+          setAssignedNextCursor(nextC);
         }
-
-        if (assignedRes.data && !assignedRes.data.error) {
-          setAssigned(assignedRes.data.data.items || []);
+      } catch {
+        if (!alive) return;
+        if (tab === "owned") {
+          setOwned([]);
+          setOwnedNextCursor(null);
         } else {
           setAssigned([]);
+          setAssignedNextCursor(null);
         }
-      } catch (err) {
-        setOwned([]);
-        setAssigned([]);
       } finally {
-        setLoading(false);
+        if (alive) setLoading(false);
       }
     };
-
-    fetchHistory();
-  }, []);
+    fetchIt();
+    return () => {
+      alive = false;
+    };
+  }, [
+    tab,
+    ownedCursor,
+    assignedCursor,
+    ownedStatus,
+    assignedStatus,
+    q,
+    from,
+    to,
+    limit,
+  ]);
 
   const totals = useMemo(() => {
     const outstanding =
@@ -242,126 +461,184 @@ export default function ReceiptUploadCard() {
     return { outstanding, forMe };
   }, [owned, assigned]);
 
-  const handleCopy = async (text) => {
-    try {
-      await navigator.clipboard.writeText(text);
-    } catch {}
-  };
+  const handleRemindClick = (billId) => setConfirmingBillId(billId);
   const executeRemind = useCallback(async (billId) => {
     if (!billId) return;
-
     try {
       await api.post(
         `/api/v1/split-bill/bills/${billId}/remind`,
         {},
-        {
-          headers: {
-            "Idempotency-Key": crypto.randomUUID(),
-          },
-        }
+        { headers: { "Idempotency-Key": crypto.randomUUID() } }
       );
-      console.log("Pengingat sukses terkirim untuk bill:", billId);
-    } catch (err) {
-      console.error("Gagal mengirim pengingat:", err);
     } finally {
       setConfirmingBillId(null);
     }
   }, []);
-  const handleRemindClick = (billId) => {
-    setConfirmingBillId(billId);
+
+  const currentPageNumber =
+    1 + (tab === "owned" ? ownedStack.length : assignedStack.length);
+  const pagesDiscovered = currentPageNumber; 
+  const hasPrev = currentPageNumber > 1;
+  const hasNext = Boolean(
+    tab === "owned" ? ownedNextCursor : assignedNextCursor
+  );
+
+  const onPrev = () => {
+    if (!hasPrev || loading) return;
+    if (tab === "owned") {
+      setOwnedStack((st) => {
+        const cp = [...st];
+        const prevCursor = cp.pop() ?? null;
+        setOwnedCursor(prevCursor);
+        return cp;
+      });
+    } else {
+      setAssignedStack((st) => {
+        const cp = [...st];
+        const prevCursor = cp.pop() ?? null;
+        setAssignedCursor(prevCursor);
+        return cp;
+      });
+    }
   };
-  const cancelRemind = () => {
-    setConfirmingBillId(null);
+
+  const onNext = () => {
+    if (!hasNext || loading) return;
+    if (tab === "owned") {
+      setOwnedStack((st) => [...st, ownedCursor]);
+      setOwnedCursor(ownedNextCursor);
+    } else {
+      setAssignedStack((st) => [...st, assignedCursor]);
+      setAssignedCursor(assignedNextCursor);
+    }
   };
-  const handleCameraDone = (ocrResult) => {
+
+  const onJump = (pageNum) => {
+    if (loading) return;
+    if (tab === "owned") {
+      const targetIdx = pageNum - 1;
+      const currIdx = ownedStack.length;
+      if (targetIdx === currIdx) return;
+      if (targetIdx < currIdx) {
+        setOwnedStack((st) => {
+          const cp = [...st];
+          while (cp.length > targetIdx) cp.pop();
+          const prev = cp[cp.length - 1] ?? null;
+          setOwnedCursor(prev);
+          return cp;
+        });
+      } else {
+      }
+    } else {
+      const targetIdx = pageNum - 1;
+      const currIdx = assignedStack.length;
+      if (targetIdx === currIdx) return;
+      if (targetIdx < currIdx) {
+        setAssignedStack((st) => {
+          const cp = [...st];
+          while (cp.length > targetIdx) cp.pop();
+          const prev = cp[cp.length - 1] ?? null;
+          setAssignedCursor(prev);
+          return cp;
+        });
+      }
+    }
+  };
+
+  const handleCameraDone = (ocrResult) =>
     navigate("/app/splitbill/review", { state: ocrResult });
-  };
-  if (next) {
+
+  if (next)
     return <Camera onBack={() => setNext(false)} onDone={handleCameraDone} />;
-  }
 
   return (
     <>
       <div className="flex flex-col items-center justify-start py-6 space-y-6">
-        <h2 className="text-1xl font-semibold text-center text-gray-900 leading-snug">
-          Mau patungan? Cukup foto bon, <br /> langsung kelar!
+        <h2 className="text-lg font-semibold text-center text-gray-900 leading-snug">
+          Mau patungan? <br />
+          <span className="text-orange-600">
+            Cukup foto bon, langsung kelar!
+          </span>
         </h2>
+
         <button
           onClick={() => setNext(true)}
-          className="w-full flex items-center p-4 bg-[#FAFAFA] rounded-[5px]
-                   shadow-[0_4px_4px_rgba(0,0,0,0.25)]
-                   transition-all duration-300 ease-out
-                   hover:shadow-[0_6px_8px_rgba(0,0,0,0.3)] hover:-translate-y-[2px]
-                   active:scale-[0.98] focus:outline-none mx-auto"
+          className="w-full flex items-center p-4 rounded-xl bg-gradient-to-r from-orange-500 to-orange-400 text-white font-semibold shadow hover:shadow-lg transition-transform hover:-translate-y-[2px] active:scale-[0.98]"
         >
-          <div
-            className="flex items-center justify-center w-9 h-9 bg-[#FAFAFA] rounded-full 
-                     shadow-[0_3px_6px_rgba(0,0,0,0.15)] mr-3 shrink-0
-                     transition-transform duration-300 ease-out hover:scale-105"
-            style={{ filter: "drop-shadow(0px 3px 3px rgba(0, 0, 0, 0.25))" }}
-          >
-            <img src="/camera-icon.svg" alt="Camera icon" className="w-5 h-5" />
-          </div>
-          <div className="flex flex-col text-left">
-            <h3 className="text-sm font-semibold text-gray-900 mb-2">
-              Hitung cepat pakai struk
-            </h3>
-            <p className="text-xs italic text-gray-600 leading-snug">
-              Foto struk belanjamu, kami bantu hitung patungannya.
-            </p>
-          </div>
+          <img
+            src="/camera-icon.svg"
+            alt="Camera"
+            className="w-6 h-6 mr-3 drop-shadow"
+          />
+          <span>Hitung cepat pakai struk</span>
         </button>
 
         <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-3">
-          <div className="p-3 rounded-xl bg-white border border-gray-100 shadow-sm">
+          <div className="p-3 rounded-xl bg-white border border-gray-100 shadow">
             <div className="text-xs text-gray-500 mb-1">
               Outstanding yang kamu tagih
             </div>
-            <div className="text-lg font-semibold">
+            <div className="text-lg font-bold text-orange-600">
               {formatIDR(totals.outstanding)}
             </div>
           </div>
-          <div className="p-3 rounded-xl bg-white border border-gray-100 shadow-sm">
+          <div className="p-3 rounded-xl bg-white border border-gray-100 shadow">
             <div className="text-xs text-gray-500 mb-1">Tagihan untuk kamu</div>
-            <div className="text-lg font-semibold">
+            <div className="text-lg font-bold text-orange-600">
               {formatIDR(totals.forMe)}
             </div>
           </div>
         </div>
-        <div className="w-full">
-          <div className="inline-flex bg-gray-100 rounded-lg p-1">
-            <button
-              onClick={() => setTab("owned")}
-              className={`px-4 py-2 text-sm rounded-md ${
-                tab === "owned"
-                  ? "bg-white shadow text-gray-900"
-                  : "text-gray-600"
-              }`}
-            >
-              Dibuat oleh saya
-            </button>
-            <button
-              onClick={() => setTab("assigned")}
-              className={`px-4 py-2 text-sm rounded-md ${
-                tab === "assigned"
-                  ? "bg-white shadow text-gray-900"
-                  : "text-gray-600"
-              }`}
-            >
-              Untuk saya
-            </button>
-          </div>
+
+        <div className="inline-flex bg-orange-100 rounded-lg p-1">
+          <button
+            onClick={() => setTab("owned")}
+            className={`px-4 py-2 text-sm font-semibold rounded-md transition-all ${
+              tab === "owned"
+                ? "bg-white text-orange-600 shadow"
+                : "text-orange-700 hover:bg-orange-200"
+            }`}
+          >
+            Dibuat oleh saya
+          </button>
+          <button
+            onClick={() => setTab("assigned")}
+            className={`px-4 py-2 text-sm font-semibold rounded-md transition-all ${
+              tab === "assigned"
+                ? "bg-white text-orange-600 shadow"
+                : "text-orange-700 hover:bg-orange-200"
+            }`}
+          >
+            Untuk saya
+          </button>
         </div>
+
+        <FilterBar
+          tab={tab}
+          ownedStatus={ownedStatus}
+          assignedStatus={assignedStatus}
+          setOwnedStatus={setOwnedStatus}
+          setAssignedStatus={setAssignedStatus}
+          q={q}
+          setQ={setQ}
+          from={from}
+          setFrom={setFrom}
+          to={to}
+          setTo={setTo}
+          limit={limit}
+          setLimit={setLimit}
+        />
+
         <div className="w-full space-y-3">
           {loading ? (
             [...Array(3)].map((_, i) => (
               <div
                 key={i}
-                className="p-4 rounded-xl bg-white shadow-sm border border-gray-100 animate-pulse"
+                className="p-4 rounded-xl bg-white border border-gray-100 animate-pulse"
               >
-                <div className="h-4 bg-gray-200 rounded w-1/3 mb-3" />
-                <div className="h-2 bg-gray-200 rounded w-full mb-2" />
-                <div className="h-2 bg-gray-200 rounded w-2/3" />
+                <div className="h-4 bg-orange-100 rounded w-1/3 mb-3" />
+                <div className="h-2 bg-orange-100 rounded w-full mb-2" />
+                <div className="h-2 bg-orange-100 rounded w-2/3" />
               </div>
             ))
           ) : tab === "owned" ? (
@@ -371,7 +648,6 @@ export default function ReceiptUploadCard() {
                   key={it.billId}
                   item={it}
                   onRemind={handleRemindClick}
-                  onCopy={handleCopy}
                 />
               ))
             ) : (
@@ -379,21 +655,27 @@ export default function ReceiptUploadCard() {
             )
           ) : assigned.length ? (
             assigned.map((it) => (
-              <AssignedItem
-                key={it.billId + it.memberId}
-                item={it}
-                onCopy={handleCopy}
-              />
+              <AssignedItem key={it.billId + it.memberId} item={it} />
             ))
           ) : (
             <EmptyStateAssigned />
           )}
         </div>
+
+        <Pager
+          page={currentPageNumber}
+          pagesDiscovered={currentPageNumber}
+          hasNext={hasNext}
+          onPrev={onPrev}
+          onNext={onNext}
+          onJump={onJump}
+        />
       </div>
+
       {confirmingBillId && (
         <ConfirmationModal
           onConfirm={() => executeRemind(confirmingBillId)}
-          onCancel={cancelRemind}
+          onCancel={() => setConfirmingBillId(null)}
         />
       )}
     </>
@@ -402,14 +684,14 @@ export default function ReceiptUploadCard() {
 
 function EmptyStateOwned() {
   return (
-    <div className="w-full p-6 bg-white border border-dashed border-gray-300 rounded-xl text-center text-gray-500">
+    <div className="w-full p-6 bg-orange-50 border border-dashed border-orange-300 rounded-xl text-center text-orange-600">
       Belum ada split bill yang kamu buat. Mulai dengan men-scan struk di atas.
     </div>
   );
 }
 function EmptyStateAssigned() {
   return (
-    <div className="w-full p-6 bg-white border border-dashed border-gray-300 rounded-xl text-center text-gray-500">
+    <div className="w-full p-6 bg-orange-50 border border-dashed border-orange-300 rounded-xl text-center text-orange-600">
       Tidak ada tagihan untuk kamu saat ini.
     </div>
   );
