@@ -1,14 +1,14 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-// import PageHeader from "../components/page_header/PageHeader";
 import BalanceCard from "../components/history_transaksi/BalanceCard";
 import RecentHistory from "../components/history_transaksi/RecentHistory";
 import ArrowButton from "../components/common/ArrowButton";
-import { PlusIcon, UserIcon } from "@heroicons/react/24/solid";
+import { PlusIcon } from "@heroicons/react/24/solid";
 import useCardBalances from "../hooks/api/useCardBalances";
 import LoadingSpinner from "../components/common/LoadingSpinner";
 import PageHeader from "../components/page_header/PageHeader";
 import View from "../components/view/View";
+
 export default function HistoryTransactionPage() {
   const { walletId } = useParams();
   const navigate = useNavigate();
@@ -24,6 +24,7 @@ export default function HistoryTransactionPage() {
 
   const [buttonGroupY, setButtonGroupY] = useState(null);
   const buttonGroupRef = useRef(null);
+
   useEffect(() => {
     const measureButton = () => {
       if (buttonGroupRef.current) {
@@ -43,9 +44,6 @@ export default function HistoryTransactionPage() {
     navigate(`/app/wallets/${walletId}/add`);
   };
 
-  const handleViewPeople = () => {
-    navigate(`/app/wallets/${walletId}/members`);
-  };
   if (walletsLoading) {
     return (
       <View>
@@ -97,12 +95,6 @@ export default function HistoryTransactionPage() {
               className="w-10 h-10 flex items-center justify-center rounded-xl bg-orange-500 text-white shadow-md active:scale-95 transition"
             >
               <PlusIcon className="w-5 h-5" />
-            </button>
-            <button
-              onClick={handleViewPeople}
-              className="w-10 h-10 flex items-center justify-center rounded-xl border border-orange-400 text-[#FF9A25] bg-white shadow-sm active:scale-95 transition"
-            >
-              <UserIcon className="w-5 h-5" />
             </button>
           </div>
         )}
