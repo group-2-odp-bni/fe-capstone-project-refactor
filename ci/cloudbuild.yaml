@@ -33,9 +33,11 @@ steps:
         [ -f .npmrc ] && (echo ">>> .npmrc:"; cat .npmrc) || true
         env | grep -Ei 'NPM_CONFIG_(OMIT|IGNORE_OPTIONAL)' || true
         npm ci --include=optional || npm ci
+        echo ">>> Installing Linux-safe bindings for native modules..."
         npm i -D @rollup/rollup-linux-x64-gnu || true
         npm i -D @swc/core-linux-x64-gnu || true
         npm i -D lightningcss-wasm || true
+        export LIGHTNINGCSS_USE_WASM=1
         npm rebuild esbuild || true
         echo ">>> Start production build"
         npx vite build --mode production
