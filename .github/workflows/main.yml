@@ -1,24 +1,17 @@
 name: CI/CD - Orange Pay
 
-# 1. TRIPPERS: Pemicu tetap sama
 on:
   push:
     branches: [main]
   pull_request:
     branches: [main]
 
-# Variabel global untuk konsistensi
 env:
   NODE_VERSION: 20.x
   PROJECT_PATH: ./orange-pay
-  # Ganti 'USERNAME/REPOSITORY' dengan milik Anda, atau gunakan variabel dinamis
-  # IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/orange-pay
-  IMAGE_NAME: ghcr.io/username/orange-pay # ✏️ GANTI INI
+  IMAGE_NAME: ghcr.io/username/orange-pay 
 
 jobs:
-  # -----------------------------------------------------------------
-  # TAHAP CI (Berjalan di setiap push & pull_request)
-  # -----------------------------------------------------------------
   lint-audit:
     name: 🧹 Lint & 🔐 Audit
     runs-on: ubuntu-latest
@@ -52,7 +45,7 @@ jobs:
   build:
     name: ⚙️ Build Vite App
     runs-on: ubuntu-latest
-    needs: lint-audit # Memastikan lolos lint & audit dulu
+    needs: lint-audit
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -73,33 +66,26 @@ jobs:
         working-directory: ${{ env.PROJECT_PATH }}
 
       - name: Upload build artifact
-        # Menyimpan hasil build ('dist') untuk digunakan di job docker
         uses: actions/upload-artifact@v4
         with:
           name: dist
           path: ${{ env.PROJECT_PATH }}/dist
 
-  # -----------------------------------------------------------------
-  # TAHAP CD (Nonaktif sementara - Hanya berjalan jika 'if: false' diubah)
-  # -----------------------------------------------------------------
   build-docker:
     name: 🐳 Build & Push Docker Image
     runs-on: ubuntu-latest
     needs: build
-    # ⛔ Nonaktif sementara. Ganti ke 'if: github.event_name == 'push' && github.ref == 'refs/heads/main'' saat siap
     if: false 
     
     permissions:
       contents: read
-      packages: write # Izin untuk push ke GitHub Container Registry (GHCR)
+      packages: write
 
     steps:
       - name: Checkout code
-        # Diperlukan untuk mengambil Dockerfile
         uses: actions/checkout@v4
 
       - name: Download build artifact
-        # Mengambil folder 'dist' dari job 'build'
         uses: actions/download-artifact@v4
         with:
           name: dist
@@ -115,7 +101,7 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
-          context: ${{ env.PROJECT_PATH }} # Path ke Dockerfile Anda
+          context: ${{ env.PROJECT_PATH }}
           file: ${{ env.PROJECT_PATH }}/Dockerfile
           push: true
           tags: |
@@ -127,20 +113,13 @@ jobs:
   deploy-production:
     name: 🚀 Deploy to Production
     runs-on: ubuntu-latest
-    needs: build-docker
-    
-    # Menambahkan gerbang persetujuan manual
-    # ❗️ ANDA HARUS mengonfigurasi environment 'production' di Pengaturan Repo
+    needs: build-docker    
     environment: 
       name: production
-      # url: https://your-production-url.com # Opsional
-
-    # ⛔ Nonaktif sementara. Ganti ke 'if: github.event_name == 'push' && github.ref == 'refs/heads/main'' saat siap
     if: false
 
     steps:
       - name: Checkout code
-        # Diperlukan untuk mengambil file docker-compose.yml
         uses: actions/checkout@v4
 
       - name: Setup SSH & Deploy
@@ -176,13 +155,10 @@ jobs:
             docker image prune -f
           EOF
 
-  # -----------------------------------------------------------------
-  # TAHAP SUMMARY (Selalu berjalan)
-  # -----------------------------------------------------------------
   summary:
     name: 📦 Pipeline Summary
     runs-on: ubuntu-latest
-    if: always() # ✅ Selalu berjalan, meskipun job lain gagal atau di-skip
+    if: always()
     needs: [lint-audit, build, build-docker, deploy-production]
 
     steps:
