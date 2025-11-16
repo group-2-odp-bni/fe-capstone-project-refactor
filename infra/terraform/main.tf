@@ -75,6 +75,19 @@ resource "google_compute_instance" "fe_vm" {
     chown -R ${var.ssh_username}:${var.ssh_username} /var/www/app
   EOT
 }
+resource "google_compute_firewall" "allow_iap_ssh" {
+  name    = "fe-allow-iap-ssh"
+  network = "default"
+
+  allow {
+    protocol = "tcp"
+    ports    = ["22"]
+  }
+
+  source_ranges = ["35.235.240.0/20"]
+  target_tags   = ["fe-web"] 
+}
+
 # resource "google_compute_firewall" "allow_ssh_temp" {
 #   name    = "fe-allow-ssh-temp"
 #   network = "default"
