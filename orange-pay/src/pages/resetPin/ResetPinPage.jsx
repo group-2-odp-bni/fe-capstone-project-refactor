@@ -45,6 +45,7 @@ function SetPinContent() {
       setOldPin(pin);
       setPin("");
       setStep("inputNewPin");
+      setError("")
       return;
     }
 
@@ -53,11 +54,13 @@ function SetPinContent() {
       setNewPin(pin);
       setPin("");
       setStep("confirm");
+      setError("")
       return;
     }
 
     // Step 3 — Confirm new PIN
     if (step === "confirm") {
+
 
       // if pin not the same, return to step 1 else pass to step 4
       if (pin !== newPin) {
@@ -85,16 +88,29 @@ function SetPinContent() {
 
     } catch (err) {
       console.error("Set PIN failed:", err);
-      setError(
-        err?.response?.data?.message ||
-        err?.message ||
-        "Terjadi kesalahan. Silakan coba lagi."
-      );
+      const errorCode = err?.response?.data?.error?.code;
 
+      if (errorCode === "AUTH-3003") {
+
+        setError("Pin lama salah, mohon input ulang pin.")
+        setStep("inputOldPin");
+
+      } else if (errorCode === "AUTH-3002") {
+
+        setError("Pin baru terlalu lemah, mohon input ulang pin baru.")
+        setStep("inputNewPin");
+
+      } else {
+        setError(err?.response?.data?.error?.message);
+        setStep("inputNewPin");
+
+      }
+
+      // log
       console.log(error)
       setPin("");
       setNewPin(null);
-      setStep("inputNewPin");
+
     } finally {
       setLoading(false);
     }
@@ -117,7 +133,7 @@ function SetPinContent() {
   };
 
   return (
-    <form onSubmit={onFormSubmit} className="pb-10">
+    <form className="pb-10">
       {error && (
         <p className="text-red-500 text-xs text-center mb-4">{error}</p>
       )}
@@ -129,7 +145,8 @@ function SetPinContent() {
         loading={loading}
         title={getTitle()}
         attemptKey={attempt}
-        // onClearError={() => setError("")}
+        onBack={() => navigate("/app/account")}
+      // onClearError={() => setError("")}
 
       />
 

@@ -6,7 +6,7 @@ import { FullSubmitButton } from "../../components/button/FullSubmitButton";
 import { useRegistrationContext } from "../../context/RegistrationContext";
 import OrangePayLogo from "../../components/register/OrangePayLogo";
 import RegisterTextContainer from "../../components/register/RegisterTextContainer";
-import api from "../../lib/api";
+import axios from "axios";
 import OtpInputField from "../../components/input/OtpInputField";
 import CountdownTimer from "../../components/dashboard/CountdownTimer";
 import ButtonLink from "../../components/button/ButtonLink";
@@ -37,7 +37,7 @@ function SetOtpContent() {
   const [otp, setOtp] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const { secondsLeft, reset } = useCountdown(30);
+  const { secondsLeft, reset } = useCountdown(60)
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -68,7 +68,7 @@ function SetOtpContent() {
     const recaptchaToken = localStorage.getItem("_grecaptcha");
 
     try {
-      const response = await api.post("/api/v1/auth/resend-otp", {
+      const response = await axios.post("/api/v1/auth/resend-otp", {
         phoneNumber: userData.phoneNumber,
         captchaToken: recaptchaToken,
       });
@@ -90,8 +90,8 @@ function SetOtpContent() {
       // else
       setError(
         err.response?.data?.error.message ||
-          err.message ||
-          "Something went wrong."
+        err.message ||
+        "Something went wrong."
       );
     } finally {
       setLoading(false);
@@ -104,7 +104,6 @@ function SetOtpContent() {
         <OtpInputField
           id="otp"
           name="otp"
-          label="OTP :"
           type="numeric"
           placeholder="Masukkan OTP "
           required
@@ -120,11 +119,15 @@ function SetOtpContent() {
         </FullSubmitButton>
       </form>
 
+      {/* Resend OTP */}
       <div className="text-center mt-4 pb-6">
-        {secondsLeft === 0 && (
-          <ButtonLink onClick={handleResendOtp}>Kirim Ulang OTP</ButtonLink>
-        )}
+        <ButtonLink
+          onClick={handleResendOtp}
+          isDisabled={secondsLeft !== 0 ? true : false}>
+          Kirim Ulang OTP
+        </ButtonLink>
       </div>
+
     </div>
   );
 }

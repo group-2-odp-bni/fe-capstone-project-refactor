@@ -6,7 +6,7 @@ import OrangeHeader from "../../components/register/OrangeHeader";
 import WhiteCardContainer from "../../components/register/WhiteCardContainer";
 import OrangePayLogo from "../../components/register/OrangePayLogo";
 import RegisterTextContainer from "../../components/register/RegisterTextContainer";
-import api from "../../lib/api";
+import axios from "axios";
 import {
   GoogleReCaptchaProvider,
   useGoogleReCaptcha,
@@ -81,7 +81,7 @@ function RegisterContent() {
       const phoneNumber = `0${formData.phoneNumber}`;
 
       //hit login
-      const { data } = await api.post("/api/v1/auth/register", {
+      const { data } = await axios.post("/api/v1/auth/register", {
         phoneNumber: phoneNumber,
         captchaToken: token,
       });
@@ -104,7 +104,7 @@ function RegisterContent() {
           // fallback message from backend
           setError(
             err.response.data?.error?.message ||
-              "Terjadi kesalahan. Silakan coba lagi."
+            "Terjadi kesalahan. Silakan coba lagi."
           );
         }
       } else {
@@ -151,7 +151,8 @@ function RegisterContent() {
             Anda.
           </LoginTextContainer>
 
-          {error && <p className="text-red-500 text-xs">{error}</p>}
+
+          {error && <p className=" text-red-500 text-xs text-center">{error}</p>}
 
           <FullSubmitButton disabled={loading}>
             {loading ? "Mengirim..." : "Daftar"}
