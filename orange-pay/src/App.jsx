@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import AppRoutes from "./routes";
 import { loadClarity } from "./util/clarity";
-
+import "./App.css";
 function App() {
   useEffect(() => {
     const projectId = import.meta.env.VITE_CLARITY_ID;
