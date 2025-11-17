@@ -1,8 +1,8 @@
 // src/components/receipt/ReceiptCard.jsx
-import React, { useMemo, useState, useRef, useEffect } from "react";
+import React, { useMemo, useState, useRef, useEffect, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import { ClipboardIcon, CheckIcon, ShareIcon } from "@heroicons/react/24/outline";
-// import * as htmlToImage from "html-to-image"; // optional; guarded below
+// import * as htmlToImage from "html-to-image"; // now dynamically imported
 import { useReceiptById } from "../../hooks/api/useHistory";
 
 const formatIDR = (n) =>
@@ -82,18 +82,51 @@ export default function ReceiptCard({ trx, externalShareRef = null, hideInlineSh
       await navigator.clipboard.writeText(refId);
       setCopied(true);
       setTimeout(() => setCopied(false), 1200);
-    } catch {}
+    } catch (e) {
+      console.warn("copy failed", e);
+      try {
+        // fallback for older browsers: select text method could be added if needed
+      } catch {}
+    }
   };
 
-  const onShare = async () => {
-    if (!cardRef.current) return;
+  const onShare = useCallback(async () => {
+    if (!cardRef.current) {
+      console.warn("No card ref to snapshot");
+      return;
+    }
 
-    // guard if html-to-image isn't imported
+    // try global first (if you exposed it for debugging), otherwise dynamic import
     // @ts-ignore
-    const htmlToImage = (window && window.__htmlToImage) || null;
-    if (!htmlToImage) return;
+    let htmlToImage = (typeof window !== "undefined" && window.__htmlToImage) || null;
+
+    if (!htmlToImage) {
+      try {
+        const mod = await import("html-to-image");
+        // html-to-image may export functions directly or as default
+        htmlToImage = mod.default || mod;
+        // optional exposure for debugging
+        // @ts-ignore
+        window.__htmlToImage = htmlToImage;
+      } catch (err) {
+        console.warn("Failed to import html-to-image:", err);
+      }
+    }
+
+    if (!htmlToImage || !htmlToImage.toPng) {
+      console.warn("html-to-image not available. Install it or ensure it's exposed on window.__htmlToImage");
+      try {
+        await navigator.clipboard.writeText(`Ref: ${refId}`);
+        // lightweight user fallback
+        alert("Receipt image sharing is unavailable — reference copied to clipboard.");
+      } catch {
+        alert("Receipt image sharing is unavailable.");
+      }
+      return;
+    }
 
     try {
+      // Wait briefly for fonts to be ready
       await Promise.race([
         new Promise((r) => setTimeout(r, 30)),
         (window.document.fonts && window.document.fonts.ready) || Promise.resolve(),
@@ -114,20 +147,35 @@ export default function ReceiptCard({ trx, externalShareRef = null, hideInlineSh
       const file = new File([blob], `receipt-${refId || "trx"}.png`, { type: "image/png" });
 
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        await navigator.share({ title: "Transaction Receipt", text: `Ref: ${refId}`, files: [file] });
-        return;
+        try {
+          await navigator.share({ title: "Transaction Receipt", text: `Ref: ${refId}`, files: [file] });
+          return;
+        } catch (shareErr) {
+          console.warn("navigator.share failed:", shareErr);
+        }
       }
 
+      // fallback: download
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
       a.download = `receipt-${refId || "trx"}.png`;
+      document.body.appendChild(a);
       a.click();
-      URL.revokeObjectURL(url);
+      a.remove();
+      // revoke after a tick to ensure download starts
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
     } catch (err) {
       console.warn("Share/snapshot error:", err);
+      // Helpful hint for CORS issues
+      const message = String(err || "").toLowerCase();
+      if (message.includes("tainted") || message.includes("security") || message.includes("cross-origin")) {
+        alert("Cannot export image due to cross-origin resources (CORS). Ensure images are served with Access-Control-Allow-Origin headers or inline the SVG.");
+      } else {
+        alert("Failed to create or share receipt image. See console for details.");
+      }
     }
-  };
+  }, [refId]);
 
   // expose share() to parent via ref
   useEffect(() => {
