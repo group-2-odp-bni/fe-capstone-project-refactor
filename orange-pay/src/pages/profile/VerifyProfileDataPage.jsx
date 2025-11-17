@@ -45,7 +45,7 @@ function VerifyProfileContent({ verifyType }) {
     const [error, setError] = useState("");
 
     // Countdown state
-    const { secondsLeft, reset } = useCountdown(5);
+    const { secondsLeft, reset } = useCountdown(60);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -144,11 +144,11 @@ function VerifyProfileContent({ verifyType }) {
             {error && <p className="text-red-500 text-xs">{error}</p>}
 
             {/* Show only when timer ends */}
-            {secondsLeft === 0 && (
-                <ButtonLink onClick={handleResendOtp}>
-                    Kirim Ulang OTP
-                </ButtonLink>
-            )}
+            <ButtonLink
+                onClick={handleResendOtp}
+                isDisabled={secondsLeft !== 0 ? true : false}>
+                Kirim Ulang OTP
+            </ButtonLink>
 
             {/* change email or phone */}
             <ButtonLink onClick={handleChangeEmailOrPhone}>
