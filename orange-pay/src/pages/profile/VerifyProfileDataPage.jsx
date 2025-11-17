@@ -9,7 +9,7 @@ import View from "../../components/view/View";
 import api from "../../lib/api";
 import ButtonLink from "../../components/button/ButtonLink";
 import CountdownTimer from "../../components/dashboard/CountdownTimer";
-import { useCountdown } from "../../hooks/useCountDown";
+import { useCountdown } from "../../hooks/useCountdown";
 
 export default function VerifyProfileDataPage() {
     const location = useLocation();

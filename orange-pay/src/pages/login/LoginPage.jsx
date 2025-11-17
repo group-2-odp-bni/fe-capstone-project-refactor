@@ -17,6 +17,7 @@ import {
 } from "react-google-recaptcha-v3";
 import View from "../../components/view/View";
 import TermsModal from "../TermsAndPrivacy";
+import useTrack from "../../hooks/useTrack";
 export default function LoginPage() {
   return (
     <GoogleReCaptchaProvider
@@ -46,6 +47,7 @@ function LoginContextContent() {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const track = useTrack("login");
 
   /** Handle phone number input changes */
   const handleChange = (e) => {
@@ -53,8 +55,10 @@ function LoginContextContent() {
 
     if (v && !v.startsWith("8")) {
       setError("Nomor harus dimulai dengan 8");
+      track("validation_failed", { reason: "must_start_with_8" });
     } else if (v.length > 0 && v.length < 9) {
       setError("Nomor minimal 9 digit setelah +62");
+      track("validation_failed", { reason: "min_digits_9" });
     } else {
       setError("");
     }
@@ -66,6 +70,7 @@ function LoginContextContent() {
   /** Handle form submit */
   const handleSubmit = async (e) => {
     e.preventDefault();
+    track("clicked", { source: "submit_login" });
 
     if (!executeRecaptcha) {
       setError("reCAPTCHA belum siap. Coba beberapa detik lagi.");
@@ -80,6 +85,8 @@ function LoginContextContent() {
         title: "Nomor belum diisi",
         text: "Silakan masukkan nomor telepon terlebih dahulu.",
       });
+      track("validation_failed", { reason: "empty_phone" });
+
       return;
     }
 
@@ -89,6 +96,8 @@ function LoginContextContent() {
         title: "Nomor tidak valid",
         text: "Nomor harus dimulai dengan angka 8.",
       });
+      track("validation_failed", { reason: "not_start_with_8" });
+
       return;
     }
 
@@ -98,6 +107,8 @@ function LoginContextContent() {
         title: "Nomor terlalu pendek",
         text: "Nomor minimal 9 digit setelah +62.",
       });
+      track("validation_failed", { reason: "too_short" });
+
       return;
     }
 
@@ -120,7 +131,10 @@ function LoginContextContent() {
       cancelButtonText: "Batal",
     });
 
-    if (!confirmResult.isConfirmed) return;
+    if (!confirmResult.isConfirmed) {
+      track("otp_send_cancelled");
+      return;
+    }
 
     setLoading(true);
     try {
@@ -158,7 +172,10 @@ function LoginContextContent() {
       setLoading(false);
     }
   };
-
+  const openTerms = () => {
+    setIsModalOpen(true);
+    track("terms_modal_opened");
+  };
   return (
     <div>
       <OrangeHeader />
@@ -181,7 +198,7 @@ function LoginContextContent() {
             Dengan masuk atau mendaftar, Anda menyetujui
             <button
               type="button"
-              onClick={() => setIsModalOpen(true)}
+              onClick={openTerms}
               className="underline font-bold mx-1 text-gray-700 hover:text-orange-600"
             >
               Syarat dan Kebijakan Privasi
