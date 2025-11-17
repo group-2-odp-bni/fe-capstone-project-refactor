@@ -9,7 +9,6 @@ import {
 const api = axios.create({
   baseURL: "",
   timeout: 30000,
-  // headers: { "Content-Type": "application/json" },
 });
 
 api.interceptors.request.use((config) => {
@@ -24,17 +23,27 @@ api.interceptors.response.use(
   (res) => res,
   async (error) => {
     const original = error.config;
+    const status = error?.response?.status;
+    const code = error?.response?.data?.error?.code;
 
-    const normalizeError = (err) =>
-      new Error(
-        err?.response?.data?.message ||
-          err?.response?.data?.error ||
-          err?.message ||
-          "Network / API error"
-      );
+    // AUTH business logic
+    if (typeof code === "string" && code.startsWith("AUTH-30")) {
+      return Promise.reject(error);
+    }
 
-    if (error?.response?.status !== 401 || original?._retry) {
-      throw error;;
+    // handle 4xx except 401
+    if (status >= 400 && status < 500 && status !== 401) {
+      return Promise.reject(error);
+    }
+
+    // 5xx
+    if (status >= 500) {
+      return Promise.reject(error);
+    }
+
+    //handle 401 ensure no infinite loop
+    if (status !== 401 || original._retry) {
+      return Promise.reject(error);
     }
     original._retry = true;
 
@@ -43,7 +52,6 @@ api.interceptors.response.use(
         refreshPromise = (async () => {
           const ok = await refreshAccessToken();
           if (!ok) throw new Error("Refresh token failed");
-          return true;
         })();
       }
 
@@ -51,17 +59,17 @@ api.interceptors.response.use(
     } catch (e) {
       refreshPromise = null;
       clearTokens();
-      if (typeof window !== "undefined") {
-        window.location.href = "/login";
-      }
-      throw normalizeError(error);
+      window.location.replace("/login");
+      throw error;
     }
 
     refreshPromise = null;
     const newAccess = getAccessToken();
     if (newAccess) {
-      original.headers = original.headers || {};
-      original.headers.Authorization = `Bearer ${newAccess}`;
+      original.headers = {
+        ...original.headers,
+        Authorization: `Bearer ${newAccess}`,
+      };
     }
     return api(original);
   }
