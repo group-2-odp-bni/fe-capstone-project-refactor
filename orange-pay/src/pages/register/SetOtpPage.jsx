@@ -6,7 +6,7 @@ import { FullSubmitButton } from "../../components/button/FullSubmitButton";
 import { useRegistrationContext } from "../../context/RegistrationContext";
 import OrangePayLogo from "../../components/register/OrangePayLogo";
 import RegisterTextContainer from "../../components/register/RegisterTextContainer";
-import api from "../../lib/api";
+import axios from "axios";
 import OtpInputField from "../../components/input/OtpInputField";
 import CountdownTimer from "../../components/dashboard/CountdownTimer";
 import ButtonLink from "../../components/button/ButtonLink";
@@ -68,7 +68,7 @@ function SetOtpContent() {
     const recaptchaToken = localStorage.getItem("_grecaptcha");
 
     try {
-      const response = await api.post("/api/v1/auth/resend-otp", {
+      const response = await axios.post("/api/v1/auth/resend-otp", {
         phoneNumber: userData.phoneNumber,
         captchaToken: recaptchaToken,
       });
@@ -90,8 +90,8 @@ function SetOtpContent() {
       // else
       setError(
         err.response?.data?.error.message ||
-          err.message ||
-          "Something went wrong."
+        err.message ||
+        "Something went wrong."
       );
     } finally {
       setLoading(false);
