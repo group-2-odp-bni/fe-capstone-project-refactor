@@ -17,7 +17,7 @@ export default function TopUpPage() {
           </p>
 
           <button
-            onClick={() => navigate("/app/topup/setAmount")}
+            onClick={() => navigate("/app/dashboard")}
             className="w-full flex justify-between items-center p-4 gap-3 border border-gray-200 rounded-2xl bg-white shadow-sm 
                    transition-all duration-200 ease-in-out hover:shadow-md hover:border-orange-400 hover:bg-orange-50 active:scale-[0.98]"
           >
