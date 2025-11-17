@@ -127,7 +127,6 @@ function VerifyProfileContent({ verifyType }) {
                 className="mt-10 mb-10"
                 id="otpCode"
                 name="otpCode"
-                label="OTP :"
                 type="numeric"
                 placeholder="Masukkan OTP"
                 required
