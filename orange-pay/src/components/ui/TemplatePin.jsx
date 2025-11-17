@@ -68,7 +68,7 @@ export default function TemplatePin({
       `}</style>
 
       {/* Header: back button — tampil HANYA jika onBack dikirim */}
-      <div className="w-full mx-auto max-w-[560px] px-[var(--pin-pad-x)]">
+      <div className="w-full mx-auto max-w-[560px] px-[var(--pin-pad-x)] py-4">
         <div className="flex items-center">
           {typeof onBack === "function" ? (
             <button

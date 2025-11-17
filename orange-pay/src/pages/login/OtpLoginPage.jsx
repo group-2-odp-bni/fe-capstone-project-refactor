@@ -37,7 +37,7 @@ function SetOtpContent() {
     const [otp, setOtp] = useState("");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
-    const { secondsLeft, reset } = useCountdown(30);
+    const { secondsLeft, reset } = useCountdown(60);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -74,7 +74,6 @@ function SetOtpContent() {
             const response = await axios.post("/api/v1/auth/resend-otp", {
                 phoneNumber: loginData.phoneNumber,
                 captchaToken: recaptchaToken,
-        
             });
 
             setLoginData({ stateToken: response.data.data.stateToken });
@@ -83,10 +82,10 @@ function SetOtpContent() {
         } catch (err) {
 
             // get error code
-            errorCode = err.response?.data?.error.code 
+            errorCode = err.response?.data?.error.code
 
             // error handle - expired
-            if(errorCode ==="AUTH-2002"){
+            if (errorCode === "AUTH-2002") {
                 setError("OTP telah expired")
                 setOtp("")
                 reset("")
@@ -111,7 +110,6 @@ function SetOtpContent() {
                 <OtpInputField
                     id="otp"
                     name="otp"
-                    label="OTP :"
                     type="numeric"
                     placeholder="Masukkan OTP"
                     required
@@ -130,11 +128,11 @@ function SetOtpContent() {
 
             {/* Resend OTP */}
             <div className="text-center mt-4 pb-6">
-                {secondsLeft === 0 && (
-                    <ButtonLink onClick={handleResendOtp}>
-                        Kirim Ulang OTP
-                    </ButtonLink>
-                )}
+                <ButtonLink
+                    onClick={handleResendOtp}
+                    isDisabled={secondsLeft !== 0 ? true : false}>
+                    Kirim Ulang OTP
+                </ButtonLink>
             </div>
         </div>
     );
