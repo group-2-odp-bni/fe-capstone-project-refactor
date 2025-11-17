@@ -7,8 +7,10 @@ import ArrowButton from "../components/common/ArrowButton";
 import { PlusIcon, UserIcon } from "@heroicons/react/24/solid";
 import useCardBalances from "../hooks/api/useCardBalances";
 import LoadingSpinner from "../components/common/LoadingSpinner";
-import PageHeader from "../components/page_header/PageHeader";
+import PageHeader from "../components/Header";
 import View from "../components/view/View";
+import HeaderMenu from "../components/HeaderMenu";
+
 export default function HistoryTransactionPage() {
   const { walletId } = useParams();
   const navigate = useNavigate();
@@ -46,6 +48,35 @@ export default function HistoryTransactionPage() {
   const handleViewPeople = () => {
     navigate(`/app/wallets/${walletId}/members`);
   };
+
+  // --- handlers for header menu actions ---
+  const handleRename = async (newName) => {
+    try {
+      // TODO: call your API to rename the wallet. Example:
+      // await api.wallets.rename(walletId, { title: newName });
+      // If your useCardBalances hook exposes a refresh, call it here.
+      console.log("Rename wallet", walletId, "->", newName);
+      // optimistic update (if you want to mutate local list, depends on your hook)
+      // otherwise rely on hook refetch
+    } catch (err) {
+      console.error("rename failed", err);
+      // you might want to show toast/error
+    }
+  };
+
+  const handleDelete = async () => {
+    try {
+      // TODO: call your API to delete the wallet. Example:
+      // await api.wallets.delete(walletId);
+      console.log("Delete wallet", walletId);
+      // navigate away after delete:
+      navigate("/app/wallets");
+    } catch (err) {
+      console.error("delete failed", err);
+      // handle error
+    }
+  };
+
   if (walletsLoading) {
     return (
       <View>
@@ -67,7 +98,16 @@ export default function HistoryTransactionPage() {
   return (
     <View>
       <div className="space-y-4 md:space-y-6" style={{ overflow: "hidden" }}>
-        <PageHeader>{pageTitle}</PageHeader>
+        <PageHeader
+          title={pageTitle}
+          right={
+            <HeaderMenu
+              currentName={wallet?.title}
+              onRename={handleRename}
+              onDelete={handleDelete}
+            />
+          }
+        />
 
         <div className="-mt-2 md:-mt-3">
           <BalanceCard
@@ -81,10 +121,7 @@ export default function HistoryTransactionPage() {
         </div>
 
         {isMainCard ? (
-          <div
-            ref={buttonGroupRef}
-            className="arrow-button-container mt-2 md:mt-3"
-          >
+          <div ref={buttonGroupRef} className="arrow-button-container mt-2 md:mt-3">
             <ArrowButton />
           </div>
         ) : (
@@ -109,9 +146,7 @@ export default function HistoryTransactionPage() {
 
         <RecentHistory
           walletId={wallet.id}
-          onExpandChange={(expanded) =>
-            setPageTitle(expanded ? "Transfer History" : "Wallet Detail")
-          }
+          onExpandChange={(expanded) => setPageTitle(expanded ? "Transfer History" : "Wallet Detail")}
           dynamicTop={buttonGroupY}
         />
       </div>
