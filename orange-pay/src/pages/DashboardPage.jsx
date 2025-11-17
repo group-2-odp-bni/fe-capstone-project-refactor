@@ -19,6 +19,25 @@ export default function DashboardPage() {
 
   /* ===== Global, centered toast/modal ===== */
   function GlobalToast({ show, onClose, onPrimary }) {
+
+    // put on top so name and image can execute first
+    useEffect(() => {
+      const getUser = async () => {
+        const response = await api.get("/api/v1/user/me");
+        const u = response?.data?.data ?? {};
+        setEmailVerified(Boolean(u?.emailVerified));
+        setPhoneVerified(Boolean(u?.phoneVerified));
+
+        setProfileData({
+          name: u.name,
+          profileImageUrl: u.profileImageUrl,
+        })
+
+
+      };
+      getUser();
+    }, []);
+    
     // close on ESC
     useEffect(() => {
       if (!show) return;
@@ -131,22 +150,6 @@ export default function DashboardPage() {
   };
   useEffect(() => () => window.clearTimeout(hideTimerRef.current), []);
   useEffect(() => () => sessionStorage.removeItem("transferFlowState"));
-  useEffect(() => {
-    const getUser = async () => {
-      const response = await api.get("/api/v1/user/me");
-      const u = response?.data?.data ?? {};
-      setEmailVerified(Boolean(u?.emailVerified));
-      setPhoneVerified(Boolean(u?.phoneVerified));
-
-      setProfileData({
-        name: u.name,
-        profileImageUrl: u.profileImageUrl,
-      })
-
-
-    };
-    getUser();
-  }, []);
 
   // profile not ready?
   const disableActions = name === "New User" || !emailVerified || !phoneVerified;
