@@ -9,7 +9,6 @@ export default function RecentList() {
 
   return (
     <section className="mt-6">
-      <Header title="Riwayat Transaksi" centerTitle showBack={false} />
       <div
         onClick={() => navigate("/app/allhistory")}
         className="flex items-center justify-between cursor-pointer group"
@@ -54,7 +53,7 @@ export default function RecentList() {
               <ul className="mt-2.5 divide-y divide-gray-200">
                 {users.map((user) => {
                   const isIncome =
-                    user.rawType === "TRANSFER_IN" || user.rawType === "TOP_UP";
+                    user.rawType === "TRANSFER_IN" || user.rawType === "TOP_UP" || user.rawType === "INTERNAL_TRANSFER_IN";
 
                   const sign = isIncome ? "+" : "−";
                   const amountColor = isIncome

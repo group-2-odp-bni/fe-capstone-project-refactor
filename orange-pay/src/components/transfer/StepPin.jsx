@@ -7,13 +7,14 @@ import TemplatePin from "../ui/TemplatePin";
 
 export default function StepPin() {
   // ----- hooks first -----
-  const { data, setStep, reset } = useTransfer();
+  // use prevStep/goBack helpers from context (Option C)
+  const { data, prevStep, goBack, reset } = useTransfer();
   const { executeTransfer } = useTransferApi();
   const navigate = useNavigate();
 
   // ----- state -----
   const [pin, setPin] = useState("");
-  const [error, setError] = useState("");       // string kosong = tidak ada error
+  const [error, setError] = useState(""); // string kosong = tidak ada error
   const [loading, setLoading] = useState(false);
 
   // UI ala InputPin.jsx
@@ -103,10 +104,27 @@ export default function StepPin() {
     hiddenRef.current?.focus();
   };
 
+  // <-- changed: use prevStep() (or goBack()) instead of setStep("confirm") -->
   const onBack = () => {
     if (loading) return;
-    setStep("confirm");
-    navigate("/app/transfer");
+    // prefer prevStep (logical previous according to STEP_ORDER)
+    // fallback to goBack which handles 'verify' snapshot restore
+    try {
+      if (typeof prevStep === "function") {
+        prevStep();
+      } else if (typeof goBack === "function") {
+        goBack();
+      } else {
+        // ultimate fallback: navigate to canonical confirm path
+        navigate("/app/transfer", { replace: true });
+      }
+    } catch (err) {
+      // swallow and fallback to goBack/navigate
+      try {
+        if (typeof goBack === "function") goBack();
+        else navigate("/app/transfer", { replace: true });
+      } catch (_) {}
+    }
   };
 
   const setErrorAndShake = (msg) => {
@@ -175,7 +193,7 @@ export default function StepPin() {
       dots={{
         length: 6,
         filled: pin.length,
-        danger: showError,      // merah hanya saat error aktif & tidak disuppress
+        danger: showError, // merah hanya saat error aktif & tidak disuppress
         shaking,
       }}
       onBack={onBack}
@@ -187,7 +205,6 @@ export default function StepPin() {
       canDelete={!loading && pin.length > 0}
       errorText={showError ? error : ""}
       zIndex={10050}
-
       /* keyboard hosting by TemplatePin */
       enableKeyboard
       hiddenRef={hiddenRef}
