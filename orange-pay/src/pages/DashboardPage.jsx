@@ -130,7 +130,7 @@ export default function DashboardPage() {
     setShowToast(true);
   };
   useEffect(() => () => window.clearTimeout(hideTimerRef.current), []);
-
+  useEffect(() => () => sessionStorage.removeItem("transferFlowState"));
   useEffect(() => {
     const getUser = async () => {
       const response = await api.get("/api/v1/user/me");
