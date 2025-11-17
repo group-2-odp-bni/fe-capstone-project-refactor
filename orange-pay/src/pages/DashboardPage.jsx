@@ -16,28 +16,28 @@ export default function DashboardPage() {
     profileImageUrl: "",
   });
 
+  // put on top so name and image can execute first
+  useEffect(() => {
+    const getUser = async () => {
+      const response = await api.get("/api/v1/user/me");
+      const u = response?.data?.data ?? {};
+      setEmailVerified(Boolean(u?.emailVerified));
+      setPhoneVerified(Boolean(u?.phoneVerified));
+
+      setProfileData({
+        name: u.name,
+        profileImageUrl: u.profileImageUrl,
+      })
+
+
+    };
+    getUser();
+  }, []);
+
 
   /* ===== Global, centered toast/modal ===== */
   function GlobalToast({ show, onClose, onPrimary }) {
 
-    // put on top so name and image can execute first
-    useEffect(() => {
-      const getUser = async () => {
-        const response = await api.get("/api/v1/user/me");
-        const u = response?.data?.data ?? {};
-        setEmailVerified(Boolean(u?.emailVerified));
-        setPhoneVerified(Boolean(u?.phoneVerified));
-
-        setProfileData({
-          name: u.name,
-          profileImageUrl: u.profileImageUrl,
-        })
-
-
-      };
-      getUser();
-    }, []);
-    
     // close on ESC
     useEffect(() => {
       if (!show) return;
