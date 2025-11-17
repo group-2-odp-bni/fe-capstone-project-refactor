@@ -129,6 +129,7 @@ function SetPinContent() {
         loading={loading}
         title={getTitle()}
         attemptKey={attempt}
+        onBack={()=>navigate("/app/account")}
         // onClearError={() => setError("")}
 
       />
