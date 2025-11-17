@@ -9,6 +9,7 @@ import useCardBalances from "../hooks/api/useCardBalances";
 import LoadingSpinner from "../components/common/LoadingSpinner";
 import PageHeader from "../components/page_header/PageHeader";
 import View from "../components/view/View";
+
 export default function HistoryTransactionPage() {
   const { walletId } = useParams();
   const navigate = useNavigate();
