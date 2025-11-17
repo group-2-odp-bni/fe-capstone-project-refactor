@@ -2,7 +2,7 @@
 import React, { useEffect } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
-import UserInfoCard from "../../components/account/userInfoCard";
+import UserInfoCard from "../../components/account/UserInfoCard";
 import ProfileImage from "../../components/account/ProfileImage";
 import { FullActionButton } from "../../components/button/FullActionButton";
 import { useProfileContext } from "../../context/ProfileContext";

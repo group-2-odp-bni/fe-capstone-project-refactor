@@ -7,11 +7,12 @@ import WhiteHeader from "../../components/register/WhiteHeader";
 import ContentBox from "../../components/common/ContentBox";
 import View from "../../components/view/View";
 
-export default function TopupResultPage({
-}) {
+export default function TopupResultPage({}) {
   const navigate = useNavigate();
   const { topupData } = useTopupContext();
-  const formattedAmount = `Rp${Number(topupData.amount || 0).toLocaleString("id-ID")}`;
+  const formattedAmount = `Rp${Number(topupData.amount || 0).toLocaleString(
+    "id-ID"
+  )}`;
 
   const date = new Date(topupData.createdAt);
   const dateText = date.toLocaleDateString("en-GB", {
@@ -27,29 +28,29 @@ export default function TopupResultPage({
 
   return (
     <View>
-      <WhiteHeader title="Topup Result" to="/app/dashboard"/>
+      <WhiteHeader title="Topup Result" to="/app/dashboard" />
       <ContentBox>
         <div className="w-full bg-white flex justify-center">
           <div className="w-full max-w-sm bg-white rounded-[22px] shadow-[0_8px_28px_rgba(0,0,0,0.06)] border border-gray-100 p-6">
             {/* Brand row (ikon + tulisan RANGE-PAY) */}
             <div className="flex items-center justify-center gap-2">
               <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-orange-500 overflow-hidden">
-                <img src="/orange.jpg" alt="brand" className="w-full h-full object-cover" />
+                <img
+                  src="/orange.jpg"
+                  alt="brand"
+                  className="w-full h-full object-cover"
+                />
               </span>
               <span className="text-gray-900 font-extrabold uppercase tracking-[0.35em]">
                 RANGE-PAY
               </span>
             </div>
 
-
-            <SuccessIcon
-              message="Topup Success!"
-            />
-
+            <SuccessIcon message="Topup Success!" />
 
             {/* Title */}
             <p className="mt-3 text-center text-sm font-extrabold text-gray-700">
-              Detail Transaction
+              Detil Transaksi
             </p>
 
             {/* Amount */}
@@ -59,8 +60,12 @@ export default function TopupResultPage({
 
             {/* Recipient box */}
             <div className="mt-4 rounded-[14px] border border-gray-200 p-3">
-              <div className="text-[13px] font-extrabold text-gray-900">{topupData.walletName}</div>
-              <div className="text-[13px] text-gray-900">{topupData.walletId}</div>
+              <div className="text-[13px] font-extrabold text-gray-900">
+                {topupData.walletName}
+              </div>
+              <div className="text-[13px] text-gray-900">
+                {topupData.walletId}
+              </div>
             </div>
 
             {/* Details rows */}
@@ -71,18 +76,18 @@ export default function TopupResultPage({
               </Row>
 
               <Row>
-                <RowLabel>Date</RowLabel>
+                <RowLabel>Tanggal</RowLabel>
                 <RowValue>{topupData.createdAt}</RowValue>
               </Row>
 
               <Row>
-                <RowLabel>Time</RowLabel>
+                <RowLabel>Waktu</RowLabel>
                 <RowValue>{timeText}</RowValue>
               </Row>
 
               <Row>
-                <RowLabel>Type of Transactions</RowLabel>
-                <RowValue>Top Up</RowValue>
+                <RowLabel>Jenis Transaksi</RowLabel>
+                <RowValue>Tambah Saldo</RowValue>
               </Row>
             </div>
 
@@ -93,18 +98,10 @@ export default function TopupResultPage({
               loading={false}
               className="mt-5 mb-5"
             />
-
-
-
-
           </div>
         </div>
-
       </ContentBox>
     </View>
-
-
-
   );
 }
 
@@ -114,11 +111,15 @@ function Row({ children }) {
 }
 
 function RowLabel({ children }) {
-  return <div className="text-[13px] font-semibold text-gray-400">{children}</div>;
+  return (
+    <div className="text-[13px] font-semibold text-gray-400">{children}</div>
+  );
 }
 
 function RowValue({ children, className = "" }) {
   return (
-    <div className={`text-[13px] font-semibold text-gray-900 ${className}`}>{children}</div>
+    <div className={`text-[13px] font-semibold text-gray-900 ${className}`}>
+      {children}
+    </div>
   );
 }

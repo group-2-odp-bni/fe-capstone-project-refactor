@@ -11,7 +11,7 @@ import OtpInputField from "../../components/input/OtpInputField";
 import CountdownTimer from "../../components/dashboard/CountdownTimer";
 import ButtonLink from "../../components/button/ButtonLink";
 import View from "../../components/view/View";
-import { useCountdown } from "../../hooks/useCountDown";
+import { useCountdown } from "../../hooks/useCountdown";
 
 export default function OtpRegisterPage() {
   return (
@@ -20,8 +20,8 @@ export default function OtpRegisterPage() {
       <WhiteCardContainer>
         <OrangePayLogo />
         <RegisterTextContainer>
-          Kode OTP telah dikirim ke WhatsApp Anda. Masukkan kode di bawah
-          untuk melanjutkan.
+          Kode OTP telah dikirim ke WhatsApp Anda. Masukkan kode di bawah untuk
+          melanjutkan.
         </RegisterTextContainer>
         <SetOtpContent />
       </WhiteCardContainer>
@@ -53,14 +53,11 @@ function SetOtpContent() {
       navigate("/register/setpin");
     } catch (err) {
       setError(
-        err.response?.data?.message ||
-        err.message ||
-        "Something went wrong."
+        err.response?.data?.message || err.message || "Something went wrong."
       );
     } finally {
       setLoading(false);
     }
-
   };
 
   const handleResendOtp = async () => {
@@ -68,33 +65,33 @@ function SetOtpContent() {
     setLoading(true);
 
     //get recaptcha token
-    const recaptchaToken = localStorage.getItem("_grecaptcha")
+    const recaptchaToken = localStorage.getItem("_grecaptcha");
 
     try {
-      const response = await axios.post("/api/v1/auth/resend-otp", {
+      const response = await api.post("/api/v1/auth/resend-otp", {
         phoneNumber: userData.phoneNumber,
         captchaToken: recaptchaToken,
       });
 
-      setLoginData({ stateToken: response.data.data.stateToken });
+      setRegistrationData({ stateToken: response.data.data.stateToken });
       setOtp("");
-      reset()
+      reset();
     } catch (err) {
       // get error code
-      errorCode = err.response?.data?.error.code
+      const errorCode = err.response?.data?.error.code;
 
       // error handle - expired
       if (errorCode === "AUTH-2002") {
-        setError("OTP telah expired")
-        setOtp("")
-        reset("")
+        setError("OTP telah expired");
+        setOtp("");
+        reset();
       }
 
       // else
       setError(
         err.response?.data?.error.message ||
-        err.message ||
-        "Something went wrong."
+          err.message ||
+          "Something went wrong."
       );
     } finally {
       setLoading(false);

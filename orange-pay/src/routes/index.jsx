@@ -26,7 +26,8 @@ import HistoryTransactionPage from "../pages/HistoryTransactionPage";
 import { RegistrationProvider } from "../context/RegistrationContext";
 import AddWalletPage from "../pages/AddWalletPage";
 import AllHistoryPage from "../pages/AllHistory";
-
+import WalletList from "../pages/WalletList";
+import RouteTracker from "./RouteTracker";
 // add balance
 import ConfirmAddBalancePage from "../pages/addBalance/ConfirmAddBalancePage";
 import AddBalancePage from "../pages/addBalance/AddBalancePage";
@@ -39,7 +40,7 @@ import InviteClaimPage from "../pages/InviteClaimsPage";
 /* login flow context & step guard */
 import { LoginProvider } from "../context/LoginContext";
 import RequireLoginStep from "./RequireLoginStep";
-import ForgetPinPage from "../pages/forgetPin/ForgetPinPage"
+import ForgetPinPage from "../pages/forgetPin/ForgetPinPage";
 import ResetPinPage from "../pages/forgetPin/ResetPinPage";
 
 /* transfer flow */
@@ -73,7 +74,7 @@ import TopupResultPage from "../pages/topup/TopupResultPage";
 import TopUpPage from "../pages/topup/TopUpPage";
 
 /*reset pin */
-import ResetSetPinPage from "../pages/resetPin/ResetPinPage"
+import ResetSetPinPage from "../pages/resetPin/ResetPinPage";
 
 export function PublicRoute({ children, redirectTo = "/app/dashboard" }) {
   const location = useLocation();
@@ -157,6 +158,7 @@ function AddBalancelayout() {
 export default function AppRoutes() {
   return (
     <BrowserRouter>
+      <RouteTracker />
       <Routes>
         {/* ---------- Public pages ---------- */}
         <Route index element={<SplashPage />} />
@@ -197,7 +199,6 @@ export default function AppRoutes() {
             <Route path="pin" element={<ResetPinPage />} />
           </Route>
 
-
           <Route
             path="reset/otp"
             element={
@@ -221,6 +222,7 @@ export default function AppRoutes() {
         {/* ---------- Protected /app routes ---------- */}
         <Route path="/app/*" element={<ProtectedRoute />}>
           <Route path="dashboard" element={<DashboardPage />} />
+          <Route path="walletlist" element={<WalletList />} />
           <Route path="transactions" element={<HistoryTransactionPage />} />
           <Route path="receipt/:trxId" element={<ReceiptPage />} />
           {/* === TESTING ROUTE (tanpa param): buka /app/members-test === */}
@@ -257,10 +259,8 @@ export default function AppRoutes() {
             <Route path="editProfile" element={<EditProfilePage />} />
             <Route path="verify" element={<VerifyProfileDataPage />} />
           </Route>
-
           {/* reset pin page */}
           <Route path="resetPin" element={<ResetSetPinPage />} />
-
           {/* user transaction limit page */}
           <Route element={<TransactionLimitLayout />}>
             <Route path="transactionLimit" element={<TransactionLimitPage />} />

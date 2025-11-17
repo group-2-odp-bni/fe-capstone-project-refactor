@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
-import { useParams, useNavigate } from "react-router-dom"; // ✅ React Router!
+import { useParams, useNavigate } from "react-router-dom";
 
 export default function SplitBillMemberPage() {
   const params = useParams();
@@ -13,10 +13,9 @@ export default function SplitBillMemberPage() {
   const [error, setError] = useState(null);
   const [receiptImage, setReceiptImage] = useState(null);
   const [openRows, setOpenRows] = useState({});
-
-  // state di parent
-const [showPay, setShowPay] = useState(false);
-const [payCtx, setPayCtx] = useState(null);
+  const [copySuccess, setCopySuccess] = useState(false);
+  const [showPay, setShowPay] = useState(false);
+  const [payCtx, setPayCtx] = useState(null);
 
   const fmt = (n) => {
     const num = Number(n || 0);
@@ -28,10 +27,6 @@ const [payCtx, setPayCtx] = useState(null);
   const currency = (n) => `Rp${fmt(n)}`;
   const roundIDR = (n) => Math.round(Number(n || 0));
 
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-
-  // ====== RECEIPT IMAGE (location.state / localStorage) ======
   useEffect(() => {
     if (!splitId) return;
     if (location.state?.receiptImage) {
@@ -61,7 +56,7 @@ const [payCtx, setPayCtx] = useState(null);
         const legacyStored = localStorage.getItem(`splitbill_data_${splitId}`);
         if (legacyStored) {
           const parsed = JSON.parse(legacyStored);
-          console.log("✅ Data loaded (legacy):", parsed);
+          console.log("Data loaded (legacy):", parsed);
           setData(parsed);
 
           const foundMember = parsed.members?.find((m) => m.id === memberId);
@@ -71,7 +66,6 @@ const [payCtx, setPayCtx] = useState(null);
     } catch {}
   }, [location.state, splitId]);
 
-  // ====== LOAD DATA ======
   useEffect(() => {
     if (!splitId || !memberId) {
       setError("Parameter tidak valid");
@@ -100,7 +94,7 @@ const [payCtx, setPayCtx] = useState(null);
       if (!foundMember) setError("Member tidak ditemukan");
       else setMember(foundMember);
     } catch (e) {
-      console.error("❌ Load error:", e);
+      console.error("Load error:", e);
     } finally {
       setLoading(false);
     }
@@ -161,103 +155,60 @@ const [payCtx, setPayCtx] = useState(null);
       };
     }
 
-      // Ada original items -> pro-rata per item
-      return data.expandedItems
-        .filter((it) => it.assignedTo?.includes(mId))
-        .reduce(
-          (acc, item) => {
-            const qty = item.assignedQuantities?.[mId] ?? 0;
-            const totalPeopleForItem = item.assignedTo?.length ?? 1;
-            const pricePerPerson = item.pricePerUnit / totalPeopleForItem;
-            const memberItemTotal = pricePerPerson * qty;
+    return data.expandedItems
+      .filter((it) => it.assignedTo?.includes(mId))
+      .reduce(
+        (acc, item) => {
+          const qty = item.assignedQuantities?.[mId] ?? 0;
+          const totalPeopleForItem = item.assignedTo?.length ?? 1;
+          const pricePerPerson = item.pricePerUnit / totalPeopleForItem;
+          const memberItemTotal = pricePerPerson * qty;
 
-            const originalItem =
-              originalItems.find(
-                (o) =>
-                  o.name?.toLowerCase().trim() ===
-                  item.name?.toLowerCase().trim()
-              ) || originalItems[item.originalIdx];
+          const originalItem =
+            originalItems.find(
+              (o) =>
+                o.name?.toLowerCase().trim() === item.name?.toLowerCase().trim()
+            ) || originalItems[item.originalIdx];
 
-            if (!originalItem) return acc;
-            const originalItemTotal = originalItem.total ?? 0;
-            if (originalItemTotal === 0) return acc;
+          if (!originalItem) return acc;
+          const originalItemTotal = originalItem.total ?? 0;
+          if (originalItemTotal === 0) return acc;
 
-            const itemProportionOfTotal =
-              originalItemTotal / originalItemsSubtotal;
-            const memberProportionOfItem = memberItemTotal / originalItemTotal;
+          const itemProportionOfTotal =
+            originalItemTotal / originalItemsSubtotal;
+          const memberProportionOfItem = memberItemTotal / originalItemTotal;
 
-            return {
-              tax:
-                acc.tax +
-                (data.pajak ?? 0) *
-                  itemProportionOfTotal *
-                  memberProportionOfItem,
-              discount:
-                acc.discount +
-                Math.abs(data.discount ?? 0) *
-                  itemProportionOfTotal *
-                  memberProportionOfItem,
-              service:
-                acc.service +
-                (data.service ?? 0) *
-                  itemProportionOfTotal *
-                  memberProportionOfItem,
-              other:
-                acc.other +
-                Math.abs(data.other ?? 0) *
-                  itemProportionOfTotal *
-                  memberProportionOfItem,
-            };
-          },
-          { tax: 0, discount: 0, service: 0, other: 0 }
-        );
-    },
-    [data, getMemberItemSubtotal]
-  );
-
-    let totalTax = 0,
-      totalDiscount = 0,
-      totalService = 0,
-      totalOther = 0;
-
-  const popupFees = useMemo(() => {
-    if (!showingDetailFor) return { tax: 0, discount: 0, service: 0, other: 0 };
-    return getFeeBreakdown(showingDetailFor);
-  }, [showingDetailFor, getFeeBreakdown]);
-
-      let originalItem = originalItems.find(
-        (origItem) =>
-          origItem.name?.toLowerCase().trim() ===
-          item.name?.toLowerCase().trim()
+          return {
+            tax:
+              acc.tax +
+              (data.pajak ?? 0) *
+                itemProportionOfTotal *
+                memberProportionOfItem,
+            discount:
+              acc.discount +
+              Math.abs(data.discount ?? 0) *
+                itemProportionOfTotal *
+                memberProportionOfItem,
+            service:
+              acc.service +
+              (data.service ?? 0) *
+                itemProportionOfTotal *
+                memberProportionOfItem,
+            other:
+              acc.other +
+              Math.abs(data.other ?? 0) *
+                itemProportionOfTotal *
+                memberProportionOfItem,
+          };
+        },
+        { tax: 0, discount: 0, service: 0, other: 0 }
       );
-      if (!originalItem) {
-        originalItem = originalItems[item.originalIdx] || null;
-      }
-      if (!originalItem) return;
+  }, [data, getMemberItemSubtotal]);
 
-      const originalItemTotal = originalItem.total || 0;
-      if (originalItemTotal === 0) return;
-
-      const itemProportionOfTotal = originalItemTotal / originalItemsSubtotal;
-      const itemTax = (data.pajak || 0) * itemProportionOfTotal;
-      const itemDiscount = Math.abs(data.discount || 0) * itemProportionOfTotal;
-      const itemService = (data.service || 0) * itemProportionOfTotal;
-      const itemOther = Math.abs(data.other || 0) * itemProportionOfTotal;
-
-      const memberProportionOfItem = memberItemTotal / originalItemTotal;
-      totalTax += itemTax * memberProportionOfItem;
-      totalDiscount += itemDiscount * memberProportionOfItem;
-      totalService += itemService * memberProportionOfItem;
-      totalOther += itemOther * memberProportionOfItem;
-    });
-
-    return {
-      tax: totalTax,
-      discount: totalDiscount,
-      service: totalService,
-      other: totalOther,
-    };
-  }, [data, memberId, calculateMemberItemSubtotal]);
+  let totalTax = 0,
+    totalDiscount = 0,
+    totalService = 0,
+    totalOther = 0;
 
   const memberTotal = useMemo(() => {
     const subtotal = calculateMemberItemSubtotal;
@@ -305,7 +256,8 @@ const [payCtx, setPayCtx] = useState(null);
             Invoice tidak ditemukan
           </p>
           <p className="text-gray-500 text-sm mb-4">
-            {error || "Data split bill mungkin sudah kedaluwarsa atau link tidak valid"}
+            {error ||
+              "Data split bill mungkin sudah kedaluwarsa atau link tidak valid"}
           </p>
           <p className="text-xs text-gray-400 mb-4 font-mono bg-gray-100 px-3 py-2 rounded break-all">
             Split ID: {splitId} | Member ID: {memberId}
@@ -332,13 +284,12 @@ const [payCtx, setPayCtx] = useState(null);
     year: "numeric",
   });
 
-  // ====== RENDER ======
   return (
     <div className="min-h-screen bg-gradient-to-b from-orange-50 to-white flex flex-col">
       <div className="bg-white border-b border-gray-200 px-4 py-3 sticky top-0 z-10 shadow-sm">
         <div className="max-w-md mx-auto flex items-center gap-2">
           <button
-            onClick={() => navigate(-1)} // ✅ React Router navigate back
+            onClick={() => navigate(-1)}
             className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-gray-100 active:scale-95 transition"
           >
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
@@ -428,7 +379,6 @@ const [payCtx, setPayCtx] = useState(null);
               )}
             </div>
 
-            {/* ITEMS */}
             <div className="mb-6 pb-6 border-b border-gray-200">
               <div className="text-sm font-bold text-gray-900 mb-3">
                 🛒 Item yang Dibeli
@@ -497,11 +447,9 @@ const [payCtx, setPayCtx] = useState(null);
                     {currency(memberTotal)}
                   </span>
                 </div>
-                {/* /kertas */}
               </div>
             </div>
 
-            {/* COPY LINK */}
             <button
               onClick={copyToClipboard}
               className={`w-full py-3 px-4 rounded-lg flex items-center justify-center gap-2 transition active:scale-95 ${

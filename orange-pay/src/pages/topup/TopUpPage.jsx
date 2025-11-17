@@ -2,14 +2,13 @@ import { useNavigate } from "react-router-dom";
 import View from "../../components/view/View";
 import WhiteHeader from "../../components/register/WhiteHeader";
 import ContentBox from "../../components/common/ContentBox";
-
+import Header from "../../components/Header";
 export default function TopUpPage() {
-  const navigate = useNavigate()
-
+  const navigate = useNavigate();
 
   return (
     <View>
-      <WhiteHeader title="Topup" />
+      <Header title="Tambah Saldo" />
       <ContentBox>
         <div className="p-4">
           <p className="text-sm text-gray-600 mb-4 font-semibold mb-6">
@@ -33,14 +32,8 @@ export default function TopUpPage() {
             </div>
             <span className="text-gray-400 group-hover:text-orange-500">›</span>
           </button>
-
-
         </div>
-
       </ContentBox>
-
-
     </View>
-
   );
 }

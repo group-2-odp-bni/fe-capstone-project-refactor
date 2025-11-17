@@ -39,6 +39,21 @@ export default function ReceiptResult({ receiptData, onBack, onConfirm }) {
   const [selectedWalletId, setSelectedWalletId] = useState(null);
   const [isWalletsLoading, setIsWalletsLoading] = useState(true);
   const [walletsError, setWalletsError] = useState(null);
+  const [mainContacts, setMainContacts] = useState([]);
+  const [isLoadingContacts, setIsLoadingContacts] = useState(true);
+
+  useEffect(() => {
+    const loadContacts = async () => {
+      setIsLoadingContacts(true);
+      const contactsData = await transferApi.getAllAccounts();
+      const contactsArray = contactsData?.data?.content ?? [];
+      setMainContacts(contactsArray);
+      setIsLoadingContacts(false);
+    };
+    if (showContacts) {
+      loadContacts();
+    }
+  }, [showContacts]);
   const receiptImage =
     editableData?.receipt_url || receiptData?.receipt_url || null;
   useEffect(() => {
@@ -244,38 +259,25 @@ export default function ReceiptResult({ receiptData, onBack, onConfirm }) {
     );
   }
 
+  const currentUserForContacts = {
+    id: "me",
+    name: "Kamu",
+    phoneMasked: "082210472710",
+    avatarText: "K".charAt(0),
+  };
+  const allContacts = mainContacts.map((contact) => ({
+    id: contact.recipientUserId,
+    userId: contact.recipientUserId,
+    name: contact.recipientName,
+    phone: contact.recipientPhone,
+    isOrangePayUser: true,
+  }));
+
+  const recommendedIds = mainContacts
+    .slice(0, 4)
+    .map((c) => c.accountId)
+    .filter(Boolean);
   if (showContacts) {
-    const [mainContacts, setMainContacts] = useState([]);
-    const [isLoadingContacts, setIsLoadingContacts] = useState(true);
-
-    useEffect(() => {
-      const loadContacts = async () => {
-        setIsLoadingContacts(true);
-        const contactsData = await transferApi.getAllAccounts(); // Ini adalah async call
-        setMainContacts(contactsData);
-        setIsLoadingContacts(false);
-      };
-
-      loadContacts();
-    }, [transferApi]);
-    const currentUserForContacts = {
-      id: "me",
-      name: "Kamu",
-      phoneMasked: "082210472710",
-      avatarText: "K".charAt(0),
-    };
-    const allContacts = mainContacts.map((contact) => ({
-      id: contact.recipientUserId,
-      userId: contact.recipientUserId,
-      name: contact.recipientName,
-      phone: contact.recipientPhone,
-      isOrangePayUser: true,
-    }));
-
-    const recommendedIds = mainContacts
-      .slice(0, 4)
-      .map((c) => c.accountId)
-      .filter(Boolean);
     return (
       <SelectContacts
         currentUser={currentUserForContacts}
@@ -299,7 +301,6 @@ export default function ReceiptResult({ receiptData, onBack, onConfirm }) {
       />
     );
   }
-
   return (
     <>
       <div className="min-h-screen bg-white flex flex-col">
@@ -340,9 +341,9 @@ export default function ReceiptResult({ receiptData, onBack, onConfirm }) {
                   setSplitName(e.target.value);
                   if (splitNameError) setSplitNameError(false);
                 }}
-                className={`w-full bg-transparent border-b 
-                             text-[13px] text-gray-900 font-medium 
-                             focus:outline-none focus:border-[#FF9A25] 
+                className={`w-full bg-transparent border-b
+                             text-[13px] text-gray-900 font-medium
+                             focus:outline-none focus:border-[#FF9A25]
                              transition-all duration-150 ease-in-out
                              ${
                                splitNameError

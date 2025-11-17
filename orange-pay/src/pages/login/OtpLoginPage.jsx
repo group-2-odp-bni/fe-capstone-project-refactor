@@ -12,7 +12,7 @@ import OtpInputField from "../../components/input/OtpInputField";
 import ButtonLink from "../../components/button/ButtonLink";
 import CountdownTimer from "../../components/dashboard/CountdownTimer";
 import View from "../../components/view/View";
-import { useCountdown } from "../../hooks/useCountDown";
+import { useCountdown } from "../../hooks/useCountdown";
 
 export default function OtpLoginPage() {
     return (

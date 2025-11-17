@@ -154,7 +154,6 @@ export default function StepConfirm() {
     
           // Persist to context so StepPin can execute
           setData({ transactionId: tx });
-    
           setStep("pin");
           navigate("/app/transfer/pin");
         } catch (err) {

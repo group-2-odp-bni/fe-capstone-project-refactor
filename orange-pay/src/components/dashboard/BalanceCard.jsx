@@ -200,9 +200,18 @@ export default function AtomicBalanceCard({
   if (loading) {
     return (
       <div className="w-full mx-auto md:px-1 mt-6">
-        <h3 className="px-0 font-semibold text-lg text-gray-900 mb-3 md:px-0 text-left">
-          Your Wallet
-        </h3>
+        <div
+        onClick={() => navigate("/app/walletlist")}
+        className="flex items-center justify-between cursor-pointer group"
+        >
+          <h3 className="font-semibold text-lg text-gray-900 mb-3 text-left group-hover:text-primary transition-colors">
+            Wallet Anda
+          </h3>
+          <span className="text-sm text-gray-500 group-hover:text-primary transition-colors">
+            Lihat semua →
+          </span>
+        </div>
+
 
         <div className="rounded-2xl overflow-hidden">
           <div className="flex gap-4">
@@ -219,6 +228,7 @@ export default function AtomicBalanceCard({
         <div className="mt-4 max-w-[520px] mx-auto">
           <div className="h-3 bg-gray-100 rounded w-3/5 animate-pulse" />
         </div>
+
       </div>
     );
   }
@@ -226,9 +236,17 @@ export default function AtomicBalanceCard({
   if (!hasRealWallets) {
     return (
       <div className="w-full mx-auto md:px-1 mt-6">
-        <h3 className="px-0 font-semibold text-lg text-gray-900 mb-3 text-left">
-          Your Wallet
-        </h3>
+        <div
+        onClick={() => navigate("/app/walletlist")}
+        className="flex items-center justify-between cursor-pointer group"
+        >
+          <h3 className="font-semibold text-lg text-gray-900 mb-3 text-left group-hover:text-primary transition-colors">
+            Wallet Anda
+          </h3>
+          <span className="text-sm text-gray-500 group-hover:text-primary transition-colors">
+            Lihat semua →
+          </span>
+        </div>
   
         <div className="rounded-[24px] overflow-hidden">
           {/* Skeleton card matching actual GradientCardShell size */}
@@ -249,14 +267,19 @@ export default function AtomicBalanceCard({
     );
   }
   
-  
-  
-
   return (
     <div className="w-full mx-auto md:px-1 mt-6">
-      <h3 className="px-0 font-semibold text-lg text-gray-900 mb-3 md:px-0 text-left">
-        Your Wallet
-      </h3>
+      <div
+        onClick={() => navigate("/app/walletlist")}
+        className="flex items-center justify-between cursor-pointer group"
+        >
+          <h3 className="font-semibold text-lg text-gray-900 mb-3 text-left group-hover:text-primary transition-colors">
+            Wallet Anda
+          </h3>
+          <span className="text-sm text-gray-500 group-hover:text-primary transition-colors">
+            Lihat semua →
+          </span>
+        </div>
 
       <div className="flex flex-wrap items-center justify-center gap-2">
         {tabs.map((c, i) => (

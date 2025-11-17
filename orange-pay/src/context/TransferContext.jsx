@@ -45,7 +45,7 @@ const mapStepToPath = (stepName) => {
     case "pin":
       return "/app/transfer/pin";
     case "confirm":
-      return "/app/transfer/confirm";
+      return "/app/transfer";
     case "success":
       return "/app/transfer/success";
     case "amount":
@@ -211,10 +211,39 @@ export const TransferProvider = ({ children }) => {
     prevPathRef.current = current;
   }, [location.pathname]);
 
-  /**
-   * When flow reaches success, clear persisted state and reset in memory.
-   * Suppress a single cycle of route-sync & persist to avoid re-saving/resync.
-   */
+  // inside TransferProvider, add this effect (paste after prevPathRef is defined)
+  useEffect(() => {
+    const onPop = () => {
+      try {
+        const prev = prevPathRef.current || "";
+        const cur = window.location.pathname || "";
+
+        // If we were in transfer and user navigated within transfer history (popstate keeps us inside),
+        // treat that as a headerBack intent: clear transfer flow and go to dashboard.
+        if (prev.startsWith("/app/transfer") && cur.startsWith("/app/transfer")) {
+          // prevent route-sync/persist fighting our forced reset
+          skipPersistRef.current = true;
+          skipRouteSyncRef.current = true;
+
+          try { sessionStorage.removeItem(TRANSFER_FLOW_KEY); } catch (_) {}
+
+          // reset in-memory
+          setFlow(defaultFlow);
+
+          // move user to dashboard (replace so we don't add another history entry)
+          try { navigate("/app/dashboard", { replace: true }); } catch (_) {}
+        }
+      } catch (err) {
+        // swallow — never throw on popstate
+        console.warn("TransferContext: popstate handler error", err);
+      }
+    };
+
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  // include navigate in deps so linter's happy; prevPathRef/skip refs and setFlow are stable
+  }, [navigate]);
+
   useEffect(() => {
     if (flow.step === "success") {
       try {
@@ -228,6 +257,21 @@ export const TransferProvider = ({ children }) => {
   }, [flow.step]);
 
   // ---------------- navigation helpers ----------------
+
+  // helper to persist a flow snapshot (respects your non-persistence rules)
+  const persistFlowSnapshot = (flowSnapshot) => {
+    try {
+      const clone = { step: flowSnapshot.step, data: { ...(flowSnapshot.data || {}) } };
+      if ("pin" in clone.data) delete clone.data.pin;
+      if (clone.step === "success" || clone.step === "verify") {
+        try { sessionStorage.removeItem(TRANSFER_FLOW_KEY); } catch (e) {}
+        return;
+      }
+      saveToSession(clone);
+    } catch (err) {
+      console.warn("TransferContext: persistFlowSnapshot error", err);
+    }
+  };
 
   // Accept 'verify' as runtime-only step (not persisted)
   const setStep = (stepName) => {
@@ -273,12 +317,21 @@ export const TransferProvider = ({ children }) => {
     setFlow((prev) => {
       const idx = STEP_ORDER.indexOf(prev.step);
       const prevName = idx <= 0 ? STEP_ORDER[0] : STEP_ORDER[idx - 1];
+
+      // still suppress route-sync to avoid loops
       skipRouteSyncRef.current = true;
       skipPersistRef.current = true;
+
+      // compute the new in-memory state snapshot
+      const newFlow = { ...prev, step: prevName };
+
+      // persist immediately so sessionStorage reflects user's action
+      persistFlowSnapshot(newFlow);
+
       try {
         navigate(mapStepToPath(prevName), { replace: true });
       } catch {}
-      return { ...prev, step: prevName };
+      return newFlow;
     });
 
   /**
@@ -301,6 +354,8 @@ export const TransferProvider = ({ children }) => {
         skipPersistRef.current = true;
         // restore the full snapshot (in-memory only)
         setFlow(last);
+        // persist this restored snapshot immediately (since it's an explicit user action)
+        persistFlowSnapshot(last);
         try {
           navigate(mapStepToPath(last.step), { replace: true });
         } catch (err) {
@@ -314,12 +369,15 @@ export const TransferProvider = ({ children }) => {
     const curIdx = STEP_ORDER.indexOf(curStep);
     const prevName = curIdx <= 0 ? STEP_ORDER[0] : STEP_ORDER[curIdx - 1];
 
-    // Suppress route-sync & persist while we update both in-memory & route
+    // Suppress route-sync while we update both in-memory & route
     skipRouteSyncRef.current = true;
     skipPersistRef.current = true;
 
-    // Update in-memory immediately, then replace URL to the canonical path
-    setFlow((prev) => ({ ...prev, step: prevName }));
+    // Build new snapshot and persist it
+    const newFlow = { ...flow, step: prevName };
+    setFlow(newFlow);
+    persistFlowSnapshot(newFlow);
+
     try {
       navigate(mapStepToPath(prevName), { replace: true });
     } catch (err) {
@@ -356,6 +414,36 @@ export const TransferProvider = ({ children }) => {
     return false;
   };
 
+  /**
+   * headerBack()
+   * - A safe back handler intended for the app header back button.
+   * - If the current location is inside the transfer flow, ensure we clear transfer state
+   *   and navigate to dashboard (deterministic).
+   * - Otherwise behave like a normal history back.
+   */
+  const headerBack = () => {
+    try {
+      const path = (location && location.pathname) || "";
+      if (path && path.startsWith("/app/transfer")) {
+        // clear transfer flow then go to dashboard (push so user has history)
+        try {
+          sessionStorage.removeItem(TRANSFER_FLOW_KEY);
+        } catch (_) {}
+        // ensure in-memory reset too
+        skipPersistRef.current = true;
+        skipRouteSyncRef.current = true;
+        setFlow(defaultFlow);
+        navigate("/app/dashboard");
+        return;
+      }
+      // Default behavior: go back in history
+      navigate(-1);
+    } catch (err) {
+      // Fallback: navigate to dashboard if something goes wrong
+      try { navigate("/app/dashboard"); } catch (_) {}
+    }
+  };
+
   const contextValue = {
     flow,
     step: flow.step,
@@ -368,6 +456,7 @@ export const TransferProvider = ({ children }) => {
     setData,
     reset,
     requireVerifyIfMissingNumber,
+    headerBack,
   };
 
   return <TransferContext.Provider value={contextValue}>{children}</TransferContext.Provider>;

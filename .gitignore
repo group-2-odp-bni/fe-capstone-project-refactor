@@ -34,3 +34,10 @@ node_modules
 .atom/
 .env.development
 .env.production
+infra/terraform/terraform.tfvars
+**/*.key
+**/*.ovpn
+**/*.crt
+**/*.csr
+**/pki/
+

@@ -10,6 +10,7 @@ import StepEnterAmount from "../components/transfer/StepEnterAmount";
 import StepConfirm from "../components/transfer/StepConfirm";
 import StepPin from "../components/transfer/StepPin";
 import StepSuccess from "../components/transfer/StepSuccess";
+import View from "../components/view/View";
 
 export default function TransferPage() {
   const { step, prevStep, reset, goBack } = useTransfer();
@@ -24,12 +25,18 @@ export default function TransferPage() {
     success: "Transfer",
   }[step] || "Transfer";
 
+  const path = location.pathname || "";
+  const isSuccessPath = path.endsWith("/success");
+
   const handleBack = () => {
-    // If we're at the first step, prefer navigating browser history first.
+    const inTransferPath = path.startsWith("/app/transfer");
+    if (inTransferPath && isSuccessPath) {
+      reset();
+      navigate("/app/dashboard");
+      return;
+    }
     if (step === "select") {
-      // try history back; if no previous entry, fallback to reset + dashboard
       if (window.history.length > 1) {
-        // go back in browser history
         navigate(-1);
         return;
       }
@@ -37,37 +44,29 @@ export default function TransferPage() {
       navigate("/app/dashboard");
       return;
     }
-  
-    // Otherwise prefer in-flow goBack (will both change step and call navigate(-1))
-    if (typeof goBack === "function") {
+
+    if (inTransferPath && typeof goBack === "function") {
       goBack();
       return;
     }
-  
-    // fallback to prevStep (in-memory step change)
+
     if (typeof prevStep === "function") {
       prevStep();
       return;
     }
-  
-    // Last fallback: clear and navigate
+
     reset();
     navigate("/app/dashboard");
   };
 
-  // If the URL is /app/transfer/success then render StepSuccess regardless of context.step
-  const path = location.pathname || "";
-  const isSuccessPath = path.endsWith("/success");
-
   return (
-    <div className="p-6">
+    <View>
       <Header title={headerTitle} onBack={handleBack} showBack centerTitle />
 
       {isSuccessPath ? (
         <StepSuccess />
       ) : (
         <>
-          {/* Select and Verify are entry steps — Verify is not recorded in history when you navigate there */}
           {step === "select" && <StepSelectContacts />}
 
           {step === "verify" && <StepVerifyContact />}
@@ -97,6 +96,6 @@ export default function TransferPage() {
           )}
         </>
       )}
-    </div>
+    </View>
   );
 }
