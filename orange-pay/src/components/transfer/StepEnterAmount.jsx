@@ -48,35 +48,12 @@ export default function StepEnterAmount() {
 
   // header/back guard: use walletsLoading to block back when loading wallets
   const loading = Boolean(walletsLoading);
-
-  // Ensure browser back / hardware back while on Amount returns to Select step
-  useEffect(() => {
-    // push marker so popstate is triggered reliably
-    try {
-      window.history.pushState({ _transfer_amount_marker: true }, "");
-    } catch (e) {
-      /* ignore */
-    }
-
-    const onPop = (ev) => {
-      // avoid interfering when not in transfer route
-      // set flow step back to select and keep user on /app/transfer
-      if (loading) return; // don't navigate while loading
-      setStep("select");
-      try {
-        navigate("/app/transfer", { replace: true });
-      } catch (err) {
-        // ignore navigation errors
-      }
-    };
-
-    window.addEventListener("popstate", onPop);
-    return () => {
-      window.removeEventListener("popstate", onPop);
-      // don't try to manipulate history on unmount
-    };
-    // only run when component mounts/unmounts or when loading changes
-  }, [navigate, setStep, loading]);
+  const onBack = () => {
+    if (loading) return;
+    setStep("select");
+    navigate("/app/transfer");
+  };
+ 
 
   const canConfirm =
     numericAmount >= MIN_AMOUNT &&
@@ -194,6 +171,7 @@ export default function StepEnterAmount() {
   });
 
   return (
+    
     <div className="flex flex-col min-h-screen bg-white">
       <div className="flex-1 px-5 pt-6 pb-5">
         {walletsLoading && (
@@ -305,6 +283,7 @@ export default function StepEnterAmount() {
         selectedId={data.senderWalletId}
         onSelect={handleSelectWallet}
       />
+      
     </div>
   );
 }
