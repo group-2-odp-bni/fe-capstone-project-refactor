@@ -8,7 +8,7 @@ import { useNavigate } from "react-router-dom";
 import View from "../../components/view/View";
 import WhiteHeader from "../../components/register/WhiteHeader";
 import api from "../../lib/api";
-import { useCountdown } from "../../hooks/useCountDown";
+import { useCountdown } from "../../hooks/useCountdown";
 
 export default function TopUpConfirmationPage() {
   const { topupData } = useTopupContext();

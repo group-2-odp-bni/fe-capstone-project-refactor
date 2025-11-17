@@ -15,7 +15,7 @@ export default function HistoryTransactionPage() {
   const { walletId } = useParams();
   const navigate = useNavigate();
 
-  const [pageTitle, setPageTitle] = useState("Wallet Detail");
+  const [pageTitle, setPageTitle] = useState("Detail Wallet");
   const { items: allWallets, loading: walletsLoading } = useCardBalances();
   const wallet = useMemo(
     () => allWallets.find((w) => w.id === walletId && !w.isAddCard),
@@ -80,7 +80,7 @@ export default function HistoryTransactionPage() {
   if (walletsLoading) {
     return (
       <View>
-        <PageHeader>Wallet Detail</PageHeader>
+        <PageHeader>Detail Wallet</PageHeader>
         <LoadingSpinner />
       </View>
     );

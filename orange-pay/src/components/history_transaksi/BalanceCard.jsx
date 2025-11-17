@@ -18,9 +18,9 @@ export default function BalanceCard({
   isMain,
 }) {
   const [isHidden, setIsHidden] = useState(false);
-  const outerGlow = `0 10px 28px rgba(0,0,0,0.22), 0 0 24px ${
-    accent || "#000"
-  }55, 0 0 64px ${accent || "#000"}33`;
+  // const outerGlow = `0 10px 28px rgba(0,0,0,0.22), 0 0 24px ${
+  //   accent || "#000"
+  // }55, 0 0 64px ${accent || "#000"}33`;
 
   if (!title) {
     return (
@@ -30,7 +30,7 @@ export default function BalanceCard({
   const badgeLabel = isMain ? "Utama" : humanizeType(type);
 
   return (
-    <GradientCardShell bg={bg} outerGlow={outerGlow}>
+    <GradientCardShell bg={bg}>
       <div className="relative z-10 flex justify-between items-start mb-5 md:mb-10">
         <div className="flex items-center space-x-3 mt-1 mb-2">
           <img
