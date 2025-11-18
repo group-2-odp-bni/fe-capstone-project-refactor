@@ -10,6 +10,7 @@ import {
   BalanceRow,
   CarouselViewport,
   CTASection,
+  PillBadge,
 } from "../ui/BalanceCardUI";
 
 export default function AtomicBalanceCard({
@@ -69,11 +70,9 @@ export default function AtomicBalanceCard({
         });
       }
     }
-    // If no real wallets, we keep arr as-is (no auto-injected add card)
     return arr;
   }, [orderedItemsRaw, hasRealWallets]);
 
-  // Make tabs come from orderedItems (ensures indices align)
   const tabs = useMemo(() => {
     const source = Array.isArray(orderedItems) ? orderedItems : [];
     return source.map((c) => ({
@@ -114,7 +113,6 @@ export default function AtomicBalanceCard({
       setActiveIndex(target);
       viewportRef.current?.scrollToIndex?.(target);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [orderedItems, initialWalletId]);
 
   useEffect(() => {
@@ -195,8 +193,6 @@ export default function AtomicBalanceCard({
     md: { bottom: 80, right: 160 },
   };
 
-  // ---------- RENDER ----------
-  // 1) Loading skeleton (carousel-like)
   if (loading) {
     return (
       <div className="w-full mx-auto md:px-1 mt-6">
@@ -372,8 +368,14 @@ export default function AtomicBalanceCard({
                   />
                   {card.walletName &&
                     String(card.walletName).trim().toUpperCase() !== "MAIN" && (
-                      <div className="absolute top-4 right-4 z-10 text-white font-semibold text-sm md:text-base leading-none pointer-events-none">
-                        {card.walletName}
+                      <div className="absolute top-1 right-4 z-10 text-white font-semibold text-sm md:text-base leading-none pointer-events-none flex flex-col items-end space-y-1">
+                        <PillBadge
+                          label={card.type} 
+                          active={card?.defaultForUser === true}
+                          style={{ transform: "translateZ(35px)" }}
+                          onClick={() => goTo(idx)}
+                        />
+                        <div className="mt-2 text-right w-full">{card.walletName}</div>
                       </div>
                     )}
                   <div className="relative z-10">
@@ -386,7 +388,6 @@ export default function AtomicBalanceCard({
                     />
                   </div>
 
-                  {/* CTA stays clickable; just pass disabled + onBlocked */}
                   <div className="relative z-30" aria-disabled={disableActions}>
                     <CTASection
                       links={linksWithWallet}

@@ -15,7 +15,7 @@ export const PillBadge = ({ label, active, style, onClick }) => (
   <button
     type="button"
     onClick={onClick}
-    className={`px-2.5 py-1 rounded-full text-[10px] font-bold text-white backdrop-blur-md shadow-sm transition-all duration-500 ${
+    className={`px-3 py-2 rounded-full text-[10px] font-bold text-white backdrop-blur-md shadow-sm transition-all duration-500 ${
       active ? "scale-[1.02]" : "opacity-90"
     }`}
     style={{
@@ -41,11 +41,7 @@ export const IconToggle = ({ on, onToggle }) => (
   </button>
 );
 
-/**
- * ActionIcon
- * - Looks active even when `disabled` so taps still trigger page toast via guards.
- * - Uses currentColor for SVG so it inherits text color.
- */
+
 export const ActionIcon = ({
   label,
   children,
@@ -78,7 +74,6 @@ export const ActionIcon = ({
     );
   }
 
-  // Anchor fallback (we still prefer passing onClick from parent)
   return (
     <a
       href={to || "#"}
@@ -97,8 +92,6 @@ export const ActionIcon = ({
     </a>
   );
 };
-
-/* ========== AmountText (measuring for eye icon) ========== */
 
 export const AmountText = ({ amount, isHidden, onMeasured }) => {
   const formatted = `Rp${Number(amount ?? 0).toLocaleString("id-ID")}`;
@@ -196,8 +189,6 @@ export const GradientCardShell = ({
   );
 };
 
-/* ========== MOLECULES ========== */
-
 export const CardTopBar = ({ title, type, isMain, onBadgeClick }) => (
   <div className="relative z-10 flex justify-between items-start mb-5 md:mb-10">
     <div className="flex items-center space-x-3 mt-1 mb-2">
@@ -206,12 +197,12 @@ export const CardTopBar = ({ title, type, isMain, onBadgeClick }) => (
         alt="RangePay Logo"
         className="h-5 md:h-6 w-auto drop-shadow"
       />
-      <PillBadge
+      {/* <PillBadge
         label={type}
         active={isMain}
         style={{ transform: "translateZ(35px)" }}
         onClick={onBadgeClick}
-      />
+      /> */}
     </div>
   </div>
 );
