@@ -5,7 +5,7 @@ import { FullSubmitButton } from "../../components/button/FullSubmitButton";
 import ProfileImage from "../../components/account/ProfileImage";
 import { useProfileContext } from "../../context/ProfileContext";
 import View from "../../components/view/View";
-import WhiteHeader from "../../components/register/WhiteHeader";
+import Header from "../../components/Header";
 import ContentBox from "../../components/common/ContentBox";
 import api from "../../lib/api";
 
@@ -120,7 +120,7 @@ export default function EditProfilePage() {
 
     return (
         <View>
-            <WhiteHeader title="Edit Akun" to="/app/profile"/>
+            <Header title="Edit Akun"/>
             <ContentBox>
                 <ProfileImage src={profileData.profileImageUrl} onImageSelected={setImageFile} />
 
