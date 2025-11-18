@@ -66,7 +66,7 @@ export default function ProfilePage() {
 
         <div className="mt-6">
           <FullActionButton onClick={() => navigate("/app/editProfile")}>
-            Edit Data
+            Ubah Data
           </FullActionButton>
         </div>
 
