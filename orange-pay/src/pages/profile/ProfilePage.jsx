@@ -6,7 +6,7 @@ import ProfileImage from "../../components/account/ProfileImage";
 import { FullActionButton } from "../../components/button/FullActionButton";
 import { useProfileContext } from "../../context/ProfileContext";
 import View from "../../components/view/View";
-import WhiteHeader from "../../components/register/WhiteHeader";
+import Header from "../../components/Header";
 import ContentBox from "../../components/common/ContentBox";
 import api from "../../lib/api";
 
@@ -44,7 +44,7 @@ export default function ProfilePage() {
 
   return (
     <View>
-      <WhiteHeader title="Akun Saya" to="/app/account" />
+      <Header title="Akun Saya"/>
       <ContentBox>
         <ProfileImage
           src={profileData.profileImageUrl}
