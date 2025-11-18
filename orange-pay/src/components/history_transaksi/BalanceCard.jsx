@@ -46,10 +46,13 @@ export default function BalanceCard({
           {/* <CTASection links={links} walletId={selectedCard.id} type={selectedCard.type} /> */}
         </div>
       </div>
-
-      <div className="absolute top-4 right-4 z-20 text-white font-semibold text-sm md:text-base leading-none">
-        {title}
-      </div>
+      
+      {title &&
+        String(title).trim().toUpperCase() !== "MAIN" && (
+          <div className="absolute top-4 right-4 z-10 text-white font-semibold text-sm md:text-base leading-none pointer-events-none">
+            {title}
+          </div>
+        )}
       <BalanceRow
         amount={balance}
         isHidden={isHidden}

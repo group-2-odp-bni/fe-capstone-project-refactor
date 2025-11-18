@@ -32,6 +32,7 @@ export default function RegisterPage() {
     </GoogleReCaptchaProvider>
   );
 }
+const API_BASE = import.meta.env.VITE_API_BASE || "";
 
 function RegisterContent() {
   const navigate = useNavigate();
@@ -81,7 +82,7 @@ function RegisterContent() {
       const phoneNumber = `0${formData.phoneNumber}`;
 
       //hit login
-      const { data } = await axios.post("/api/v1/auth/register", {
+      const { data } = await axios.post(`${API_BASE}/api/v1/auth/register`, {
         phoneNumber: phoneNumber,
         captchaToken: token,
       });
@@ -104,7 +105,7 @@ function RegisterContent() {
           // fallback message from backend
           setError(
             err.response.data?.error?.message ||
-            "Terjadi kesalahan. Silakan coba lagi."
+              "Terjadi kesalahan. Silakan coba lagi."
           );
         }
       } else {
@@ -151,8 +152,9 @@ function RegisterContent() {
             Anda.
           </LoginTextContainer>
 
-
-          {error && <p className=" text-red-500 text-xs text-center">{error}</p>}
+          {error && (
+            <p className=" text-red-500 text-xs text-center">{error}</p>
+          )}
 
           <FullSubmitButton disabled={loading}>
             {loading ? "Mengirim..." : "Daftar"}
