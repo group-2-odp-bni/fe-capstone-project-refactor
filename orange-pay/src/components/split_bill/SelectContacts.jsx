@@ -17,10 +17,8 @@ function formatPhoneE164(phone) {
   }
   return phone;
 }
-
 const getContactId = (c = {}) =>
-  c.id ?? c.accountId ?? c.phone ?? String(c.name || "");
-
+  c.id ?? c.recipientUserId ?? c.userId ?? c.phone ?? String(c.name || "");
 function maskPhoneLast4(p = "") {
   const d = (p || "").replace(/[^\d]/g, "");
   if (d.length < 4) return `*${d}`;
@@ -28,19 +26,10 @@ function maskPhoneLast4(p = "") {
 }
 
 function mapContactFromApi(ct = {}) {
-  const id =
-    ct.id ??
-    ct.userId ??
-    ct.accountId ??
-    ct.recipientUserId ??
-    ct.phone ??
-    ct.phoneNumber;
-
-  const name = ct.name ?? ct.displayName ?? ct.recipientName ?? "";
-
+  const id = ct.recipientUserId ?? ct.id ?? ct.phoneNumber ?? ct.phone;
+  const name = ct.recipientName ?? ct.name ?? ct.displayName ?? "";
   const phone =
-    ct.phone ?? ct.phoneNumber ?? ct.phoneE164 ?? ct.recipientPhone ?? "";
-
+    ct.recipientPhone ?? ct.phoneNumber ?? ct.phoneE164 ?? ct.phone ?? "";
   return { id, name, phone };
 }
 
@@ -117,13 +106,12 @@ export default function SelectContacts({
         setFavorites(qtItems);
 
         if (meRes) {
-          const me = meRes.data?.data ?? {};
-          const name = me.name || "Kamu";
-          const phoneMasked =
-            me.phoneMasked ||
-            (me.phoneNumber ? maskPhoneLast4(me.phoneNumber) : "*____");
+          const userData = meRes.data?.data || {};
+          const name = userData.name || "Kamu";
+          const phoneRaw = userData.phoneNumber || userData.phone;
+          const phoneMasked = phoneRaw ? maskPhoneLast4(phoneRaw) : "*____";
           setCurrentUser({
-            id: me.id || "me",
+            id: userData.id || "me",
             name,
             phoneMasked,
             avatarText: (name?.[0] || "K").toUpperCase(),

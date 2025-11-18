@@ -5,6 +5,11 @@ export default defineConfig({
   plugins: [react()],
   server: {
     proxy: {
+      "/api/v1/split-bill-payments": {
+        target: "https://api-dev.orangebybni.my.id",
+        changeOrigin: true,
+        secure: false,
+      },
       "/api/v1/split-bill": {
         target: "https://ml-dev.orangebybni.my.id",
         changeOrigin: true,
@@ -54,9 +59,7 @@ export default defineConfig({
       //   secure: false,
       // },
     },
-    allowedHosts: [
-      'app-dev.orangebybni.my.id'
-    ],
+    allowedHosts: ["app-dev.orangebybni.my.id"],
     host: true,
   },
 });
