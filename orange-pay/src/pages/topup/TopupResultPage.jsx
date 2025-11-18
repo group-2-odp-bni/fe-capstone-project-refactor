@@ -77,7 +77,7 @@ export default function TopupResultPage({}) {
 
               <Row>
                 <RowLabel>Tanggal</RowLabel>
-                <RowValue>{topupData.createdAt}</RowValue>
+                <RowValue>{dateText}</RowValue>
               </Row>
 
               <Row>
