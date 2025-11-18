@@ -39,7 +39,7 @@ export default function TransactionLimitEditPage() {
       await api.put("/api/v1/wallets/limits", formData);
       navigate(-1);
     } catch (error) {
-      // console.error("Error updating limits:", error);
+
     }
   };
 

@@ -93,10 +93,9 @@ function RegisterContent() {
       });
       navigate("/register/otp");
     } catch (err) {
-      // console.log("error");
+
 
       if (err.response) {
-        // console.log(err.response);
         const errorCode = err.response.data?.error?.code;
 
         if (errorCode === "AUTH-1002") {

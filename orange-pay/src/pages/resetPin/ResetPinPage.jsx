@@ -83,7 +83,6 @@ function SetPinContent() {
       navigate("/app/dashboard");
 
     } catch (err) {
-      // console.error("Set PIN failed:", err);
       const errorCode = err?.response?.data?.error?.code;
 
       if (errorCode === "AUTH-3003") {
@@ -102,8 +101,6 @@ function SetPinContent() {
 
       }
 
-      // log
-      // console.log(error)
       setPin("");
       setNewPin(null);
 

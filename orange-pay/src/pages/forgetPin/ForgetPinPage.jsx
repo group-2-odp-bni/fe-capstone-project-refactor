@@ -47,10 +47,6 @@ function SetOtpContent() {
     useEffect(() => {
 
         // get new state token
-        // console.log("----login data----")
-        // console.log(loginData)
-
-
         const getNewStateToken = async () => {
             try {
                 const response = await axios.post(

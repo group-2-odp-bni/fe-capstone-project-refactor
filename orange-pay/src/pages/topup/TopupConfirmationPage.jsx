@@ -45,7 +45,6 @@ export default function TopUpConfirmationPage() {
         setError("Pembayaran belum dilakukan.");
       }
     } catch (err) {
-      // console.error("Failed to get status:", err);
       setError(
         err.response?.data?.error?.message ||
           err.message ||

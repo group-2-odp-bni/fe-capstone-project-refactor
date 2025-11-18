@@ -25,7 +25,6 @@ export default function ProfilePage() {
         });
 
         const user = response.data.data;
-        console.log("Fetched user:", user);
 
         setProfileData({
           name: user.name,
@@ -36,13 +35,11 @@ export default function ProfilePage() {
           profileImageUrl: user.profileImageUrl,
         });
       } catch (error) {
-        // console.error("Failed to fetch user profile:", error);
+
       }
     };
 
     getUserProfile();
-    // console.log("test")
-    // console.log(profileData.profileImageUrl)
   }, []);
 
   return (
