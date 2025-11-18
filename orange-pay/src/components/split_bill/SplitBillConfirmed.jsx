@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { toPng } from "html-to-image";
-
+import { useNavigate } from "react-router-dom";
 export default function SplitBillConfirmed({
   data,
   onRefresh,
@@ -8,7 +8,7 @@ export default function SplitBillConfirmed({
   onBackToHome,
 }) {
   const receiptRef = useRef(null);
-
+  const navigate = useNavigate();
   const [isDownloading, setIsDownloading] = useState(false);
   const [updating, setUpdating] = useState(false);
 
@@ -17,6 +17,12 @@ export default function SplitBillConfirmed({
     title: "",
     message: "",
     type: "success",
+  });
+
+  const [confirmModal, setConfirmModal] = useState({
+    show: false,
+    memberId: null,
+    memberName: "",
   });
 
   const showToast = (title, message, type = "success") => {
@@ -37,7 +43,6 @@ export default function SplitBillConfirmed({
 
     try {
       await new Promise((r) => setTimeout(r, 500));
-
       const dataUrl = await toPng(receiptRef.current, {
         cacheBust: true,
         backgroundColor: "#ffffff",
@@ -51,37 +56,38 @@ export default function SplitBillConfirmed({
       link.click();
       document.body.removeChild(link);
 
-      showToast(
-        "Berhasil!",
-        "Gambar struk telah disimpan ke galeri.",
-        "success"
-      );
+      showToast("Berhasil!", "Gambar struk telah disimpan.", "success");
     } catch (err) {
       console.error(err);
-      showToast(
-        "Gagal Unduh",
-        "Terjadi kesalahan saat membuat gambar. Coba lagi.",
-        "error"
-      );
+      showToast("Gagal", "Tidak dapat menyimpan gambar.", "error");
     } finally {
       setIsDownloading(false);
     }
   };
 
-  const handleTogglePaid = async (memberId, currentStatus) => {
+  const onVerifyClick = (memberId, currentStatus, memberName) => {
     if (currentStatus === "PAID" || updating) return;
+    setConfirmModal({ show: true, memberId, memberName });
+  };
 
-    if (!window.confirm("Konfirmasi pembayaran manual untuk member ini?"))
-      return;
+  const executeMarkPaid = async () => {
+    if (!confirmModal.memberId) return;
 
     setUpdating(true);
+    setConfirmModal((prev) => ({ ...prev, show: false })); // Tutup modal
+
     try {
-      await onMarkPaid([memberId]);
-      showToast("Sukses", "Status pembayaran berhasil diperbarui.", "success");
+      await onMarkPaid([confirmModal.memberId]);
+      showToast(
+        "Sukses",
+        `Status pembayaran ${confirmModal.memberName} diperbarui.`,
+        "success"
+      );
     } catch (err) {
       showToast("Gagal", err.message || "Gagal update status.", "error");
     } finally {
       setUpdating(false);
+      setConfirmModal({ show: false, memberId: null, memberName: "" });
     }
   };
 
@@ -99,7 +105,7 @@ export default function SplitBillConfirmed({
         }`}
       >
         <div
-          className={`bg-white shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-gray-100 rounded-2xl p-4 flex items-start gap-4 max-w-sm w-full pointer-events-auto ${
+          className={`bg-white shadow-2xl border border-gray-100 rounded-2xl p-4 flex items-start gap-4 max-w-sm w-full pointer-events-auto ${
             toast.type === "error"
               ? "border-l-4 border-l-red-500"
               : "border-l-4 border-l-green-500"
@@ -120,8 +126,6 @@ export default function SplitBillConfirmed({
                 fill="none"
                 stroke="currentColor"
                 strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
               >
                 <line x1="18" y1="6" x2="6" y2="18"></line>
                 <line x1="6" y1="6" x2="18" y2="18"></line>
@@ -134,45 +138,75 @@ export default function SplitBillConfirmed({
                 fill="none"
                 stroke="currentColor"
                 strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
               >
                 <polyline points="20 6 9 17 4 12"></polyline>
               </svg>
             )}
           </div>
-
           <div className="flex-1">
-            <h4
-              className={`font-bold text-sm ${
-                toast.type === "error" ? "text-red-600" : "text-gray-900"
-              }`}
-            >
-              {toast.title}
-            </h4>
-            <p className="text-xs text-gray-500 mt-1 leading-relaxed">
-              {toast.message}
-            </p>
+            <h4 className="font-bold text-sm text-gray-900">{toast.title}</h4>
+            <p className="text-xs text-gray-500 mt-1">{toast.message}</p>
           </div>
-
-          <button
-            onClick={() => setToast((prev) => ({ ...prev, show: false }))}
-            className="text-gray-400 hover:text-gray-600"
-          >
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <line x1="18" y1="6" x2="6" y2="18"></line>
-              <line x1="6" y1="6" x2="18" y2="18"></line>
-            </svg>
-          </button>
         </div>
       </div>
+
+      {confirmModal.show && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center px-4 animate-in fade-in duration-200">
+          <div
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() =>
+              setConfirmModal({ show: false, memberId: null, memberName: "" })
+            }
+          ></div>
+
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-6 relative z-10 scale-100 animate-in zoom-in-95 duration-200">
+            <div className="w-14 h-14 bg-orange-50 rounded-full flex items-center justify-center mb-4 mx-auto">
+              <svg
+                width="28"
+                height="28"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                className="text-orange-500"
+              >
+                <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z" />
+                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+                <line x1="12" y1="17" x2="12.01" y2="17" />
+              </svg>
+            </div>
+
+            <h3 className="text-lg font-bold text-gray-900 mb-2 text-center">
+              Konfirmasi Pembayaran
+            </h3>
+            <p className="text-gray-500 text-sm mb-6 text-center leading-relaxed">
+              Apakah Anda yakin ingin menandai tagihan{" "}
+              <b>{confirmModal.memberName}</b> sebagai lunas secara manual?
+            </p>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() =>
+                  setConfirmModal({
+                    show: false,
+                    memberId: null,
+                    memberName: "",
+                  })
+                }
+                className="flex-1 py-3 rounded-xl border border-gray-200 text-gray-600 font-bold text-sm hover:bg-gray-50 transition"
+              >
+                Batal
+              </button>
+              <button
+                onClick={executeMarkPaid}
+                className="flex-1 py-3 rounded-xl bg-gray-900 text-white font-bold text-sm hover:bg-gray-800 transition shadow-lg"
+              >
+                Ya, Lunas
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="bg-white px-4 py-3 border-b border-gray-200 sticky top-0 z-10 flex items-center justify-between">
         <button
@@ -194,6 +228,7 @@ export default function SplitBillConfirmed({
         <div className="w-10"></div>
       </div>
 
+      {/* Main Content */}
       <div className="flex-1 p-4 overflow-y-auto pb-24">
         <div className="max-w-md mx-auto space-y-5">
           <div
@@ -201,6 +236,7 @@ export default function SplitBillConfirmed({
             className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden relative"
             style={{ backgroundColor: "#ffffff" }}
           >
+            {/* Header Struk */}
             <div className="bg-gradient-to-r from-[#FF9A25] to-[#FF7A25] p-6 text-white text-center relative overflow-hidden">
               <div className="absolute -top-10 -right-10 w-32 h-32 bg-white opacity-10 rounded-full blur-2xl"></div>
               <div className="relative z-10">
@@ -223,7 +259,9 @@ export default function SplitBillConfirmed({
               </div>
             </div>
 
+            {/* Body Struk */}
             <div className="p-5">
+              {/* Progress Bar */}
               <div className="mb-6">
                 <div className="flex justify-between text-xs mb-2 font-medium text-gray-500">
                   <span>Progress Pembayaran</span>
@@ -237,6 +275,7 @@ export default function SplitBillConfirmed({
                 </div>
               </div>
 
+              {/* List Member */}
               <div className="space-y-4">
                 <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider">
                   Daftar Anggota ({data.members.length})
@@ -277,7 +316,9 @@ export default function SplitBillConfirmed({
                       </div>
 
                       <button
-                        onClick={() => handleTogglePaid(m.memberId, m.status)}
+                        onClick={() =>
+                          onVerifyClick(m.memberId, m.status, m.name)
+                        }
                         disabled={isPaid || updating}
                         className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1 ${
                           isPaid
@@ -324,6 +365,25 @@ export default function SplitBillConfirmed({
               </div>
             </div>
             <div className="absolute bottom-0 left-0 w-full h-1.5 bg-[radial-gradient(circle,transparent_50%,#ffffff_50%)] bg-[length:10px_10px] rotate-180"></div>
+            <button
+              onClick={() => navigate("/app/splitbill")}
+              className="w-full py-3 rounded-xl border border-orange-200 text-orange-600 font-semibold text-sm hover:bg-orange-50 active:scale-95 transition-all flex items-center justify-center gap-2"
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M19 12H5" />
+                <path d="M12 19l-7-7 7-7" />
+              </svg>
+              Kembali ke Daftar Bill
+            </button>
           </div>
         </div>
       </div>
@@ -346,11 +406,10 @@ export default function SplitBillConfirmed({
               <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
             </svg>
           </button>
-
           <button
             onClick={handleDownload}
             disabled={isDownloading}
-            className="flex-1 py-3.5 bg-gray-900 text-white rounded-xl font-bold shadow-lg active:scale-95 transition flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+            className="flex-1 py-3.5 bg-gray-900 text-white rounded-xl font-bold shadow-lg active:scale-95 transition flex items-center justify-center gap-2 disabled:opacity-70"
           >
             {isDownloading ? (
               "Menyimpan..."
@@ -363,8 +422,6 @@ export default function SplitBillConfirmed({
                   fill="none"
                   stroke="currentColor"
                   strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
                 >
                   <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
                   <polyline points="7 10 12 15 17 10" />

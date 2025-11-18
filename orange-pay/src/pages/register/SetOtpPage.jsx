@@ -45,7 +45,7 @@ function SetOtpContent() {
     setLoading(true);
 
     try {
-      const { data } = await api.post(`${API_BASE}//api/v1/auth/verify`, {
+      const { data } = await axios.post(`${API_BASE}/api/v1/auth/verify`, {
         phoneNumber: userData.phoneNumber,
         otp,
       });
