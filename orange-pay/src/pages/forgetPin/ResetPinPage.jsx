@@ -75,7 +75,7 @@ function SetNewPinContent() {
             // saveTokens(accessToken, refreshToken);
             navigate("/login");
         } catch (err) {
-            console.error("Set PIN failed:", err);
+            // console.error("Set PIN failed:", err);
             setError(err?.response?.data?.message || err?.message || "Terjadi kesalahan. Silakan coba lagi.");
             setPin("");
             setFirstPin(null);

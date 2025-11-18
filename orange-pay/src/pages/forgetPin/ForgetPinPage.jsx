@@ -5,7 +5,6 @@ import OtpInputField from "../../components/input/OtpInputField";
 import CountdownTimer from "../../components/dashboard/CountdownTimer";
 import { useCountdown } from "../../hooks/useCountdown";
 import { FullSubmitButton } from "../../components/button/FullSubmitButton";
-import ButtonLink from "../../components/button/ButtonLink";
 import { useLoginContext } from "../../context/LoginContext";
 import axios from "axios";
 import WhiteCardContainer from "../../components/register/WhiteCardContainer";
@@ -34,6 +33,7 @@ export default function ForgetPinPage() {
 
     );
 }
+const API_BASE = import.meta.env.VITE_API_BASE || "";
 
 function SetOtpContent() {
 
@@ -47,14 +47,14 @@ function SetOtpContent() {
     useEffect(() => {
 
         // get new state token
-        console.log("----login data----")
-        console.log(loginData)
+        // console.log("----login data----")
+        // console.log(loginData)
 
 
         const getNewStateToken = async () => {
             try {
                 const response = await axios.post(
-                    "/api/v1/pin/reset/request",
+                    `${API_BASE}/api/v1/pin/reset/request`,
                     {
                         "phoneNumber": loginData.phoneNumber,
                         "captchaToken": localStorage.getItem("_grecaptcha")
@@ -84,7 +84,7 @@ function SetOtpContent() {
         setLoading(true);
 
         try {
-            const response = await axios.post("/api/v1/pin/reset/verify", {
+            const response = await axios.post(`${API_BASE}/api/v1/pin/reset/verify`, {
                 phoneNumber: loginData.phoneNumber,
                 otp,
             });

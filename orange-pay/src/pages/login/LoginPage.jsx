@@ -160,7 +160,7 @@ function LoginContextContent() {
 
       navigate("/login/otp");
     } catch (err) {
-      console.error(err);
+      // console.error(err);
       Swal.fire({
         icon: "error",
         title: "Gagal Mengirim OTP",

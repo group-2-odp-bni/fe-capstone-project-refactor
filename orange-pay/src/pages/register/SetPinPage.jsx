@@ -83,7 +83,7 @@ function SetPinContent() {
       saveTokens(accessToken, refreshToken);
       navigate("/app/dashboard");
     } catch (err) {
-      console.error("Set PIN failed:", err);
+      // console.error("Set PIN failed:", err);
       const errorCode = err?.response?.data?.error?.code;
 
       if (errorCode === "AUTH-3002") {

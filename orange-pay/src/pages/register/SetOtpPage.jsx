@@ -33,7 +33,7 @@ const API_BASE = import.meta.env.VITE_API_BASE || "";
 function SetOtpContent() {
   const navigate = useNavigate();
   const { userData, setRegistrationData } = useRegistrationContext();
-  console.log(userData.phoneNumber);
+  // console.log(userData.phoneNumber);
 
   const [otp, setOtp] = useState("");
   const [loading, setLoading] = useState(false);
