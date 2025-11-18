@@ -9,6 +9,7 @@ import { saveTokens } from "../../services/auth/authService";
 import { useLoginContext } from "../../context/LoginContext";
 import axios from "axios";
 import View from "../../components/view/View";
+const API_BASE = import.meta.env.VITE_API_BASE || "";
 
 export default function PinLoginPage() {
   return (
@@ -32,19 +33,35 @@ function PinLoginContent() {
   const submitPin = async () => {
     setAttempt((x) => x + 1);
 
-    if (pin.length !== 6) { setError("PIN harus 6 digit"); return; }
-    if (!loginData?.stateToken) { setError("Sesi login tidak valid. Silakan coba lagi."); return; }
+    if (pin.length !== 6) {
+      setError("PIN harus 6 digit");
+      return;
+    }
+    if (!loginData?.stateToken) {
+      setError("Sesi login tidak valid. Silakan coba lagi.");
+      return;
+    }
 
-    setError(""); setLoading(true);
+    setError("");
+    setLoading(true);
     try {
-      const res = await axios.post("/api/v1/auth/pin", { pin }, {
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${loginData.stateToken}` },
-      });
+      const res = await axios.post(
+        `${API_BASE}/api/v1/auth/pin`,
+        { pin },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${loginData.stateToken}`,
+          },
+        }
+      );
       const { accessToken, refreshToken } = res?.data?.data || {};
       saveTokens(accessToken, refreshToken);
       navigate("/app/dashboard");
     } catch (err) {
-      setError(err?.response?.data?.message || err?.message || "Something went wrong.");
+      setError(
+        err?.response?.data?.message || err?.message || "Something went wrong."
+      );
     } finally {
       setLoading(false);
     }
@@ -56,10 +73,15 @@ function PinLoginContent() {
   };
 
   const handleForgotPin = () => {
-    navigate("/login/forget-pin/otp", { state: { phone: loginData?.phone ?? null } });
+    navigate("/login/forget-pin/otp", {
+      state: { phone: loginData?.phone ?? null },
+    });
   };
 
-  const onFormSubmit = (e) => { e.preventDefault(); submitPin(); };
+  const onFormSubmit = (e) => {
+    e.preventDefault();
+    submitPin();
+  };
 
   return (
     <form onSubmit={onFormSubmit} className="pb-10">
@@ -72,11 +94,13 @@ function PinLoginContent() {
         title="Masukkan PIN Anda"
         attemptKey={attempt}
         onClearError={() => setError("")}
-        onBack={goBack}                 // ← aktif di login
-        onForgot={handleForgotPin}      // ← aktif di login
+        onBack={goBack} // ← aktif di login
+        onForgot={handleForgotPin} // ← aktif di login
       />
 
-      {error && <p className="text-red-500 text-xs text-center mb-4">{error}</p>}
+      {error && (
+        <p className="text-red-500 text-xs text-center mb-4">{error}</p>
+      )}
 
       <FullSubmitButton disabled={loading || pin.length !== 6}>
         {loading ? "Memverifikasi..." : "Masuk"}
