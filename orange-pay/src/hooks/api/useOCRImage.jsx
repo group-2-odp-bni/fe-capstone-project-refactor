@@ -34,9 +34,9 @@ const _normalizeRawItems = (rawItems = []) => {
     return {
       line_id: `L${idx + 1}`,
       name: name,
-      qty: qty, 
+      qty: qty,
       unit_price_rp: unit_price,
-      line_subtotal_rp: line_total, 
+      line_subtotal_rp: line_total,
     };
   });
 };
@@ -71,6 +71,7 @@ export const useOCRImage = () => {
         formData.append("receipt_image", imageFile);
 
         const config = {
+          timeout: 60000,
           onUploadProgress: (progressEvent) => {
             const { loaded, total } = progressEvent;
             const percentCompleted = Math.round((loaded * 100) / total);
@@ -116,7 +117,7 @@ export const useOCRImage = () => {
 
             formattedData = {
               receiptId: `DRAFT-${Date.now()}`,
-              items: normalizedItems, 
+              items: normalizedItems,
               subtotal: itemsSubtotal,
               pajak: pajak,
               service: service,
@@ -147,7 +148,7 @@ export const useOCRImage = () => {
         setOcrData(formattedData);
         setIsSuccess(true);
         setIsProcessing(false);
-        return formattedData; 
+        return formattedData;
       } catch (error) {
         setOcrError(error);
         setIsError(true);
