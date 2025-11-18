@@ -127,55 +127,61 @@ export default function AddBalancePage() {
             </div>
           )}
 
-          <label className="block text-sm font-bold mb-2 text-gray-700">
-            Add Balance
-          </label>
+          {/* Dropdown Input - New UI */}
+<div className="mt-4">
+  <label className="block text-sm font-semibold text-gray-700 mb-2">
+    Sumber Dana
+  </label>
 
-          <div className="relative">
-            <button
-              type="button"
-              onClick={() => setDropdownOpen(!dropdownOpen)}
-              className="w-full flex justify-between items-center bg-gray-100 border border-gray-200 rounded-xl py-4 px-5 shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-300"
-            >
-              <div className="flex items-center gap-3">
-                <img
-                  src="/orangepay_card.svg"
-                  alt="Logo"
-                  className="h-5 w-auto"
-                />
-                <span className="font-semibold text-gray-800">
-                  {selectedFromWallet?.title || "Pilih Wallet Sumber"}
-                </span>
-              </div>
-              <ChevronDownIcon
-                className={`w-5 h-5 text-gray-500 transition-transform ${dropdownOpen ? "rotate-180" : ""
-                  }`}
-              />
-            </button>
+  <div className="relative">
+    <button
+      type="button"
+      onClick={() => setDropdownOpen(!dropdownOpen)}
+      className="w-full bg-white border border-gray-300 rounded-2xl px-5 py-4 flex justify-between items-center shadow-sm focus:ring-2 focus:ring-orange-400 transition"
+    >
+      <div className="flex flex-col text-left">
+        <span className="font-bold text-gray-900 text-base">
+          {selectedFromWallet?.title || "Pilih Wallet"}
+        </span>
+        <span className="text-xs text-gray-500">
+          Balance: Rp{selectedFromWallet?.balance?.toLocaleString("id-ID") || "0"}
+        </span>
+      </div>
 
-            {dropdownOpen && (
-              <ul className="absolute z-20 mt-1 w-full bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden">
-                {fromWalletOptions.length === 0 && (
-                  <li className="px-4 py-3 text-sm text-gray-500">
-                    Tidak ada wallet lain yang tersedia.
-                  </li>
-                )}
-                {fromWalletOptions.map((w) => (
-                  <li
-                    key={w.id}
-                    onClick={() => {
-                      setFromWalletId(w.id);
-                      setDropdownOpen(false);
-                    }}
-                    className={`px-4 py-3 text-sm cursor-pointer hover:bg-orange-50 ${fromWalletId === w.id ? "bg-orange-100 font-medium" : ""
-                      }`}
-                  >
-                    {w.title} (Rp{w.balance.toLocaleString("id-ID")})
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
+      <ChevronDownIcon
+        className={`w-5 h-5 text-gray-500 transition-transform ${
+          dropdownOpen ? "rotate-180" : ""
+        }`}
+      />
+    </button>
+
+    {dropdownOpen && (
+      <ul className="absolute w-full bg-white border border-gray-200 rounded-xl shadow-lg mt-2 overflow-hidden z-30">
+        {fromWalletOptions.map((w) => (
+          <li
+            key={w.id}
+            onClick={() => {
+              setFromWalletId(w.id);
+              setDropdownOpen(false);
+            }}
+            className={`px-5 py-3 cursor-pointer hover:bg-orange-50 transition ${
+              fromWalletId === w.id ? "bg-orange-100 font-medium" : ""
+            }`}
+          >
+            <div className="flex flex-col text-left">
+              <span className="font-semibold text-gray-800 text-sm">
+                {w.title}
+              </span>
+              <span className="text-xs text-gray-500">
+                Balance: Rp{w.balance.toLocaleString("id-ID")}
+              </span>
+            </div>
+          </li>
+        ))}
+      </ul>
+    )}
+  </div>
+</div>
 
           <div className="mt-6">
             <label className="block text-sm font-medium mb-2 text-gray-700">

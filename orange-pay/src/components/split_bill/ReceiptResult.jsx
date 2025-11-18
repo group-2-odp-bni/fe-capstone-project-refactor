@@ -27,7 +27,7 @@ export default function ReceiptResult({ receiptData, onBack, onConfirm }) {
   const [splitName, setSplitName] = useState(
     editableData?.splitName || editableData?.merchantName || "Split Bill"
   );
-
+  const [currentUser, setCurrentUser] = useState(null);
   const [splitMembers, setSplitMembers] = useState([]);
   const [splitNameError, setSplitNameError] = useState(false);
 
@@ -54,6 +54,24 @@ export default function ReceiptResult({ receiptData, onBack, onConfirm }) {
       loadContacts();
     }
   }, [showContacts]);
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const res = await api.get("/api/v1/user/me");
+        const userData = res.data?.data || {};
+        setCurrentUser({
+          id: userData.id,
+          name: userData.name || "Kamu",
+          phoneMasked: userData.phoneNumber || userData.phone || "",
+          avatarText: (userData.name?.[0] || "K").toUpperCase(),
+        });
+      } catch (err) {
+        console.error("Gagal load profile", err);
+        setCurrentUser({ id: "me", name: "Kamu", phoneMasked: "" });
+      }
+    };
+    fetchProfile();
+  }, []);
   const receiptImage =
     editableData?.receipt_url || receiptData?.receipt_url || null;
   useEffect(() => {
@@ -165,16 +183,25 @@ export default function ReceiptResult({ receiptData, onBack, onConfirm }) {
       }
       const normalizedAssignments = (
         payloadFromConfirmation.assignments || []
-      ).map((a) => ({
-        memberRef: {
-          userId: a?.memberRef?.userId ?? undefined,
-          phone: a?.memberRef?.phone ?? a?.memberRef?.phoneE164 ?? undefined,
-          name: a?.memberRef?.name ?? undefined,
-          email: a?.memberRef?.email ?? undefined,
-        },
-        amount: Number.isFinite(a?.amount) ? Math.round(a.amount) : undefined,
-        items: Array.isArray(a?.items) ? a.items : undefined,
-      }));
+      ).map((a) => {
+        const isOwner =
+          a?.memberRef?.isCurrentUser === true ||
+          (currentUser?.id && a?.memberRef?.userId === currentUser.id);
+
+        return {
+          memberRef: {
+            userId: a?.memberRef?.userId ?? undefined,
+            phone: a?.memberRef?.phone ?? a?.memberRef?.phoneE164 ?? undefined,
+            name: a?.memberRef?.name ?? undefined,
+            email: a?.memberRef?.email ?? undefined,
+          },
+          amount: Number.isFinite(a?.amount) ? Math.round(a.amount) : undefined,
+          items: Array.isArray(a?.items) ? a.items : undefined,
+
+          status: isOwner ? "PAID" : "PENDING",
+        };
+      });
+
       if (!normalizedAssignments.length) {
         throw new Error("Data 'assignments' (pembagian) tidak ada.");
       }
@@ -234,15 +261,11 @@ export default function ReceiptResult({ receiptData, onBack, onConfirm }) {
   }
 
   if (showConfirmation) {
-    const currentUserForConf = {
-      id: "me",
-      name: "Kamu",
-      phoneMasked: "*XXXX",
-    };
+    const userToPass = currentUser || { id: "me", name: "Kamu" };
     return (
       <SplitBillConfirmation
         splitName={splitName}
-        currentUser={currentUserForConf}
+        currentUser={userToPass}
         members={splitMembers}
         items={items}
         subtotal={subtotal}
@@ -259,11 +282,11 @@ export default function ReceiptResult({ receiptData, onBack, onConfirm }) {
     );
   }
 
-  const currentUserForContacts = {
+  const userToPass = currentUser || {
     id: "me",
     name: "Kamu",
-    phoneMasked: "082210472710",
-    avatarText: "K".charAt(0),
+    phoneMasked: "",
+    avatarText: "K",
   };
   const allContacts = mainContacts.map((contact) => ({
     id: contact.recipientUserId,
@@ -280,18 +303,19 @@ export default function ReceiptResult({ receiptData, onBack, onConfirm }) {
   if (showContacts) {
     return (
       <SelectContacts
-        currentUser={currentUserForContacts}
+        currentUser={userToPass}
         contacts={allContacts}
         recommendedIds={recommendedIds}
         initialSelectedIds={splitMembers
-          .filter((m) => m.id !== "me")
+          .filter((m) => m.id !== "me" && m.id !== userToPass.id)
           .map((m) => m.id)}
         onBack={() => setShowContacts(false)}
         onConfirm={({ selectedContacts }) => {
           const currentUserAsMember = {
-            id: currentUserForContacts.id,
-            name: currentUserForContacts.name,
-            phoneMasked: currentUserForContacts.phoneMasked,
+            id: userToPass.id,
+            name: userToPass.name,
+            phoneMasked: userToPass.phoneMasked,
+            isCurrentUser: true,
           };
           const allMembers = [currentUserAsMember, ...selectedContacts];
           setSplitMembers(allMembers);
@@ -445,7 +469,7 @@ export default function ReceiptResult({ receiptData, onBack, onConfirm }) {
                       </div>
                       <div className="text-right">
                         <div className="text-sm font-bold text-gray-900">
-                          {formatIDR(wallet.balance)}
+                          {formatIDR(wallet.balanceSnapshot)}
                         </div>
                         <div className="text-xs text-gray-500">Saldo</div>
                       </div>
@@ -616,21 +640,6 @@ export default function ReceiptResult({ receiptData, onBack, onConfirm }) {
           </div>
         </div>
       )}
-      {/* <style jsx>{`
-        @keyframes slide-down {
-          from {
-            opacity: 0;
-            transform: translate(-50%, -20px);
-          }
-          to {
-            opacity: 1;
-            transform: translate(-50%, 0);
-          }
-        }
-        .animate-slide-down {
-          animation: slide-down 0.3s ease-out;
-        }
-      `}</style> */}
     </>
   );
 }
