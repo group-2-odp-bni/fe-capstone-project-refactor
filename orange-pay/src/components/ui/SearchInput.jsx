@@ -18,7 +18,7 @@ export default function SearchInput({
   };
 
   return (
-    <div className="mb-5 px-4">
+    <div className="mb-5 px-0">
       <div className="relative">
         {/* Search icon */}
         <span className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-gray-400">
