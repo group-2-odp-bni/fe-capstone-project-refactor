@@ -28,6 +28,7 @@ export default function OtpRegisterPage() {
     </View>
   );
 }
+const API_BASE = import.meta.env.VITE_API_BASE || "";
 
 function SetOtpContent() {
   const navigate = useNavigate();
@@ -37,7 +38,7 @@ function SetOtpContent() {
   const [otp, setOtp] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const { secondsLeft, reset } = useCountdown(60)
+  const { secondsLeft, reset } = useCountdown(60);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -45,7 +46,7 @@ function SetOtpContent() {
     setLoading(true);
 
     try {
-      const { data } = await api.post("/api/v1/auth/verify", {
+      const { data } = await api.post(`${API_BASE}//api/v1/auth/verify`, {
         phoneNumber: userData.phoneNumber,
         otp,
       });
@@ -68,7 +69,7 @@ function SetOtpContent() {
     const recaptchaToken = localStorage.getItem("_grecaptcha");
 
     try {
-      const response = await axios.post("/api/v1/auth/resend-otp", {
+      const response = await axios.post(`${API_BASE}/api/v1/auth/resend-otp`, {
         phoneNumber: userData.phoneNumber,
         captchaToken: recaptchaToken,
       });
@@ -90,8 +91,8 @@ function SetOtpContent() {
       // else
       setError(
         err.response?.data?.error.message ||
-        err.message ||
-        "Something went wrong."
+          err.message ||
+          "Something went wrong."
       );
     } finally {
       setLoading(false);
@@ -123,11 +124,11 @@ function SetOtpContent() {
       <div className="text-center mt-4 pb-6">
         <ButtonLink
           onClick={handleResendOtp}
-          isDisabled={secondsLeft !== 0 ? true : false}>
+          isDisabled={secondsLeft !== 0 ? true : false}
+        >
           Kirim Ulang OTP
         </ButtonLink>
       </div>
-
     </div>
   );
 }

@@ -15,125 +15,123 @@ import View from "../../components/view/View";
 import { useCountdown } from "../../hooks/useCountdown";
 
 export default function OtpLoginPage() {
-    return (
-        <View>
-            <OrangeHeader />
-            <WhiteCardContainer>
-                <OrangePayLogo />
-                <RegisterTextContainer>
-                    Kode OTP telah dikirim ke WhatsApp Anda. Masukkan kode di bawah untuk
-                    melanjutkan.
-                </RegisterTextContainer>
-                <SetOtpContent />
-            </WhiteCardContainer>
-        </View>
-    );
+  return (
+    <View>
+      <OrangeHeader />
+      <WhiteCardContainer>
+        <OrangePayLogo />
+        <RegisterTextContainer>
+          Kode OTP telah dikirim ke WhatsApp Anda. Masukkan kode di bawah untuk
+          melanjutkan.
+        </RegisterTextContainer>
+        <SetOtpContent />
+      </WhiteCardContainer>
+    </View>
+  );
 }
+const API_BASE = import.meta.env.VITE_API_BASE || "";
 
 function SetOtpContent() {
-    const navigate = useNavigate();
-    const { loginData, setLoginData } = useLoginContext();
+  const navigate = useNavigate();
+  const { loginData, setLoginData } = useLoginContext();
 
-    const [otp, setOtp] = useState("");
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState("");
-    const { secondsLeft, reset } = useCountdown(60);
+  const [otp, setOtp] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const { secondsLeft, reset } = useCountdown(60);
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        setError("");
-        setLoading(true);
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
 
-        try {
-            const response = await axios.post("/api/v1/auth/verify", {
-                phoneNumber: loginData.phoneNumber,
-                otp,
-            });
+    try {
+      const response = await axios.post(`${API_BASE}/api/v1/auth/verify`, {
+        phoneNumber: loginData.phoneNumber,
+        otp,
+      });
 
-            setLoginData({ stateToken: response.data.data.stateToken });
-            navigate("/login/pin");
-        } catch (err) {
-            setError(
-                err.response?.data?.message ||
-                err.message ||
-                "Something went wrong."
-            );
-        } finally {
-            setLoading(false);
-        }
-    };
+      setLoginData({ stateToken: response.data.data.stateToken });
+      navigate("/login/pin");
+    } catch (err) {
+      setError(
+        err.response?.data?.message || err.message || "Something went wrong."
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    const handleResendOtp = async () => {
-        setError("");
-        setLoading(true);
+  const handleResendOtp = async () => {
+    setError("");
+    setLoading(true);
 
-        //get recaptcha token
-        const recaptchaToken = localStorage.getItem("_grecaptcha")
+    //get recaptcha token
+    const recaptchaToken = localStorage.getItem("_grecaptcha");
 
-        try {
-            const response = await axios.post("/api/v1/auth/resend-otp", {
-                phoneNumber: loginData.phoneNumber,
-                captchaToken: recaptchaToken,
-            });
+    try {
+      const response = await axios.post(`${API_BASE}/api/v1/auth/resend-otp`, {
+        phoneNumber: loginData.phoneNumber,
+        captchaToken: recaptchaToken,
+      });
 
-            setLoginData({ stateToken: response.data.data.stateToken });
-            setOtp("");
-            reset();
-        } catch (err) {
+      setLoginData({ stateToken: response.data.data.stateToken });
+      setOtp("");
+      reset();
+    } catch (err) {
+      // get error code
+      errorCode = err.response?.data?.error.code;
 
-            // get error code
-            errorCode = err.response?.data?.error.code
+      // error handle - expired
+      if (errorCode === "AUTH-2002") {
+        setError("OTP telah expired");
+        setOtp("");
+        reset("");
+      }
 
-            // error handle - expired
-            if (errorCode === "AUTH-2002") {
-                setError("OTP telah expired")
-                setOtp("")
-                reset("")
-            }
+      // else
+      setError(
+        err.response?.data?.error.message ||
+          err.message ||
+          "Something went wrong."
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
 
-            // else
-            setError(
-                err.response?.data?.error.message ||
-                err.message ||
-                "Something went wrong."
-            );
-        } finally {
-            setLoading(false);
-        }
-    };
+  return (
+    <div>
+      <form onSubmit={handleSubmit} className="space-y-5 mt-6">
+        {/* OTP field */}
+        <OtpInputField
+          id="otp"
+          name="otp"
+          type="numeric"
+          placeholder="Masukkan OTP"
+          required
+          value={otp}
+          onChange={(e) => setOtp(e.target.value)}
+        />
 
-    return (
-        <div>
-            <form onSubmit={handleSubmit} className="space-y-5 mt-6">
+        <CountdownTimer initialSeconds={secondsLeft} />
 
-                {/* OTP field */}
-                <OtpInputField
-                    id="otp"
-                    name="otp"
-                    type="numeric"
-                    placeholder="Masukkan OTP"
-                    required
-                    value={otp}
-                    onChange={(e) => setOtp(e.target.value)}
-                />
+        {error && <p className="text-red-500 text-xs">{error}</p>}
 
-                <CountdownTimer initialSeconds={secondsLeft} />
+        <FullSubmitButton disabled={loading}>
+          {loading ? "Memverifikasi..." : "Lanjut"}
+        </FullSubmitButton>
+      </form>
 
-                {error && <p className="text-red-500 text-xs">{error}</p>}
-
-                <FullSubmitButton disabled={loading}>
-                    {loading ? "Memverifikasi..." : "Lanjut"}
-                </FullSubmitButton>
-            </form>
-
-            {/* Resend OTP */}
-            <div className="text-center mt-4 pb-6">
-                <ButtonLink
-                    onClick={handleResendOtp}
-                    isDisabled={secondsLeft !== 0 ? true : false}>
-                    Kirim Ulang OTP
-                </ButtonLink>
-            </div>
-        </div>
-    );
+      {/* Resend OTP */}
+      <div className="text-center mt-4 pb-6">
+        <ButtonLink
+          onClick={handleResendOtp}
+          isDisabled={secondsLeft !== 0 ? true : false}
+        >
+          Kirim Ulang OTP
+        </ButtonLink>
+      </div>
+    </div>
+  );
 }
