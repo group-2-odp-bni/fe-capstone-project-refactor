@@ -1,6 +1,5 @@
 // src/pages/ProfilePage.jsx
 import React, { useEffect } from "react";
-import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import UserInfoCard from "../../components/account/UserInfoCard";
 import ProfileImage from "../../components/account/ProfileImage";
@@ -9,6 +8,7 @@ import { useProfileContext } from "../../context/ProfileContext";
 import View from "../../components/view/View";
 import WhiteHeader from "../../components/register/WhiteHeader";
 import ContentBox from "../../components/common/ContentBox";
+import api from "../../lib/api";
 
 export default function ProfilePage() {
   const navigate = useNavigate();
@@ -17,15 +17,14 @@ export default function ProfilePage() {
   useEffect(() => {
     const getUserProfile = async () => {
       try {
-        console.log("--- get user name ----");
-        const response = await axios.get("/api/v1/user/me", {
+
+        const response = await api.get("/api/v1/user/me", {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
           },
         });
 
         const user = response.data.data;
-        console.log("Fetched user:", user);
 
         setProfileData({
           name: user.name,
@@ -36,13 +35,11 @@ export default function ProfilePage() {
           profileImageUrl: user.profileImageUrl,
         });
       } catch (error) {
-        console.error("Failed to fetch user profile:", error);
+
       }
     };
 
     getUserProfile();
-    console.log("test")
-    console.log(profileData.profileImageUrl)
   }, []);
 
   return (
