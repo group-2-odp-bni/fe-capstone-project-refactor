@@ -33,9 +33,7 @@ export default function SetAmountPage() {
           transactionId: wallet.transactionId,
         }));
         setWalletList(walletData);
-        console.log("Wallets:", walletData);
       } catch (err) {
-        console.error("Failed to load wallets:", err);
       }
     };
     getUserWalletList();
@@ -44,7 +42,6 @@ export default function SetAmountPage() {
   /** === Handle Confirm === */
   const handleConfirmAmount = async () => {
     if (!selectedWallet || !amount) {
-      console.warn("Missing wallet or amount");
       return;
     }
 
@@ -57,16 +54,6 @@ export default function SetAmountPage() {
 
     // save data
     setTopupData({
-      walletId: selectedWallet.id,
-      walletName: selectedWallet.name,
-      amount: Number(amount),
-      vaNumber: response.data.data.vaNumber,
-      transactionRef: response.data.data.transactionRef,
-      createdAt: response.data.data.createdAt,
-      transactionId: response.data.data.transactionId,
-    });
-
-    console.log("Saved to context:", {
       walletId: selectedWallet.id,
       walletName: selectedWallet.name,
       amount: Number(amount),
