@@ -15,7 +15,7 @@ export const PillBadge = ({ label, active, style, onClick }) => (
   <div
     type="button"
     onClick={onClick}
-    className={`px-3 py-2 rounded-full text-[10px] font-bold text-white backdrop-blur-md shadow-sm transition-all duration-500 ${
+    className={`inline-flex items-center w-max pt-1 px-2 py-1.5 rounded-full text-[10px] font-bold text-white backdrop-blur-md shadow-sm transition-all duration-500 ${
       active ? "scale-[1.02]" : "opacity-90"
     }`}
     style={{
@@ -238,19 +238,20 @@ export const GradientCardShell = ({
 };
 
 export const CardTopBar = ({ title, type, isMain, onBadgeClick }) => (
-  <div className="relative z-10 flex justify-between items-start mb-5 md:mb-10">
-    <div className="flex items-center space-x-3 mt-1 mb-2">
+  <div className="relative z-10 flex justify-between items-start mb-2 md:mb-2">
+    <div className="items-center space-x-3 mt-1">
       <img
         src="/orangepay_card.svg"
         alt="RangePay Logo"
         className="h-5 md:h-6 w-auto drop-shadow"
       />
-      {/* <PillBadge
+      <div className="pt-2"></div>
+      <PillBadge
         label={type}
         active={isMain}
         style={{ transform: "translateZ(35px)" }}
         onClick={onBadgeClick}
-      /> */}
+      />
     </div>
   </div>
 );
@@ -323,7 +324,7 @@ export const CTASection = ({
 
   return (
     <div
-      className="relative z-10 flex justify-end items-center mt-6 md:mt-2"
+      className="relative z-10 flex justify-end items-center mt-4 md:mt-2"
       style={{ transform: "translateZ(25px)" }}
     >
       <div className="flex space-x-6 md:space-x-8 text-white">
@@ -364,7 +365,7 @@ export const BalanceRow = ({
 
   return (
     <div
-      className="relative z-10 mb-2 md:mb-3"
+      className="relative z-10 mb-1 md:mb-2"
       style={{ width: sizes.maxWidth ? sizes.maxWidth + 28 : undefined }}
     >
       <AmountText amount={amount} isHidden={isHidden} onMeasured={setSizes} />
