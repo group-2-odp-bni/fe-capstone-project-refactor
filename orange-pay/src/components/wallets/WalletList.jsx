@@ -72,7 +72,7 @@ export default function Wallets() {
               ${
                 typeFilter === t
                   ? "bg-orange-400 text-white shadow"
-                  : "bg-gray-50 text-black hover:bg-orange-100"
+                  : "bg-gray-50 text-gray hover:bg-gray-100"
               }`}
           >
             {t}
