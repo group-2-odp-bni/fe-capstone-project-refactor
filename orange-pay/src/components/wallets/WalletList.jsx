@@ -70,8 +70,8 @@ export default function Wallets() {
             className={`px-4 py-1.5 rounded-full text-xs font-semibold transition whitespace-nowrap
               ${
                 typeFilter === t
-                  ? "bg-orange-500 text-white shadow"
-                  : "bg-orange-50 text-orange-700 hover:bg-orange-100"
+                  ? "bg-orange-400 text-white shadow"
+                  : "bg-gray-50 text-gray hover:bg-gray-100"
               }`}
           >
             {t}
