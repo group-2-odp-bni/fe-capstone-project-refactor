@@ -34,7 +34,7 @@ export default function TopupResultPage({}) {
           <div className="w-full max-w-sm bg-white rounded-[22px] shadow-[0_8px_28px_rgba(0,0,0,0.06)] border border-gray-100 p-6">
             {/* Brand row (ikon + tulisan RANGE-PAY) */}
             <div className="flex items-center justify-center gap-2">
-              <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-orange-500 overflow-hidden">
+              <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-orange-400 overflow-hidden">
                 <img
                   src="/orange.jpg"
                   alt="brand"
