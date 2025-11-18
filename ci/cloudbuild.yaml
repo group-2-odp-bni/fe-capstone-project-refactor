@@ -3,10 +3,12 @@ substitutions:
   _FE_VM_ZONE: "us-central1-c"
   _SSH_USER: "web"
   _PURGE_CF: "true"
-  _CF_ZONE_ID: "<ISI_ZONE_ID_KAMU>"
+  _CF_ZONE_ID: ""
   _DOMAIN_NAME: "app.orangebybni.my.id"
   _CF_TOKEN_SECRET: "cf-api-token"
-
+  _VITE_API_BASE: ""
+  _VITE_CLARITY_ID: ""
+  _VITE_RECAPTCHA_SITE_KEY: ""
 options:
   logging: CLOUD_LOGGING_ONLY
 
@@ -23,6 +25,9 @@ steps:
       - -ceu
       - |
         cd orange-pay
+        export VITE_API_BASE="${_VITE_API_BASE}"
+        export VITE_CLARITY_ID="${_VITE_CLARITY_ID}"
+        export VITE_RECAPTCHA_SITE_KEY="${_VITE_RECAPTCHA_SITE_KEY}"
         rm -rf node_modules
         echo ">>> Debug npm/node"
         node -v
