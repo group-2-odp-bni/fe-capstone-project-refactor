@@ -180,7 +180,7 @@ export default function HeaderMenu({ currentName = "", onRename, onDelete }) {
           <button
             type="button"
             onClick={handleRenameConfirm}
-            className="px-4 py-2 rounded bg-orange-500 text-white flex items-center gap-2"
+            className="px-4 py-2 rounded bg-orange-400 text-white flex items-center gap-2"
             disabled={loading}
           >
             {loading ? (

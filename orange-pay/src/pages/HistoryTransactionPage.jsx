@@ -259,7 +259,7 @@ export default function HistoryTransactionPage() {
             {/* Tombol plus tetap muncul */}
             <button
               onClick={handleAddBalanceFromWallet}
-              className="w-10 h-10 flex items-center justify-center rounded-xl bg-orange-500 text-white shadow-md active:scale-95 transition"
+              className="w-10 h-10 flex items-center justify-center rounded-xl bg-orange-400 text-white shadow-md active:scale-95 transition"
             >
               <PlusIcon className="w-5 h-5" />
             </button>

@@ -12,7 +12,7 @@ import { useNavigate } from "react-router-dom";
 /* ========== ATOMS ========== */
 
 export const PillBadge = ({ label, active, style, onClick }) => (
-  <button
+  <div
     type="button"
     onClick={onClick}
     className={`px-3 py-2 rounded-full text-[10px] font-bold text-white backdrop-blur-md shadow-sm transition-all duration-500 ${
@@ -24,23 +24,71 @@ export const PillBadge = ({ label, active, style, onClick }) => (
     }}
   >
     {label}
-  </button>
+  </div>
 );
 
-export const IconToggle = ({ on, onToggle }) => (
-  <button
-    onClick={onToggle}
-    className="active:scale-95"
-    style={{ transform: "translateZ(35px)" }}
-  >
-    {on ? (
-      <EyeSlashIcon className="w-5 h-4 md:w-6 md:h-4 text-white/85" />
-    ) : (
-      <EyeIcon className="w-5 h-4 md:w-6 md:h-4 text-white/95" />
-    )}
-  </button>
-);
+/**
+ * IconToggle
+ * - Stops propagation in capture and bubble phases.
+ * - Calls stopImmediatePropagation on nativeEvent when available.
+ * - Uses type="button" and pointer-events:auto.
+ */
+export const IconToggle = ({ on, onToggle }) => {
+  const handlePointerDownCapture = (e) => {
+    e.stopPropagation();
+    try {
+      e.nativeEvent?.stopImmediatePropagation?.();
+    } catch {}
+  };
 
+  const handlePointerUpCapture = (e) => {
+    e.stopPropagation();
+    try {
+      e.nativeEvent?.stopImmediatePropagation?.();
+    } catch {}
+  };
+
+  const handleClick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    try {
+      e.nativeEvent?.stopImmediatePropagation?.();
+    } catch {}
+    onToggle?.();
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === " " || e.key === "Enter") {
+      e.preventDefault();
+      e.stopPropagation();
+      try {
+        e.nativeEvent?.stopImmediatePropagation?.();
+      } catch {}
+      onToggle?.();
+    }
+  };
+
+  return (
+    <button
+      type="button"
+      data-ignore-overlay="true"            
+      onPointerDownCapture={handlePointerDownCapture}
+      onPointerUpCapture={handlePointerUpCapture}
+      onClick={handleClick}
+      onKeyDown={handleKeyDown}
+      className="active:scale-95"
+      style={{ transform: "translateZ(35px)", pointerEvents: "auto" }}
+      aria-pressed={Boolean(on)}
+      aria-label={on ? "Hide balance" : "Show balance"}
+    >
+      {on ? (
+        <EyeSlashIcon className="w-5 h-4 md:w-6 md:h-4 text-white/85" />
+      ) : (
+        <EyeIcon className="w-5 h-4 md:w-6 md:h-4 text-white/95" />
+      )}
+    </button>
+  );
+};
 
 export const ActionIcon = ({
   label,
@@ -320,8 +368,9 @@ export const BalanceRow = ({
       style={{ width: sizes.maxWidth ? sizes.maxWidth + 28 : undefined }}
     >
       <AmountText amount={amount} isHidden={isHidden} onMeasured={setSizes} />
+      {/* IMPORTANT: put IconToggle on top of the overlay by giving a higher z-index */}
       <div
-        className="absolute top-1/2 -translate-y-1/2 will-change-transform"
+        className="absolute top-1/2 -translate-y-1/2 will-change-transform z-40"
         style={{ left: sizes.currentWidth + 6, transform: "translateZ(35px)" }}
       >
         <IconToggle on={isHidden} onToggle={onToggleHidden} />
