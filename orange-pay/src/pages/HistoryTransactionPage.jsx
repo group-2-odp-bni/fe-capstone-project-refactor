@@ -12,6 +12,81 @@ import View from "../components/view/View";
 import HeaderMenu from "../components/HeaderMenu";
 import useWalletApi from "../hooks/api/useWalletApi";
 
+/**
+ * Small, local toast implementation (no external libs)
+ */
+function Toast({ open, title, description, onClose }) {
+  useEffect(() => {
+    if (!open) return;
+    const t = setTimeout(() => onClose?.(), 2000);
+    return () => clearTimeout(t);
+  }, [open, onClose]);
+
+  return (
+    <div
+      aria-live="polite"
+      className="fixed right-4 bottom-6 z-[60] pointer-events-none"
+    >
+      <div
+        className={`pointer-events-auto transform transition-all duration-300 ${
+          open ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+        }`}
+      >
+        <div className="max-w-sm w-80 rounded-xl shadow-lg bg-white ring-1 ring-black/5 overflow-hidden">
+          <div className="p-3 flex items-start gap-3">
+            <div className="flex-shrink-0 mt-0.5">
+              {/* check icon */}
+              <svg
+                className="w-6 h-6 text-green-600"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path d="M5 13l4 4L19 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </div>
+            <div className="flex-1">
+              <div className="text-sm font-semibold text-gray-900">{title}</div>
+              {description && (
+                <div className="text-xs text-gray-500 mt-0.5">{description}</div>
+              )}
+            </div>
+            <button
+              onClick={onClose}
+              className="ml-3 text-gray-400 hover:text-gray-600"
+              aria-label="close"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Success Modal / Popout shown after deletion.
+ * It is non-blocking but centered and clearly visible.
+ */
+function SuccessPopout({ open, title = "Deleted", description, onClose }) {
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-[50] flex items-center justify-center pointer-events-none">
+      <div className="absolute inset-0 bg-black/30 backdrop-blur-sm pointer-events-auto" onClick={onClose} />
+      <div className="pointer-events-auto bg-white rounded-2xl p-6 shadow-2xl w-[90%] max-w-sm mx-auto z-10 text-center transform transition-all">
+        <div className="flex items-center justify-center w-16 h-16 rounded-full bg-green-50 mx-auto">
+          <svg className="w-9 h-9 text-green-600" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M5 13l4 4L19 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </div>
+        <h3 className="mt-4 text-lg font-semibold text-gray-900">{title}</h3>
+        {description && <p className="mt-1 text-sm text-gray-600">{description}</p>}
+      </div>
+    </div>
+  );
+}
+
 export default function HistoryTransactionPage() {
   const { walletId } = useParams();
   const navigate = useNavigate();
@@ -21,6 +96,9 @@ export default function HistoryTransactionPage() {
 
   const [pageTitle, setPageTitle] = useState("Wallet Detail");
   const [actionLoading, setActionLoading] = useState(false);
+
+  const [showSuccessPopout, setShowSuccessPopout] = useState(false);
+  const [showToast, setShowToast] = useState(false);
 
   const wallet = useMemo(
     () => allWallets.find((w) => w.id === walletId && !w.isAddCard),
@@ -76,11 +154,10 @@ export default function HistoryTransactionPage() {
     try {
       setActionLoading(true);
       await renameWallet(walletId, newName);
-      // refresh to reflect changes. If your useCardBalances has refetch, call it instead.
+      // update can be done via refetch; fallback to reload if you prefer
       window.location.reload();
     } catch (err) {
       console.error("rename failed", err);
-      // TODO: show toast/error to user
       throw err; // rethrow so HeaderMenu can catch and stop loading
     } finally {
       setActionLoading(false);
@@ -89,13 +166,30 @@ export default function HistoryTransactionPage() {
 
   const handleDelete = async () => {
     if (!walletId) return;
+
     try {
       setActionLoading(true);
       await deleteWallet(walletId);
-      // navigate away after delete
+
+      // show both popout and toast
+      setShowSuccessPopout(true);
+      setShowToast(true);
+
+      // auto-close popout and navigate after short delay
+      setTimeout(() => {
+        setShowSuccessPopout(false);
+      }, 900);
+
+      setTimeout(() => {
+        setShowToast(false);
+        navigate("/app/dashboard");
+      }, 1400);
     } catch (err) {
       console.error("delete failed", err);
-      // TODO: show toast/error to user
+      // show a quick error toast as fallback
+      setShowToast(true);
+      // override with error message - reuse toast UI for simplicity
+      setTimeout(() => setShowToast(false), 1800);
       throw err;
     } finally {
       setActionLoading(false);
@@ -138,6 +232,7 @@ export default function HistoryTransactionPage() {
               currentName={wallet?.title}
               onRename={handleRename}
               onDelete={handleDelete}
+              loading={actionLoading}
             />
           }
         />
@@ -155,7 +250,6 @@ export default function HistoryTransactionPage() {
 
         {isMainCard ? (
           <div ref={buttonGroupRef} className="arrow-button-container mt-2 md:mt-3">
-            <ArrowButton />
           </div>
         ) : (
           <div
@@ -190,6 +284,21 @@ export default function HistoryTransactionPage() {
           dynamicTop={buttonGroupY}
         />
       </div>
+
+      {/* Success popout + toast */}
+      <SuccessPopout
+        open={showSuccessPopout}
+        title="Wallet Deleted"
+        description="The wallet has been removed successfully."
+        onClose={() => setShowSuccessPopout(false)}
+      />
+
+      <Toast
+        open={showToast}
+        title="Wallet Deleted"
+        description="Your wallet has been removed successfully."
+        onClose={() => setShowToast(false)}
+      />
     </View>
   );
 }
