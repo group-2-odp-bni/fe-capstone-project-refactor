@@ -150,7 +150,6 @@ function SetOtpContent() {
                 <OtpInputField
                     id="otp"
                     name="otp"
-                    label="OTP :"
                     type="numeric"
                     placeholder="Masukkan OTP"
                     required

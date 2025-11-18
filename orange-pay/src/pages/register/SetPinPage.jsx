@@ -3,12 +3,11 @@ import { useNavigate } from "react-router-dom";
 
 import CenteredNumberInputPad from "../../components/register/CenteredNumberInputPad";
 import PageHeader from "../../components/page_header/PageHeader";
-import { FullSubmitButton } from "../../components/button/FullSubmitButton";
 import { useRegistrationContext } from "../../context/RegistrationContext";
 import WhiteCardContainer from "../../components/register/WhiteCardContainer";
 import { saveTokens } from "../../services/auth/authService";
-import api from "../../lib/api";
 import View from "../../components/view/View";
+import axios from "axios";
 
 export default function SetPinPage() {
   return (
@@ -66,7 +65,7 @@ function SetPinContent() {
 
     setLoading(true);
     try {
-      const pinRes = await api.post(
+      const pinRes = await axios.post(
         "/api/v1/auth/pin",
         { pin },
         {
@@ -84,7 +83,14 @@ function SetPinContent() {
       navigate("/app/dashboard");
     } catch (err) {
       console.error("Set PIN failed:", err);
-      setError(err?.response?.data?.message || err?.message || "Terjadi kesalahan. Silakan coba lagi.");
+      const errorCode = err?.response?.data?.error?.code
+
+      if (errorCode === "AUTH-3002") {
+        setError("Pin yang dibuat terlalu lemah. Mohon buat ulang.")
+      } else {
+        setError("Terjadi kesalahan. Silakan coba lagi.")
+      }
+
       setPin("");
       setFirstPin(null);
       setStep("create");
@@ -98,10 +104,6 @@ function SetPinContent() {
     submitPin();
   };
 
-  const goBack = () => {
-    if (window.history.length > 1) navigate(-1);
-    else navigate("/register", { replace: true });
-  };
 
   return (
     <form onSubmit={onFormSubmit} className="pb-10">
@@ -113,15 +115,8 @@ function SetPinContent() {
         loading={loading}
         title={step === "create" ? "Buat PIN Anda" : "Konfirmasi PIN Anda"}
         attemptKey={attempt}
-        onClearError={() => setError("")}
-        onBack={goBack}
+        onBack={() => navigate("/register")}
       />
-
-      {error && <p className="text-red-500 text-xs text-center mb-4">{error}</p>}
-
-      <FullSubmitButton disabled={loading || pin.length !== 6}>
-        {loading ? "Menyimpan..." : step === "create" ? "Lanjutkan" : "Simpan"}
-      </FullSubmitButton>
     </form>
   );
 }

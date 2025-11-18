@@ -6,7 +6,7 @@ import OrangeHeader from "../../components/register/OrangeHeader";
 import WhiteCardContainer from "../../components/register/WhiteCardContainer";
 import OrangePayLogo from "../../components/register/OrangePayLogo";
 import RegisterTextContainer from "../../components/register/RegisterTextContainer";
-import api from "../../lib/api";
+import axios from "axios";
 import {
   GoogleReCaptchaProvider,
   useGoogleReCaptcha,
@@ -32,6 +32,7 @@ export default function RegisterPage() {
     </GoogleReCaptchaProvider>
   );
 }
+const API_BASE = import.meta.env.VITE_API_BASE || "";
 
 function RegisterContent() {
   const navigate = useNavigate();
@@ -81,7 +82,7 @@ function RegisterContent() {
       const phoneNumber = `0${formData.phoneNumber}`;
 
       //hit login
-      const { data } = await api.post("/api/v1/auth/register", {
+      const { data } = await axios.post(`${API_BASE}/api/v1/auth/register`, {
         phoneNumber: phoneNumber,
         captchaToken: token,
       });
@@ -151,7 +152,9 @@ function RegisterContent() {
             Anda.
           </LoginTextContainer>
 
-          {error && <p className="text-red-500 text-xs">{error}</p>}
+          {error && (
+            <p className=" text-red-500 text-xs text-center">{error}</p>
+          )}
 
           <FullSubmitButton disabled={loading}>
             {loading ? "Mengirim..." : "Daftar"}
