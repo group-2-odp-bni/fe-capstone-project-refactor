@@ -27,12 +27,16 @@ export default function useRecentTransfer({
 
   useEffect(() => {
     let mounted = true;
+    const controller = new AbortController();
 
     (async () => {
       setLoading(true);
       setErr(null);
       try {
-        const resp = await api.get("/api/v1/transactions/all-wallets", { params });
+        const resp = await api.get("/api/v1/transactions/all-wallets", {
+          params,
+          signal: controller.signal,
+        });
 
         // Robustly unwrap possible shapes
         const root = resp?.data;
@@ -48,7 +52,9 @@ export default function useRecentTransfer({
         const mapped = rows.map(mapTxnRowToUI);
         if (mounted) setUsers(mapped);
       } catch (e) {
-        if (mounted) setErr(e?.message || "Failed to load transactions");
+        // abort is expected on unmount — don't treat as error
+        const isCanceled = e?.code === "ERR_CANCELED" || e?.name === "CanceledError" || e?.name === "AbortError";
+        if (!isCanceled && mounted) setErr(e?.message || "Failed to load transactions");
       } finally {
         if (mounted) setLoading(false);
       }
@@ -56,6 +62,7 @@ export default function useRecentTransfer({
 
     return () => {
       mounted = false;
+      controller.abort();
     };
   }, [params]);
 
@@ -69,34 +76,54 @@ export function useReceiptById(trxId) {
   const [loading, setLoading] = useState(Boolean(trxId));
   const [error, setError] = useState(null);
 
-  const fetchOnce = useCallback(async () => {
+  const fetchOnce = useCallback(async (opts = {}) => {
     if (!trxId) return;
+    const controller = opts.controller || new AbortController();
+    let mounted = true;
+
     setLoading(true);
     setError(null);
     try {
-      const resp = await api.get(`/api/v1/transactions/${encodeURIComponent(trxId)}`);
+      const resp = await api.get(`/api/v1/transactions/${encodeURIComponent(trxId)}`, {
+        signal: controller.signal,
+      });
       const root = resp?.data;
       const payload = root?.data ?? root ?? {};
       const mapped = mapReceiptPayload(payload);
-      setTrx(mapped);
+      if (mounted) setTrx(mapped);
     } catch (e) {
-      setError(e?.message || "Failed to load receipt");
+      const isCanceled = e?.code === "ERR_CANCELED" || e?.name === "CanceledError" || e?.name === "AbortError";
+      if (!isCanceled) setError(e?.message || "Failed to load receipt");
     } finally {
-      setLoading(false);
+      if (mounted) setLoading(false);
     }
+
+    return () => { mounted = false; };
   }, [trxId]);
 
   useEffect(() => {
-    let mounted = true;
-    (async () => {
-      await fetchOnce();
-    })();
-    return () => {
-      mounted = false;
-    };
-  }, [fetchOnce]);
+    if (!trxId) return;
+    const controller = new AbortController();
+    let didCleanup = false;
 
-  return { trx, loading, error, refetch: fetchOnce };
+    (async () => {
+      try {
+        await fetchOnce({ controller });
+      } catch (e) {
+        // ignore; fetchOnce already handles errors
+      }
+    })();
+
+    return () => {
+      didCleanup = true;
+      controller.abort();
+    };
+  }, [fetchOnce, trxId]);
+
+  // expose a refetch that creates a fresh controller (caller can ignore controller)
+  const refetch = useCallback(() => fetchOnce({ controller: new AbortController() }), [fetchOnce]);
+
+  return { trx, loading, error, refetch };
 }
 
 /* ---------------- helpers ---------------- */
@@ -196,14 +223,9 @@ function mapTxnRowToUI(tx = {}) {
   };
 }
 
-/**
- * Map the single-transaction payload into what ReceiptCard expects.
- * Flips From/To for Top Up via Virtual Account (VA).
- */
 function mapReceiptPayload(p = {}) {
   const amount = Number(p.amount ?? p.nominal ?? p.value ?? 0);
 
-  // Source / wallet name (fallbacks)
   const walletName =
     p.walletName ||
     p.sourceWalletName ||
@@ -212,8 +234,8 @@ function mapReceiptPayload(p = {}) {
     p.displayName ||
     "-";
 
-  // detect TOP UP VA
-  const rawType = String(p.type || "").toUpperCase(); // e.g., "TOP_UP"
+  // detect types
+  const rawType = String(p.type || p.transactionType || "").toUpperCase(); // e.g., "TOP_UP"
   const normType = rawType.replace(/_/g, ""); // "TOPUP"
   const desc = String(p.description || p.displaySubtitle || "").toUpperCase();
   const counterName = String(p.counterpartyName || p.displayName || "").toUpperCase();
@@ -221,6 +243,10 @@ function mapReceiptPayload(p = {}) {
   const isTopUp = normType === "TOPUP";
   const isVirtualAccount = /VIRTUAL\s*ACCOUNT|(^|\s)VA(\s|$)/.test(desc) || /VIRTUAL\s*ACCOUNT|(^|\s)VA(\s|$)/.test(counterName);
   const isTopUpVA = isTopUp && isVirtualAccount;
+
+  // detect specific transfer-in types (tolerant to underscore/no-underscore)
+  const isTransferIn = normType === "TRANSFERIN" || rawType === "TRANSFER_IN";
+  const isInternalTransferIn = normType === "INTERNALTRANSFERIN" || rawType === "INTERNAL_TRANSFER_IN";
 
   // default parties: From = user, To = counterparty
   let sender = p.userName || "-";
@@ -231,6 +257,22 @@ function mapReceiptPayload(p = {}) {
   // flip for Top Up VA: From = VA, To = user
   if (isTopUpVA) {
     sender = p.counterpartyName || p.displayName || "Virtual Account";
+    senderPhoneRaw = p.counterpartyPhone || "";
+    receiver = p.userName || "-";
+    receiverPhoneRaw = p.userPhone || "";
+  }
+
+  // flip for transfer_in: From = other person, To = user
+  if (isTransferIn) {
+    sender = p.counterpartyName || p.displayName || "Sender";
+    senderPhoneRaw = p.counterpartyPhone || "";
+    receiver = p.userName || "-";
+    receiverPhoneRaw = p.userPhone || "";
+  }
+
+  // flip for internal_transfer_in: From = other member, To = user
+  if (isInternalTransferIn) {
+    sender = p.counterpartyName || p.displayName || "Member";
     senderPhoneRaw = p.counterpartyPhone || "";
     receiver = p.userName || "-";
     receiverPhoneRaw = p.userPhone || "";
@@ -338,6 +380,7 @@ export function useWalletHistoryByMonth({
 
   useEffect(() => {
     let mounted = true;
+    const controller = new AbortController();
 
     if (!walletId) {
       setUsers([]);
@@ -350,7 +393,7 @@ export function useWalletHistoryByMonth({
       setLoading(true);
       setErr(null);
       try {
-        const resp = await api.get("/api/v1/transactions", { params });
+        const resp = await api.get("/api/v1/transactions", { params, signal: controller.signal });
 
         const root = resp?.data;
         const data = root?.data ?? root ?? {};
@@ -365,13 +408,17 @@ export function useWalletHistoryByMonth({
         const mapped = rows.map(mapTxnRowToUI);
         if (mounted) setUsers(mapped);
       } catch (e) {
-        if (mounted) setErr(e?.message || "Failed to load transactions");
+        const isCanceled = e?.code === "ERR_CANCELED" || e?.name === "CanceledError" || e?.name === "AbortError";
+        if (!isCanceled && mounted) setErr(e?.message || "Failed to load transactions");
       } finally {
         if (mounted) setLoading(false);
       }
     })();
 
-    return () => { mounted = false; };
+    return () => {
+      mounted = false;
+      controller.abort();
+    };
   }, [params, walletId]);
 
   return { users, loading, error: err };

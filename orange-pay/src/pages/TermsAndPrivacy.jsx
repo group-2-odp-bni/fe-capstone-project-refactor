@@ -156,7 +156,7 @@ export default function TermsModal({ isOpen, onClose }) {
         <div className="mt-6 text-center">
           <button
             onClick={onClose}
-            className="w-full rounded-lg bg-orange-600 px-4 py-2 text-white font-semibold hover:bg-orange-700"
+            className="w-full rounded-lg bg-orange-400 px-4 py-2 text-white font-semibold hover:bg-orange-700"
           >
             Saya Mengerti
           </button>
