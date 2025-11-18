@@ -19,6 +19,7 @@ export default function SetPinPage() {
     </View>
   );
 }
+const API_BASE = import.meta.env.VITE_API_BASE || "";
 
 function SetPinContent() {
   const navigate = useNavigate();
@@ -66,7 +67,7 @@ function SetPinContent() {
     setLoading(true);
     try {
       const pinRes = await axios.post(
-        "/api/v1/auth/pin",
+        `${API_BASE}/api/v1/auth/pin`,
         { pin },
         {
           headers: {
@@ -83,12 +84,12 @@ function SetPinContent() {
       navigate("/app/dashboard");
     } catch (err) {
       console.error("Set PIN failed:", err);
-      const errorCode = err?.response?.data?.error?.code
+      const errorCode = err?.response?.data?.error?.code;
 
       if (errorCode === "AUTH-3002") {
-        setError("Pin yang dibuat terlalu lemah. Mohon buat ulang.")
+        setError("Pin yang dibuat terlalu lemah. Mohon buat ulang.");
       } else {
-        setError("Terjadi kesalahan. Silakan coba lagi.")
+        setError("Terjadi kesalahan. Silakan coba lagi.");
       }
 
       setPin("");
@@ -103,7 +104,6 @@ function SetPinContent() {
     e.preventDefault();
     submitPin();
   };
-
 
   return (
     <form onSubmit={onFormSubmit} className="pb-10">
