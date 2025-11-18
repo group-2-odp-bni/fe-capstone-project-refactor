@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import InputField from "../../components/account/AccountGeneralInput";
 import { FullSubmitButton } from "../../components/button/FullSubmitButton";
@@ -34,7 +33,7 @@ export default function EditProfilePage() {
                 setProfileData(normalizedUser);
                 setOriginalProfile(normalizedUser);
             } catch (error) {
-                console.error("Failed to fetch user profile:", error);
+
             }
         };
 
@@ -92,7 +91,6 @@ export default function EditProfilePage() {
             }
 
         } catch (err) {
-            console.error("Failed to save profile:", err);
             setError("Gagal menyimpan perubahan. Silakan coba lagi.");
         } finally {
             setLoading(false);
@@ -113,9 +111,7 @@ export default function EditProfilePage() {
                 },
             });
 
-            console.log("Image uploaded:", response.data);
         } catch (err) {
-            console.error("Failed to upload profile image:", err);
             setError("Gagal mengunggah foto profil.");
         } finally {
             setUploading(false);

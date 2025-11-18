@@ -1,10 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-
 import CenteredNumberInputPad from "../../components/register/CenteredNumberInputPad";
-import PageHeader from "../../components/page_header/PageHeader";
-import { FullSubmitButton } from "../../components/button/FullSubmitButton";
-
 import WhiteCardContainer from "../../components/register/WhiteCardContainer";
 import { saveTokens } from "../../services/auth/authService";
 import api from "../../lib/api";
@@ -87,7 +83,6 @@ function SetPinContent() {
       navigate("/app/dashboard");
 
     } catch (err) {
-      console.error("Set PIN failed:", err);
       const errorCode = err?.response?.data?.error?.code;
 
       if (errorCode === "AUTH-3003") {
@@ -106,8 +101,6 @@ function SetPinContent() {
 
       }
 
-      // log
-      console.log(error)
       setPin("");
       setNewPin(null);
 

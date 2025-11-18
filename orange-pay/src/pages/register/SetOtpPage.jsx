@@ -33,7 +33,6 @@ const API_BASE = import.meta.env.VITE_API_BASE || "";
 function SetOtpContent() {
   const navigate = useNavigate();
   const { userData, setRegistrationData } = useRegistrationContext();
-  console.log(userData.phoneNumber);
 
   const [otp, setOtp] = useState("");
   const [loading, setLoading] = useState(false);
@@ -46,7 +45,7 @@ function SetOtpContent() {
     setLoading(true);
 
     try {
-      const { data } = await api.post(`${API_BASE}//api/v1/auth/verify`, {
+      const { data } = await axios.post(`${API_BASE}/api/v1/auth/verify`, {
         phoneNumber: userData.phoneNumber,
         otp,
       });
