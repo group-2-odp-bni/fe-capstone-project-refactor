@@ -129,7 +129,7 @@ export default function HeaderMenu({ currentName = "", onRename, onDelete }) {
     >
       <div
         role="menu"
-        className="bg-white rounded-lg shadow-lg ring-1 ring-black ring-opacity-5 overflow-hidden"
+        className="bg-white rounded-lg shadow-lg ring-1 ring-gray-100  overflow-hidden"
         style={{ minWidth: 140 }}
       >
         <button
