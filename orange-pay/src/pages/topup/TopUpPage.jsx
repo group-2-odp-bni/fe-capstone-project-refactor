@@ -30,7 +30,7 @@ export default function TopUpPage() {
                 BNI Virtual Account
               </span>
             </div>
-            <span className="text-gray-400 group-hover:text-orange-500">›</span>
+            <span className="text-gray-400 group-hover:text-orange-400">›</span>
           </button>
         </div>
       </ContentBox>

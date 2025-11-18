@@ -12,10 +12,10 @@ import { useNavigate } from "react-router-dom";
 /* ========== ATOMS ========== */
 
 export const PillBadge = ({ label, active, style, onClick }) => (
-  <button
+  <div
     type="button"
     onClick={onClick}
-    className={`px-2.5 py-1 rounded-full text-[10px] font-bold text-white backdrop-blur-md shadow-sm transition-all duration-500 ${
+    className={`px-3 py-2 rounded-full text-[10px] font-bold text-white backdrop-blur-md shadow-sm transition-all duration-500 ${
       active ? "scale-[1.02]" : "opacity-90"
     }`}
     style={{
@@ -24,28 +24,72 @@ export const PillBadge = ({ label, active, style, onClick }) => (
     }}
   >
     {label}
-  </button>
-);
-
-export const IconToggle = ({ on, onToggle }) => (
-  <button
-    onClick={onToggle}
-    className="active:scale-95"
-    style={{ transform: "translateZ(35px)" }}
-  >
-    {on ? (
-      <EyeSlashIcon className="w-5 h-4 md:w-6 md:h-4 text-white/85" />
-    ) : (
-      <EyeIcon className="w-5 h-4 md:w-6 md:h-4 text-white/95" />
-    )}
-  </button>
+  </div>
 );
 
 /**
- * ActionIcon
- * - Looks active even when `disabled` so taps still trigger page toast via guards.
- * - Uses currentColor for SVG so it inherits text color.
+ * IconToggle
+ * - Stops propagation in capture and bubble phases.
+ * - Calls stopImmediatePropagation on nativeEvent when available.
+ * - Uses type="button" and pointer-events:auto.
  */
+export const IconToggle = ({ on, onToggle }) => {
+  const handlePointerDownCapture = (e) => {
+    e.stopPropagation();
+    try {
+      e.nativeEvent?.stopImmediatePropagation?.();
+    } catch {}
+  };
+
+  const handlePointerUpCapture = (e) => {
+    e.stopPropagation();
+    try {
+      e.nativeEvent?.stopImmediatePropagation?.();
+    } catch {}
+  };
+
+  const handleClick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    try {
+      e.nativeEvent?.stopImmediatePropagation?.();
+    } catch {}
+    onToggle?.();
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === " " || e.key === "Enter") {
+      e.preventDefault();
+      e.stopPropagation();
+      try {
+        e.nativeEvent?.stopImmediatePropagation?.();
+      } catch {}
+      onToggle?.();
+    }
+  };
+
+  return (
+    <button
+      type="button"
+      data-ignore-overlay="true"            
+      onPointerDownCapture={handlePointerDownCapture}
+      onPointerUpCapture={handlePointerUpCapture}
+      onClick={handleClick}
+      onKeyDown={handleKeyDown}
+      className="active:scale-95"
+      style={{ transform: "translateZ(35px)", pointerEvents: "auto" }}
+      aria-pressed={Boolean(on)}
+      aria-label={on ? "Hide balance" : "Show balance"}
+    >
+      {on ? (
+        <EyeSlashIcon className="w-5 h-4 md:w-6 md:h-4 text-white/85" />
+      ) : (
+        <EyeIcon className="w-5 h-4 md:w-6 md:h-4 text-white/95" />
+      )}
+    </button>
+  );
+};
+
 export const ActionIcon = ({
   label,
   children,
@@ -78,7 +122,6 @@ export const ActionIcon = ({
     );
   }
 
-  // Anchor fallback (we still prefer passing onClick from parent)
   return (
     <a
       href={to || "#"}
@@ -97,8 +140,6 @@ export const ActionIcon = ({
     </a>
   );
 };
-
-/* ========== AmountText (measuring for eye icon) ========== */
 
 export const AmountText = ({ amount, isHidden, onMeasured }) => {
   const formatted = `Rp${Number(amount ?? 0).toLocaleString("id-ID")}`;
@@ -196,8 +237,6 @@ export const GradientCardShell = ({
   );
 };
 
-/* ========== MOLECULES ========== */
-
 export const CardTopBar = ({ title, type, isMain, onBadgeClick }) => (
   <div className="relative z-10 flex justify-between items-start mb-5 md:mb-10">
     <div className="flex items-center space-x-3 mt-1 mb-2">
@@ -206,12 +245,12 @@ export const CardTopBar = ({ title, type, isMain, onBadgeClick }) => (
         alt="RangePay Logo"
         className="h-5 md:h-6 w-auto drop-shadow"
       />
-      <PillBadge
+      {/* <PillBadge
         label={type}
         active={isMain}
         style={{ transform: "translateZ(35px)" }}
         onClick={onBadgeClick}
-      />
+      /> */}
     </div>
   </div>
 );
@@ -329,8 +368,9 @@ export const BalanceRow = ({
       style={{ width: sizes.maxWidth ? sizes.maxWidth + 28 : undefined }}
     >
       <AmountText amount={amount} isHidden={isHidden} onMeasured={setSizes} />
+      {/* IMPORTANT: put IconToggle on top of the overlay by giving a higher z-index */}
       <div
-        className="absolute top-1/2 -translate-y-1/2 will-change-transform"
+        className="absolute top-1/2 -translate-y-1/2 will-change-transform z-40"
         style={{ left: sizes.currentWidth + 6, transform: "translateZ(35px)" }}
       >
         <IconToggle on={isHidden} onToggle={onToggleHidden} />

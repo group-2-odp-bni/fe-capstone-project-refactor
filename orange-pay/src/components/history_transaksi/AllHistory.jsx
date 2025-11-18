@@ -1,6 +1,7 @@
 import React, { useMemo } from "react";
 import useRecentTransfer from "../../hooks/api/useHistory";
 import { useNavigate } from "react-router-dom";
+
 export default function TransactionList({
   walletId = null,
   onTransactionClick = null,
@@ -149,12 +150,11 @@ export default function TransactionList({
 
           <ul className="space-y-2">
             {section.items.map((t) => {
+              const raw = (t.rawType || "").toUpperCase();
               const isIncome =
-                t.rawType === "TRANSFER_IN" || t.rawType === "TOP_UP";
+                raw === "TRANSFER_IN" || raw === "TOP_UP" || raw === "INTERNAL_TRANSFER_IN";
               const sign = isIncome ? "+" : "−";
-              const amountColor = isIncome
-                ? "text-emerald-500"
-                : "text-black-600";
+              const amountColor = isIncome ? "text-emerald-500" : "text-black-600";
 
               return (
                 <li key={t.id}>
