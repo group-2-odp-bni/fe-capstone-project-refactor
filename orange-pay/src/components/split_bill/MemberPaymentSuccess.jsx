@@ -15,10 +15,27 @@ const RECEIPT_EXTRA_GAP = 64; // ✅ WILL BE USED NOW!
 const FOOTER_SAFE_GAP = 8;
 
 /** ---------- Util: dataURL <-> Blob ---------- */
+// function dataURLtoBlob(dataurl) {
+//   const arr = dataurl.split(",");
+//   const mime = arr[0].match(/:(.*?);/)[1];
+//   const bstr = atob(arr[1]);
+//   let n = bstr.length;
+//   const u8arr = new Uint8Array(n);
+//   while (n--) u8arr[n] = bstr.charCodeAt(n);
+//   return new Blob([u8arr], { type: mime });
+// }
+
 function dataURLtoBlob(dataurl) {
-  const arr = dataurl.split(",");
-  const mime = arr[0].match(/:(.*?);/)[1];
-  const bstr = atob(arr[1]);
+  const [header, base64] = dataurl.split(",");
+
+  let mime = "application/octet-stream";
+  if (header && header.startsWith("data:")) {
+    const withoutPrefix = header.slice(5);
+    const [mimePart] = withoutPrefix.split(";");
+    if (mimePart) mime = mimePart;
+  }
+
+  const bstr = atob(base64 || "");
   let n = bstr.length;
   const u8arr = new Uint8Array(n);
   while (n--) u8arr[n] = bstr.charCodeAt(n);
