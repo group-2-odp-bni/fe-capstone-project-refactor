@@ -436,13 +436,7 @@ export default function AtomicBalanceCard({
                     />
                     {card.walletName &&
                       String(card.walletName).trim().toUpperCase() !== "MAIN" && (
-                        <div className="absolute top-1 right-4 z-10 text-white font-semibold text-sm md:text-base leading-none pointer-events-none flex flex-col items-end space-y-1">
-                          <PillBadge
-                            label={card.type} 
-                            active={card?.defaultForUser === true}
-                            style={{ transform: "translateZ(35px)" }}
-                            onClick={() => goTo(idx)}
-                          />
+                        <div className="absolute top-0 right-4 z-10 text-white font-semibold text-sm md:text-base leading-none pointer-events-none flex flex-col items-end space-y-1">
                           <div className="mt-2 text-right w-full">{card.walletName}</div>
                         </div>
                       )}

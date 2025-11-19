@@ -8,7 +8,7 @@ import api from "../../lib/api";
 import { useTopupContext } from "../../context/TopupContext";
 import { useNavigate } from "react-router-dom";
 import View from "../../components/view/View";
-import WhiteHeader from "../../components/register/WhiteHeader";
+import Header from "../../components/Header";
 import ContentBox from "../../components/common/ContentBox";
 import { useToast } from "../../context/ToastContext";
 
@@ -91,7 +91,7 @@ export default function SetAmountPage() {
 
   return (
     <View>
-      <WhiteHeader title="Tambah Saldo" to="/app/topup" />
+      <Header title="Tambah Saldo"/>
       <ContentBox>
         <div className="flex flex-col">
           <div className=" pb-28 flex-1">
