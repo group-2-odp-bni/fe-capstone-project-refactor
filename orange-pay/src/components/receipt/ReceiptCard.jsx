@@ -4,6 +4,7 @@ import { useParams } from "react-router-dom";
 import { ClipboardIcon, CheckIcon, ShareIcon } from "@heroicons/react/24/outline";
 // import * as htmlToImage from "html-to-image"; // now dynamically imported
 import { useReceiptById } from "../../hooks/api/useHistory";
+import { useToast } from "../../context/ToastContext";
 
 const formatIDR = (n) =>
   new Intl.NumberFormat("id-ID", {
@@ -57,6 +58,7 @@ function useTrxIdFromParams() {
 
 export default function ReceiptCard({ trx, externalShareRef = null, hideInlineShare = true }) {
   // If trx is passed, skip fetching; otherwise take it from URL
+  const { showToast } = useToast();
   const trxIdFromUrl = useTrxIdFromParams();
   const shouldFetch = !trx && !!trxIdFromUrl;
   const { trx: fetchedTrx, loading: hookLoading, error: hookError } = useReceiptById(
@@ -118,9 +120,19 @@ export default function ReceiptCard({ trx, externalShareRef = null, hideInlineSh
       try {
         await navigator.clipboard.writeText(`Ref: ${refId}`);
         // lightweight user fallback
-        alert("Receipt image sharing is unavailable — reference copied to clipboard.");
+
+              showToast({
+        type: "error",
+        title: "Berbagi gambar tidak tersedia",
+        message: "Fitur berbagi gambar tidak dapat diakses saat ini. Referensi transaksi telah disalin ke clipboard Anda."
+      });
+
       } catch {
-        alert("Receipt image sharing is unavailable.");
+                      showToast({
+        type: "error",
+        title: "Berbagi gambar tidak tersedia",
+        message: "Fitur berbagi gambar tidak dapat diakses saat ini."
+      });
       }
       return;
     }
@@ -170,9 +182,18 @@ export default function ReceiptCard({ trx, externalShareRef = null, hideInlineSh
       // Helpful hint for CORS issues
       const message = String(err || "").toLowerCase();
       if (message.includes("tainted") || message.includes("security") || message.includes("cross-origin")) {
-        alert("Cannot export image due to cross-origin resources (CORS). Ensure images are served with Access-Control-Allow-Origin headers or inline the SVG.");
+                      showToast({
+        type: "error",
+        title: "Gagal mengekspor gambar struk",
+        message: "Struk tidak dapat diekspor karena memuat konten dari sumber lain (CORS). Pastikan logo dan gambar dimuat dari domain yang sama atau sudah mengizinkan akses cross-origin."
+      });
+
       } else {
-        alert("Failed to create or share receipt image. See console for details.");
+        showToast({
+        type: "error",
+        title: "Gagal membuat atau berbagi gambar struk",
+        message: "Terjadi kesalahan saat membuat atau membagikan gambar struk."
+      });
       }
     }
   }, [refId]);

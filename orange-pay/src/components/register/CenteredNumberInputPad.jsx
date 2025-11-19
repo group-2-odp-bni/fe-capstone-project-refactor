@@ -4,17 +4,16 @@ import TemplatePin from "../ui/TemplatePin";
 export default function CenteredNumberInputPad({
   value,
   onChange,
-  onConfirm,                 // (pin) => void
-  title = "Masukkan PIN Anda",
+  onConfirm,
+  title,
   length = 6,
   loading = false,
   errorText = "",
   zIndex = 10050,
-  onClearError,             // () => void
-  attemptKey,               // number
-  // ← tambahan untuk kontrol Back & Forgot di halaman pemakai
-  onBack,                   // () => void (optional)
-  onForgot,                 // () => void (optional, kirim di Login saja)
+  onClearError,
+  attemptKey,
+  onBack,
+  onForgot,
 }) {
   const max = Math.max(4, Math.min(8, length));
 
@@ -34,13 +33,19 @@ export default function CenteredNumberInputPad({
     setShaking(false);
     const start = setTimeout(() => setShaking(true), 10);
     shakeTimeoutRef.current = setTimeout(() => setShaking(false), 510);
-    return () => { clearTimeout(start); clearTimeout(shakeTimeoutRef.current); };
+    return () => { 
+      clearTimeout(start); 
+      if (shakeTimeoutRef.current) clearTimeout(shakeTimeoutRef.current); 
+    };
   };
 
   useEffect(() => {
     if (!attemptKey) return;
-    if (errorText) { setSuppressErrorUI(false); triggerShake(); }
-  }, [attemptKey]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (errorText) { 
+      setSuppressErrorUI(false); 
+      triggerShake(); 
+    }
+  }, [attemptKey, errorText]);
 
   useEffect(() => {
     if (!errorText) return;
@@ -50,27 +55,42 @@ export default function CenteredNumberInputPad({
 
   useEffect(() => {
     const was = prevLoadingRef.current;
-    if (was && !loading && !!errorText) { setSuppressErrorUI(false); triggerShake(); }
+    if (was && !loading && !!errorText) { 
+      setSuppressErrorUI(false); 
+      triggerShake(); 
+    }
     prevLoadingRef.current = loading;
   }, [loading, errorText]);
 
+  // 🔧 perbaikan di sini
   useEffect(() => {
     if (value.length === 0 && !errorText) {
       setSuppressErrorUI(true);
+    } else if (errorText) {
+      setSuppressErrorUI(false);
     }
-  }, [value]);
+  }, [value, errorText]);
 
   const clamp = (s) => (s || "").toString().replace(/\D/g, "").slice(0, max);
 
   const handleDigit = (d) => {
     if (loading || value.length >= max) return;
+    
+    if (errorText) {
+      setSuppressErrorUI(true);
+      onClearError?.();
+    }
+    
     onChange(clamp(value + d));
   };
 
   const handleDelete = () => {
     if (loading || value.length === 0) return;
     if (shakeTimeoutRef.current) clearTimeout(shakeTimeoutRef.current);
-    onChange("");
+
+    const next = value.slice(0, -1);
+    onChange(next);
+
     setShaking(false);
     setSuppressErrorUI(true);
     onClearError?.();
@@ -79,16 +99,30 @@ export default function CenteredNumberInputPad({
 
   const onHiddenChange = (e) => {
     if (loading) return;
+    
+    if (errorText && e.target.value.length > value.length) {
+      setSuppressErrorUI(true);
+      onClearError?.();
+    }
+    
     onChange(clamp(e.target.value));
   };
+
   const onHiddenKeyDown = (e) => {
     if (loading) return;
+
     if (/^\d$/.test(e.key) && value.length < max) {
       e.preventDefault();
+      
+      if (errorText) {
+        setSuppressErrorUI(true);
+        onClearError?.();
+      }
+      
       onChange(clamp(value + e.key));
     } else if (e.key === "Backspace") {
       e.preventDefault();
-      onChange(value.slice(0, -1));
+      handleDelete();
     } else if (e.key === "Enter" && value.length === max) {
       e.preventDefault();
       onConfirm?.(value);
@@ -106,8 +140,8 @@ export default function CenteredNumberInputPad({
     <TemplatePin
       title={title}
       dots={{ length: max, filled: value.length, danger: showError, shaking }}
-      onBack={onBack}                 // ← dikirim apa adanya; jika undefined, tombol back tidak muncul
-      onForgot={onForgot}             // ← kirim hanya di Login; di Register jangan kirim
+      onBack={onBack}
+      onForgot={onForgot}
       onDigit={handleDigit}
       onConfirm={() => { if (canConfirm) onConfirm?.(value); }}
       onDelete={handleDelete}

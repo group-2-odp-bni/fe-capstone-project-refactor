@@ -5,35 +5,51 @@ import useTransferApi from "../../hooks/api/useTransfer";
 import { useNavigate } from "react-router-dom";
 import TemplatePin from "../ui/TemplatePin";
 
+const MAX_ATTEMPTS = 5; // ✅ Maksimal 5 kesempatan
+
 export default function StepPin() {
-  // ----- hooks first -----
-  // use prevStep/goBack helpers from context (Option C)
-  const { data, prevStep, goBack, reset } = useTransfer();
+  const { data, prevStep, goBack } = useTransfer();
   const { executeTransfer } = useTransferApi();
   const navigate = useNavigate();
 
-  // ----- state -----
   const [pin, setPin] = useState("");
-  const [error, setError] = useState(""); // string kosong = tidak ada error
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [attempt, setAttempt] = useState(0);
+  const [failedAttempts, setFailedAttempts] = useState(0);
+  const [isLocked, setIsLocked] = useState(false);
 
-  // UI ala InputPin.jsx
   const [suppressErrorUI, setSuppressErrorUI] = useState(false);
   const [shaking, setShaking] = useState(false);
   const shakeTimeoutRef = useRef(null);
   const prevLoadingRef = useRef(loading);
-
-  // Hidden input (hosted di TemplatePin)
   const hiddenRef = useRef(null);
 
-  // ----- guard data -----
+  // ----- guard data: kalau bener-bener nggak lengkap, lempar balik ke halaman transfer -----
   useEffect(() => {
     if (!data || !data.phone || !data.amount || !data.transactionId) {
       navigate("/app/transfer", { replace: true });
     }
   }, [data, navigate]);
 
-  // ----- helpers -----
+  // ✅ kalau sudah terkunci → set error + kosongkan PIN
+  useEffect(() => {
+    if (isLocked) {
+      setError("Akun Anda telah terblokir. Anda akan dialihkan ke halaman utama...");
+      setPin("");
+    }
+  }, [isLocked]);
+
+  // ✅ redirect auto setelah terkunci
+  useEffect(() => {
+    if (isLocked) {
+      const timer = setTimeout(() => {
+        navigate("/", { replace: true });
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [isLocked, navigate]);
+
   const triggerShake = () => {
     if (shakeTimeoutRef.current) clearTimeout(shakeTimeoutRef.current);
     setShaking(false);
@@ -41,18 +57,24 @@ export default function StepPin() {
     shakeTimeoutRef.current = setTimeout(() => setShaking(false), 510);
     return () => {
       clearTimeout(start);
-      clearTimeout(shakeTimeoutRef.current);
+      if (shakeTimeoutRef.current) clearTimeout(shakeTimeoutRef.current);
     };
   };
 
-  // Error berubah → tampilkan & shake
+  useEffect(() => {
+    if (!attempt) return;
+    if (error) {
+      setSuppressErrorUI(false);
+      triggerShake();
+    }
+  }, [attempt, error]);
+
   useEffect(() => {
     if (!error) return;
     setSuppressErrorUI(false);
     triggerShake();
   }, [error]);
 
-  // Attempt selesai (loading true → false) + error ada → paksa tampil & shake
   useEffect(() => {
     const wasLoading = prevLoadingRef.current;
     if (wasLoading && !loading && !!error) {
@@ -62,64 +84,82 @@ export default function StepPin() {
     prevLoadingRef.current = loading;
   }, [loading, error]);
 
-  // Jika pin kosong (clear/backspace), sembunyikan error UI (balik normal/oranye)
   useEffect(() => {
-    if (pin.length === 0) setSuppressErrorUI(true);
+    if (pin.length === 0) {
+      setSuppressErrorUI(true);
+    }
   }, [pin]);
 
-  const clampNum = (raw) => (raw || "").toString().replace(/\D/g, "").slice(0, 6);
+  const clampNum = (raw) =>
+    (raw || "").toString().replace(/\D/g, "").slice(0, 6);
 
-  // keyboard/paste handlers (hidden input)
   const onHiddenChange = (e) => {
-    if (loading) return;
+    if (loading || isLocked) return;
+
+    if (error && e.target.value.length > pin.length) {
+      setSuppressErrorUI(true);
+      setError("");
+    }
+
     setPin(clampNum(e.target.value));
   };
 
   const onHiddenKeyDown = (e) => {
-    if (loading) return;
+    if (loading || isLocked) return;
+
     if (/^\d$/.test(e.key) && pin.length < 6) {
       e.preventDefault();
+
+      if (error) {
+        setSuppressErrorUI(true);
+        setError("");
+      }
+
       setPin((p) => (p + e.key).slice(0, 6));
     } else if (e.key === "Backspace") {
       e.preventDefault();
-      setPin((p) => p.slice(0, -1));
+      onDelete();
     } else if (e.key === "Enter" && pin.length === 6) {
       e.preventDefault();
       submitPinAndTransfer();
     }
   };
 
-  // keypad actions (TemplatePin)
   const onDigit = (d) => {
-    if (loading || pin.length >= 6) return;
+    if (loading || isLocked || pin.length >= 6) return;
+
+    if (error) {
+      setSuppressErrorUI(true);
+      setError("");
+    }
+
     setPin((p) => (p + d).slice(0, 6));
   };
 
   const onDelete = () => {
-    if (loading || pin.length === 0) return;
+    if (loading || isLocked || pin.length === 0) return;
     if (shakeTimeoutRef.current) clearTimeout(shakeTimeoutRef.current);
-    setPin("");
+
+    const next = pin.slice(0, -1);
+    setPin(next);
+
     setShaking(false);
-    setSuppressErrorUI(true); // sembunyikan merah + pesan
+    setSuppressErrorUI(true);
+    setError("");
     hiddenRef.current?.focus();
   };
 
-  // <-- changed: use prevStep() (or goBack()) instead of setStep("confirm") -->
   const onBack = () => {
     if (loading) return;
-    // prefer prevStep (logical previous according to STEP_ORDER)
-    // fallback to goBack which handles 'verify' snapshot restore
     try {
       if (typeof prevStep === "function") {
         prevStep();
       } else if (typeof goBack === "function") {
         goBack();
       } else {
-        // ultimate fallback: navigate to canonical confirm path
         navigate("/app/transfer", { replace: true });
       }
     } catch (err) {
-      // swallow and fallback to goBack/navigate
       try {
         if (typeof goBack === "function") goBack();
         else navigate("/app/transfer", { replace: true });
@@ -127,61 +167,97 @@ export default function StepPin() {
     }
   };
 
-  const setErrorAndShake = (msg) => {
-    setError(msg);
-    setSuppressErrorUI(false);
-    triggerShake();
-  };
-
   const submitPinAndTransfer = async () => {
+    setAttempt((x) => x + 1);
+
+    if (isLocked) {
+      return;
+    }
+
     if (pin.length !== 6) {
-      setErrorAndShake("PIN must be 6 digits");
-      return;
-    }
-    if (!data || !data.phone || !data.amount) {
-      setErrorAndShake("Recipient or amount missing");
+      setError("PIN must be 6 digits");
       return;
     }
 
-    if (!data.transactionId) {
-      setError("Missing transaction ID");
+    // ⚠️ Di sini kita TIDAK lagi cek !data.phone / !data.amount
+    // Karena sudah dijaga oleh useEffect di atas.
+    // Kalau mau ekstra aman:
+    if (!data || !data.transactionId) {
+      setError("Missing transaction data. Silakan ulangi transfer.");
       return;
     }
 
+    setError("");
     setLoading(true);
     try {
-      // ✅ pass transactionId to execute endpoint
-      const res = await executeTransfer({ transactionId: data.transactionId, pin });
+      const res = await executeTransfer({
+        transactionId: data.transactionId,
+        pin,
+      });
       console.log("StepPin: performTransfer result:", res);
 
       if (!res) {
         setError("Unknown error from server");
         return;
       }
+
+      // 👉 Di sinilah limit kesempatan dipakai kalau backend kasih status error
       if (res.status === "error") {
-        setError(res.message || "Transfer failed");
+        setFailedAttempts((prev) => {
+          const newFailed = prev + 1;
+          const remaining = MAX_ATTEMPTS - newFailed;
+
+          if (newFailed >= MAX_ATTEMPTS) {
+            setIsLocked(true); // useEffect isLocked yang akan set error + redirect
+          } else {
+            setError(
+              `${res.message || "Transfer failed"}. Anda masih punya kesempatan ${remaining} kali lagi.`
+            );
+          }
+
+          return newFailed;
+        });
         return;
       }
 
-      // Prefer transactionId returned, fallback to initiated one
+      // ✅ Success - reset counter
+      setFailedAttempts(0);
+      setIsLocked(false);
+
       const tx =
         res.transactionId ||
         res.transaction_id ||
         res.id ||
         data.transactionId;
 
-      console.log("StepPin: navigating to success tx=", tx);
       window.dispatchEvent(new Event("contacts:updated"));
-      navigate(`/app/transfer/success?tx=${encodeURIComponent(tx)}`, { replace: false });
+      navigate(`/app/transfer/success?tx=${encodeURIComponent(tx)}`, {
+        replace: false,
+      });
     } catch (err) {
       console.error("submitPinAndTransfer error:", err);
       const apiMsg =
         err?.response?.data?.message ||
         err?.response?.data?.error ||
         err?.message;
-      setError(apiMsg || "Transfer error");
+
+      // 👉 Di sini juga pakai limit kesempatan kalau API melempar error (misalnya PIN salah dilempar 4xx)
+      setFailedAttempts((prev) => {
+        const newFailed = prev + 1;
+        const remaining = MAX_ATTEMPTS - newFailed;
+
+        if (newFailed >= MAX_ATTEMPTS) {
+          setIsLocked(true); // useEffect isLocked yang akan set error + redirect
+        } else {
+          setError(
+            `${apiMsg || "Transfer error"}. Anda masih punya kesempatan ${remaining} kali lagi.`
+          );
+        }
+
+        return newFailed;
+      });
     } finally {
-      setLoading(false); // efek transisi loading akan retrigger shake bila error masih ada
+      setLoading(false);
     }
   };
 
@@ -193,7 +269,7 @@ export default function StepPin() {
       dots={{
         length: 6,
         filled: pin.length,
-        danger: showError, // merah hanya saat error aktif & tidak disuppress
+        danger: showError,
         shaking,
       }}
       onBack={onBack}
@@ -201,11 +277,10 @@ export default function StepPin() {
       onDigit={onDigit}
       onConfirm={submitPinAndTransfer}
       onDelete={onDelete}
-      canConfirm={!loading && pin.length === 6}
-      canDelete={!loading && pin.length > 0}
+      canConfirm={!loading && !isLocked && pin.length === 6}
+      canDelete={!loading && !isLocked && pin.length > 0}
       errorText={showError ? error : ""}
       zIndex={10050}
-      /* keyboard hosting by TemplatePin */
       enableKeyboard
       hiddenRef={hiddenRef}
       hiddenValue={pin}
