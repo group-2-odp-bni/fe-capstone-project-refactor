@@ -248,7 +248,7 @@ export default function AssignMemberPage({ walletIdOverride }) {
           api.get(`/api/v1/wallets/${walletId}/me/role`),
           api.get(`/api/v1/wallets/${walletId}`),
           api.get(`/api/v1/user/me`),
-          api.get(`/quick-transfers/top?limit=10`),
+          api.get(`/api/v1/quick-transfers/top?limit=10`),
         ]);
 
         const membersFromApi = memberRes.data.data;
