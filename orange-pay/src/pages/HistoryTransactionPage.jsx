@@ -91,7 +91,8 @@ export default function HistoryTransactionPage() {
   const { walletId } = useParams();
   const navigate = useNavigate();
 
-  const { renameWallet, deleteWallet } = useWalletApi();
+  // NOTE: getMyRole added from useWalletApi
+  const { renameWallet, deleteWallet, getMyRole } = useWalletApi();
   const { items: allWallets, loading: walletsLoading } = useCardBalances();
 
   const [pageTitle, setPageTitle] = useState("Wallet Detail");
@@ -99,6 +100,10 @@ export default function HistoryTransactionPage() {
 
   const [showSuccessPopout, setShowSuccessPopout] = useState(false);
   const [showToast, setShowToast] = useState(false);
+
+  // role states
+  const [myRole, setMyRole] = useState(null);
+  const [roleLoading, setRoleLoading] = useState(false);
 
   const wallet = useMemo(
     () => allWallets.find((w) => w.id === walletId && !w.isAddCard),
@@ -140,17 +145,52 @@ export default function HistoryTransactionPage() {
     };
   }, [isMainCard, wallet]);
 
+  // Fetch role when walletId changes
+  useEffect(() => {
+    let mounted = true;
+    async function loadRole() {
+      if (!walletId) return;
+      setRoleLoading(true);
+      try {
+        const role = await getMyRole(walletId);
+        if (mounted) setMyRole(role);
+      } catch (err) {
+        if (mounted) setMyRole(null);
+      } finally {
+        if (mounted) setRoleLoading(false);
+      }
+    }
+    loadRole();
+    return () => {
+      mounted = false;
+    };
+  }, [walletId, getMyRole]);
+
+  // normalize role check helpers
+  const normalizedRole = useMemo(() => (myRole ? String(myRole).trim().toLowerCase() : null), [myRole]);
+
+  // treat OWNER and ADMIN as full-permission roles
+  const isAdminOrOwner = normalizedRole === "admin" || normalizedRole === "owner";
+  const isSpender = normalizedRole === "spender";
+  const isViewer = normalizedRole === "viewer";
+
   const handleAddBalanceFromWallet = () => {
+    // permission guard (defensive): Admin/Owner and Spender can add
+    if (!(isAdminOrOwner || isSpender)) return;
     navigate(`/app/wallets/${walletId}/add`);
   };
 
   const handleViewPeople = () => {
+    // only Admin/Owner can view/manage members
+    if (!isAdminOrOwner) return;
     navigate(`/app/wallets/${walletId}/members`);
   };
 
   // ----- Header menu action handlers -----
   const handleRename = async (newName) => {
     if (!newName || !walletId) return;
+    // only Admin/Owner may rename
+    if (!isAdminOrOwner) return;
     try {
       setActionLoading(true);
       await renameWallet(walletId, newName);
@@ -166,6 +206,8 @@ export default function HistoryTransactionPage() {
 
   const handleDelete = async () => {
     if (!walletId) return;
+    // only Admin/Owner may delete
+    if (!isAdminOrOwner) return;
 
     try {
       setActionLoading(true);
@@ -227,13 +269,16 @@ export default function HistoryTransactionPage() {
       <div className="space-y-4 md:space-y-6">
         <PageHeader
           title={pageTitle}
+          // only show HeaderMenu for Admin/Owner (can do everything)
           right={
-            <HeaderMenu
-              currentName={wallet?.title}
-              onRename={handleRename}
-              onDelete={handleDelete}
-              loading={actionLoading}
-            />
+            isAdminOrOwner ? (
+              <HeaderMenu
+                currentName={wallet?.title}
+                onRename={handleRename}
+                onDelete={handleDelete}
+                loading={actionLoading}
+              />
+            ) : null
           }
         />
 
@@ -249,26 +294,43 @@ export default function HistoryTransactionPage() {
         </div>
 
         {isMainCard ? (
-          <div ref={buttonGroupRef} className="arrow-button-container mt-2 md:mt-3">
-          </div>
+          <div ref={buttonGroupRef} className="arrow-button-container mt-2 md:mt-3" />
         ) : (
           <div
             ref={buttonGroupRef}
             className="button-group flex justify-center gap-3 mt-3 md:mt-4 relative z-10"
           >
-            {/* Tombol plus tetap muncul */}
+            {/* Add balance: allowed for Admin/Owner and Spender */}
             <button
               onClick={handleAddBalanceFromWallet}
-              className="w-10 h-10 flex items-center justify-center rounded-xl bg-orange-400 text-white shadow-md active:scale-95 transition"
+              disabled={roleLoading || !(isAdminOrOwner || isSpender)}
+              className={`w-10 h-10 flex items-center justify-center rounded-xl shadow-md active:scale-95 transition
+                ${roleLoading ? "opacity-60 cursor-wait bg-gray-100 text-gray-400" : isAdminOrOwner || isSpender ? "bg-orange-400 text-white" : "bg-white text-gray-300 border border-gray-200 cursor-not-allowed"}`}
+              title={
+                roleLoading
+                  ? "Checking permissions..."
+                  : isAdminOrOwner || isSpender
+                  ? "Add balance"
+                  : "You don't have permission to add balance"
+              }
             >
               <PlusIcon className="w-5 h-5" />
             </button>
 
-            {/* Icon Person hanya muncul untuk Shared Wallet */}
+            {/* Icon Person (view members) only for Shared wallet AND Admin/Owner */}
             {wallet.type === "Shared" && (
               <button
                 onClick={handleViewPeople}
-                className="w-10 h-10 flex items-center justify-center rounded-xl border border-orange-400 text-[#FF9A25] bg-white shadow-sm active:scale-95 transition"
+                disabled={roleLoading || !isAdminOrOwner}
+                className={`w-10 h-10 flex items-center justify-center rounded-xl border shadow-sm active:scale-95 transition
+                  ${roleLoading ? "opacity-60 cursor-wait border-gray-200 text-gray-300 bg-white" : isAdminOrOwner ? "border-orange-400 text-[#FF9A25] bg-white" : "border-gray-200 text-gray-300 bg-white cursor-not-allowed"}`}
+                title={
+                  roleLoading
+                    ? "Checking permissions..."
+                    : isAdminOrOwner
+                    ? "View members"
+                    : "You don't have permission to view members"
+                }
               >
                 <UserIcon className="w-5 h-5" />
               </button>
