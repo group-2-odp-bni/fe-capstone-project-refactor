@@ -25,7 +25,6 @@ export default function PinLoginPage() {
 function PinLoginContent() {
   const navigate = useNavigate();
   const { loginData } = useLoginContext();
-
   const [pin, setPin] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -38,9 +37,8 @@ function PinLoginContent() {
       setError("PIN harus 6 digit");
       return;
     }
-
     if (!loginData?.stateToken) {
-       setError("Sesi login tidak valid. Silakan coba lagi.");
+      setError("Sesi login tidak valid. Silakan coba lagi.");
       return;
     }
 
@@ -59,7 +57,6 @@ function PinLoginContent() {
       );
       const { accessToken, refreshToken } = res?.data?.data || {};
       saveTokens(accessToken, refreshToken);
- 
       navigate("/app/dashboard");
     } catch (err) {
       setError(
@@ -93,7 +90,7 @@ function PinLoginContent() {
         onChange={setPin}
         onConfirm={submitPin}
         errorText={error}
-       loading={loading}
+        loading={loading}
         title="Masukkan PIN Anda"
         attemptKey={attempt}
         onClearError={() => setError("")}
@@ -102,10 +99,10 @@ function PinLoginContent() {
       />
 
       {error && (
-       <p className="text-red-500 text-xs text-center mb-4">{error}</p>
+        <p className="text-red-500 text-xs text-center mb-4">{error}</p>
       )}
 
-       <FullSubmitButton disabled={loading || pin.length !== 6}>
+      <FullSubmitButton disabled={loading || pin.length !== 6}>
         {loading ? "Memverifikasi..." : "Masuk"}
       </FullSubmitButton>
     </form>
