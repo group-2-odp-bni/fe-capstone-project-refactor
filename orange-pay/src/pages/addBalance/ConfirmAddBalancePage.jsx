@@ -118,7 +118,7 @@ export default function ConfirmAddBalancePage() {
         <button
           type="button"
           onClick={handleConfirm}
-          className="w-full bg-orange-500 text-white py-3.5 rounded-xl font-semibold shadow-lg hover:bg-orange-600 active:scale-[.99] transition text-center"
+          className="w-full bg-orange-400 text-white py-3.5 rounded-xl font-semibold shadow-lg hover:bg-orange-400 active:scale-[.99] transition text-center"
         >
           Confirm
         </button>

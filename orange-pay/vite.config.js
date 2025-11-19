@@ -11,7 +11,7 @@ export default defineConfig({
         secure: false,
       },
       "/api/v1/split-bill": {
-        target: "https://ml-dev.orangebybni.my.id",
+        target: "https://api-dev.orangebybni.my.id",
         changeOrigin: true,
         secure: false,
       },
@@ -22,7 +22,7 @@ export default defineConfig({
         secure: false,
       },
       "/s/": {
-        target: "https://ml-dev.orangebybni.my.id",
+        target: "https://api-dev.orangebybni.my.id",
         changeOrigin: true,
         secure: false,
       },

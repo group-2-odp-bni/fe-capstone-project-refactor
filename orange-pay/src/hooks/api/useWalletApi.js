@@ -19,8 +19,6 @@ export default function useWalletApi() {
     try {
       const body = {
         name: newName,
-        status: "ACTIVE",
-        metadata: {},
       };
 
       const response = await api.patch(`/api/v1/wallets/${walletId}`, body);
