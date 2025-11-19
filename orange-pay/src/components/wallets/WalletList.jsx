@@ -1,8 +1,9 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import useCardBalances from "../../hooks/api/useCardBalances";
-import { GradientCardShell, BalanceRow, PillBadge } from "../ui/BalanceCardUI";
+import { GradientCardShell, BalanceRow, PillBadge, CardTopBar } from "../ui/BalanceCardUI";
 import SearchInput from "../ui/SearchInput";
+import { BiGame } from "react-icons/bi";
 
 export default function Wallets() {
   const navigate = useNavigate();
@@ -70,8 +71,8 @@ export default function Wallets() {
             className={`px-4 py-1.5 rounded-full text-xs font-semibold transition whitespace-nowrap
               ${
                 typeFilter === t
-                  ? "bg-orange-500 text-white shadow"
-                  : "bg-orange-50 text-orange-700 hover:bg-orange-100"
+                  ? "bg-orange-400 text-white shadow"
+                  : "bg-gray-50 text-gray hover:bg-gray-100"
               }`}
           >
             {t}
@@ -106,35 +107,31 @@ function WalletCardInline({ card, onClick, humanizeType }) {
   const badgeLabel = card.isMain ? "Utama" : humanizeType(card.type);
 
   return (
-    <GradientCardShell
-      bg={bg}
-      onClick={onClick}
-      className="w-full min-h-[110px] p-4 cursor-pointer text-white relative"
+    <GradientCardShell bg={bg}>
+    <div
+        className="relative"
+        style={{ transformStyle: "preserve-3d" }}
     >
-      {/* TOP LEFT — Logo + Badge */}
-      <div className="relative z-10 flex items-center space-x-3 mb-4">
-        <img
-          src="/orangepay_card.svg"
-          alt="RangePay Logo"
-          className="h-5 md:h-6 w-auto drop-shadow"
+        <div>
+        <CardTopBar
+            title={card.title}
+            type={card.type}
+            isMain={card?.defaultForUser === true}
+            onBadgeClick={() => goTo(idx)}
         />
-        <PillBadge label={badgeLabel} active={!!card.isMain} />
-      </div>
-
-      {/* TOP RIGHT — Wallet Name */}
-      {card.walletName &&
-        String(card.walletName).trim().toUpperCase() !== "MAIN" && (
-          <div className="absolute top-4 right-4 z-10 text-white font-semibold text-sm md:text-base leading-none">
-            {card.walletName}
-          </div>
-        )}
-
-      {/* BALANCE */}
-      <BalanceRow
-        amount={card.balance}
-        isHidden={isHidden}
-        onToggleHidden={() => setIsHidden(!isHidden)}
-      />
+        {card.walletName &&
+            String(card.walletName).trim().toUpperCase() !== "MAIN" && (
+            <div className="absolute top-0 right-4 z-10 text-white font-semibold text-sm md:text-base leading-none pointer-events-none flex flex-col items-end space-y-1">
+                <div className="mt-2 text-right w-full">{card.walletName}</div>
+            </div>
+            )}
+        </div>
+        <div className="relative z-10">
+        <BalanceRow
+            amount={card.balance}
+        />
+        </div>
+    </div>
     </GradientCardShell>
   );
 }

@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import View from "../../components/view/View";
-import WhiteHeader from "../../components/register/WhiteHeader";
+import Header from "../../components/Header";
 import ContentBox from "../../components/common/ContentBox";
 
 export default function TopUpPage() {
@@ -8,7 +8,7 @@ export default function TopUpPage() {
 
   return (
     <View>
-      <WhiteHeader title="Tambah Saldo" to="/app/dashboard" />
+      <Header title="Tambah Saldo"/>
       <ContentBox>
         <div className="p-4">
           <p className="text-sm text-gray-600 mb-4 font-semibold mb-6">
@@ -30,7 +30,7 @@ export default function TopUpPage() {
                 BNI Virtual Account
               </span>
             </div>
-            <span className="text-gray-400 group-hover:text-orange-500">›</span>
+            <span className="text-gray-400 group-hover:text-orange-400">›</span>
           </button>
         </div>
       </ContentBox>

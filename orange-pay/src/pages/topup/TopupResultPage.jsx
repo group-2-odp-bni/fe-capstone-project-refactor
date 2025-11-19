@@ -3,7 +3,7 @@ import { useTopupContext } from "../../context/TopupContext";
 import SuccessIcon from "../../components/common/SuccessIcon";
 import { useNavigate } from "react-router-dom";
 import ConfirmButton from "../../components/top-up/ConfirmButton";
-import WhiteHeader from "../../components/register/WhiteHeader";
+import Header from "../../components/Header";
 import ContentBox from "../../components/common/ContentBox";
 import View from "../../components/view/View";
 
@@ -28,13 +28,13 @@ export default function TopupResultPage({}) {
 
   return (
     <View>
-      <WhiteHeader title="Topup Result" to="/app/dashboard" />
+      <Header title="Topup Result" />
       <ContentBox>
         <div className="w-full bg-white flex justify-center">
           <div className="w-full max-w-sm bg-white rounded-[22px] shadow-[0_8px_28px_rgba(0,0,0,0.06)] border border-gray-100 p-6">
             {/* Brand row (ikon + tulisan RANGE-PAY) */}
             <div className="flex items-center justify-center gap-2">
-              <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-orange-500 overflow-hidden">
+              <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-orange-400 overflow-hidden">
                 <img
                   src="/orange.jpg"
                   alt="brand"

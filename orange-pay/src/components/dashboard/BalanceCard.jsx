@@ -10,6 +10,7 @@ import {
   BalanceRow,
   CarouselViewport,
   CTASection,
+  PillBadge,
 } from "../ui/BalanceCardUI";
 
 export default function AtomicBalanceCard({
@@ -69,11 +70,9 @@ export default function AtomicBalanceCard({
         });
       }
     }
-    // If no real wallets, we keep arr as-is (no auto-injected add card)
     return arr;
   }, [orderedItemsRaw, hasRealWallets]);
 
-  // Make tabs come from orderedItems (ensures indices align)
   const tabs = useMemo(() => {
     const source = Array.isArray(orderedItems) ? orderedItems : [];
     return source.map((c) => ({
@@ -114,7 +113,6 @@ export default function AtomicBalanceCard({
       setActiveIndex(target);
       viewportRef.current?.scrollToIndex?.(target);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [orderedItems, initialWalletId]);
 
   useEffect(() => {
@@ -175,28 +173,93 @@ export default function AtomicBalanceCard({
 
   const makeOverlayHandlers = (to) => {
     const draggingRef = viewportRef.current?.isDraggingRef;
-    const onClick = () => {
-      if (draggingRef?.current) return;
-      if (!to) return;
-      navigate(to);
-    };
-    const onKeyDown = (e) => {
-      if (draggingRef?.current) return;
-      if (e.key === "Enter" || e.key === " ") {
-        e.preventDefault();
-        onClick();
+  
+    const isIgnoredElement = (el) => {
+      try {
+        return Boolean(el && el.closest && el.closest('[data-ignore-overlay="true"]'));
+      } catch {
+        return false;
       }
     };
+  
+    // Return the marked element (if any) under the given client coords
+    const getIgnoredElementAtPoint = (overlayEl, clientX, clientY) => {
+      try {
+        if (!overlayEl || !overlayEl.style) return null;
+        if (typeof clientX !== "number" || typeof clientY !== "number") return null;
+  
+        const prev = overlayEl.style.pointerEvents;
+        // temporarily let clicks go "through" this overlay so we can see what's visually underneath
+        overlayEl.style.pointerEvents = "none";
+        const el = document.elementFromPoint(clientX, clientY);
+        overlayEl.style.pointerEvents = prev || "";
+        if (!el) return null;
+        return el.closest && el.closest('[data-ignore-overlay="true"]');
+      } catch {
+        try { if (overlayEl && overlayEl.style) overlayEl.style.pointerEvents = ""; } catch {}
+        return null;
+      }
+    };
+  
+    const isActiveElementIgnored = () => {
+      try {
+        const ae = document.activeElement;
+        return Boolean(ae && ae.closest && ae.closest('[data-ignore-overlay="true"]'));
+      } catch {
+        return false;
+      }
+    };
+  
+    const onClick = (event) => {
+      try {
+        // 1) If the pointer visually landed on an ignored control, call its `.click()` so its handlers run.
+        if (event?.clientX != null && event?.clientY != null) {
+          const ignoredEl = getIgnoredElementAtPoint(event.currentTarget, event.clientX, event.clientY);
+          if (ignoredEl) {
+            // Trigger a real click on the underlying control so its handlers (IconToggle) run.
+            // Using .click() preserves default behavior and dispatches events to React handlers.
+            ignoredEl.click();
+            return;
+          }
+        }
+  
+        // 2) If focus is currently on an ignored control (keyboard case), do nothing — the focused control will receive the key event.
+        if (isActiveElementIgnored()) return;
+  
+        if (draggingRef?.current) return;
+        if (!to) return;
+        navigate(to);
+      } catch (err) {
+        // fallback conservative behaviour: navigate as before if nothing else handled
+        if (draggingRef?.current) return;
+        if (!to) return;
+        navigate(to);
+      }
+    };
+  
+    const onKeyDown = (event) => {
+      // If the focused element is an ignored control, do nothing here — let that element handle the key event.
+      if (isActiveElementIgnored()) return;
+  
+      if (draggingRef?.current) return;
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        onClick(event);
+      }
+    };
+  
     return { onClick, onKeyDown };
   };
+  
+  
+  
+  
 
   const EXCLUDE = {
     sm: { bottom: 64, right: 120 },
     md: { bottom: 80, right: 160 },
   };
 
-  // ---------- RENDER ----------
-  // 1) Loading skeleton (carousel-like)
   if (loading) {
     return (
       <div className="w-full mx-auto md:px-1 mt-6">
@@ -364,18 +427,20 @@ export default function AtomicBalanceCard({
                       )`,
                     }}
                   />
-                  <CardTopBar
-                    title={card.title}
-                    type={card.type}
-                    isMain={card?.defaultForUser === true}
-                    onBadgeClick={() => goTo(idx)}
-                  />
-                  {card.walletName &&
-                    String(card.walletName).trim().toUpperCase() !== "MAIN" && (
-                      <div className="absolute top-4 right-4 z-10 text-white font-semibold text-sm md:text-base leading-none pointer-events-none">
-                        {card.walletName}
-                      </div>
-                    )}
+                  <div>
+                    <CardTopBar
+                      title={card.title}
+                      type={card.type}
+                      isMain={card?.defaultForUser === true}
+                      onBadgeClick={() => goTo(idx)}
+                    />
+                    {card.walletName &&
+                      String(card.walletName).trim().toUpperCase() !== "MAIN" && (
+                        <div className="absolute top-0 right-4 z-10 text-white font-semibold text-sm md:text-base leading-none pointer-events-none flex flex-col items-end space-y-1">
+                          <div className="mt-2 text-right w-full">{card.walletName}</div>
+                        </div>
+                      )}
+                  </div>
                   <div className="relative z-10">
                     <BalanceRow
                       amount={amount}
@@ -386,7 +451,6 @@ export default function AtomicBalanceCard({
                     />
                   </div>
 
-                  {/* CTA stays clickable; just pass disabled + onBlocked */}
                   <div className="relative z-30" aria-disabled={disableActions}>
                     <CTASection
                       links={linksWithWallet}

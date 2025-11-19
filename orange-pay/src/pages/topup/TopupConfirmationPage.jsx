@@ -6,7 +6,7 @@ import VirtualAccountBox from "../../components/top-up/VirtualAccountBox";
 import CountdownTimer from "../../components/dashboard/CountdownTimer";
 import { useNavigate } from "react-router-dom";
 import View from "../../components/view/View";
-import WhiteHeader from "../../components/register/WhiteHeader";
+import Header from "../../components/Header";
 import api from "../../lib/api";
 import { useCountdown } from "../../hooks/useCountdown";
 
@@ -57,7 +57,7 @@ export default function TopUpConfirmationPage() {
 
   return (
     <View>
-      <WhiteHeader title="Konfirmasi Topup" />
+      <Header title="Konfirmasi Topup" />
       <div className="flex items-center justify-center px-4">
         {/* Card */}
         <div className="w-full max-w-sm rounded-[28px] border border-gray-200 shadow-sm min-h-[500px]">

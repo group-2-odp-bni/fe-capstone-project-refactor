@@ -36,7 +36,7 @@ export default function Header({
       className={`sticky top-0 z-20 bg-white ${className}`}
       role="banner"
     >
-      <div className="px-4 py-3 flex ">
+      <div className="px-4 py-3 pt-5 flex ">
         {/* left: back button or placeholder */}  
         <div className="w-10 flex justify-start">
           {showBack ? (
