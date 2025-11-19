@@ -340,9 +340,10 @@ function DockingHighFive({ members = [], onDock }) {
           inset: 0,
           zIndex: 10040,
           opacity: confettiOpacity,
-          transition: frozen
-            ? "opacity 600ms ease-out"
-            : "opacity 600ms ease-out",
+          transition: "opacity 600ms ease-out",
+          // transition: frozen
+          //   ? "opacity 600ms ease-out"
+          //   : "opacity 600ms ease-out",
           overflow: "hidden",
         }}
       >
