@@ -77,7 +77,7 @@ export default function AddWalletPage() {
     } catch (e) {
       
     showToast({
-      type: "error",
+      type: "success",
       title: "Gagal membuat wallet",
       message: e?.message || "Wallet tidak boleh duplikat.",
     });
