@@ -1,5 +1,9 @@
-let loaded = false;
-let ready = false;
+let _injected = false;
+
+function getClarity() {
+  if (typeof window === "undefined") return null;
+  return typeof window.clarity === "function" ? window.clarity : null;
+}
 
 export function loadClarity(projectId) {
   if (typeof window === "undefined" || !projectId) return;
@@ -10,34 +14,35 @@ export function loadClarity(projectId) {
     window.__CLARITY_INIT_DONE = true;
     return;
   }
+
   if (document.querySelector('script[data-clarity="true"]')) {
     window.__CLARITY_INIT_DONE = true;
     return;
   }
+
   if (_injected) return;
   _injected = true;
 
-  (function (c, l, a, r, i, t, y) {
-    c[a] =
-      c[a] ||
-      function () {
-        (c[a].q = c[a].q || []).push(arguments);
-      };
-    t = l.createElement(r);
-    t.async = 1;
-    t.setAttribute("data-clarity", "true");
-    t.src = "https://www.clarity.ms/tag/" + i;
-    t.onload = () => {
-      window.__CLARITY_INIT_DONE = true;
+  window.clarity =
+    window.clarity ||
+    function () {
+      (window.clarity.q = window.clarity.q || []).push(arguments);
     };
-    y = l.getElementsByTagName(r)[0];
-    y.parentNode.insertBefore(t, y);
-  })(window, document, "clarity", "script", projectId);
-}
 
-function getClarity() {
-  if (typeof window === "undefined") return null;
-  return typeof window.clarity === "function" ? window.clarity : null;
+  const scriptEl = document.createElement("script");
+  scriptEl.async = true;
+  scriptEl.setAttribute("data-clarity", "true");
+  scriptEl.src = "https://www.clarity.ms/tag/" + projectId;
+  scriptEl.onload = () => {
+    window.__CLARITY_INIT_DONE = true;
+  };
+
+  const firstScript = document.getElementsByTagName("script")[0];
+  if (firstScript && firstScript.parentNode) {
+    firstScript.parentNode.insertBefore(scriptEl, firstScript);
+  } else {
+    document.head.appendChild(scriptEl);
+  }
 }
 
 export function clarityPageview() {
