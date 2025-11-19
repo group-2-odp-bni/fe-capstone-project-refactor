@@ -2,7 +2,7 @@
 const outerGlow = "0 6px 16px rgba(0,0,0,0.12), 0 0 24px rgba(0,0,0,0.08)";
 
 export default function WalletCardPreview({
-  variant = "personal" && "shared",
+  variant = "personal",
   name = "",
   balance = 0,
   gradient = "linear-gradient(101.06deg,#8B138D 23.71%,#591467 50.68%,#25062B 97.82%)",
