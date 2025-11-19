@@ -10,7 +10,7 @@ export default function Toast({ toast }) {
     >
       <div
         className={`
-          bg-white/95 backdrop-blur shadow-2xl border rounded-2xl p-4 flex items-start gap-4 max-w-sm w-full pointer-events-auto
+          bg-white shadow-2xl border border-gray-100 rounded-2xl p-4 flex items-start gap-4 max-w-sm w-full pointer-events-auto
           ${isError ? "border-l-4 border-l-red-500" : ""}
           ${isSuccess ? "border-l-4 border-l-emerald-500" : ""}
         `}
