@@ -5,6 +5,7 @@ import WhiteCardContainer from "../../components/register/WhiteCardContainer";
 import { saveTokens } from "../../services/auth/authService";
 import api from "../../lib/api";
 import View from "../../components/view/View";
+import { useToast } from "../../context/ToastContext";
 
 export default function SetPinPage() {
   return (
@@ -24,15 +25,19 @@ function SetPinContent() {
   const [newPin, setNewPin] = useState(null);
   const [step, setStep] = useState("inputOldPin");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
   const [attempt, setAttempt] = useState(0);
+  const { showToast } = useToast()
 
   const submitPin = async () => {
     setAttempt((x) => x + 1);
 
     // hanldle pin lenght
     if (pin.length !== 6) {
-      setError("PIN harus 6 digit");
+      showToast({
+        type: "error",
+        title: "Error",
+        message: "PIN harus 6 digit",
+      })
       return;
     }
 
@@ -41,7 +46,7 @@ function SetPinContent() {
       setOldPin(pin);
       setPin("");
       setStep("inputNewPin");
-      setError("")
+
       return;
     }
 
@@ -50,7 +55,6 @@ function SetPinContent() {
       setNewPin(pin);
       setPin("");
       setStep("confirm");
-      setError("")
       return;
     }
 
@@ -60,7 +64,11 @@ function SetPinContent() {
 
       // if pin not the same, return to step 1 else pass to step 4
       if (pin !== newPin) {
-        setError("PIN tidak cocok, silakan coba lagi.");
+        showToast({
+          type: "error",
+          title: "Error",
+          message: "PIN tidak cocok, silakan coba lagi.",
+        })
         setPin("");
         setNewPin(null);
         setStep("inputNewPin");
@@ -86,17 +94,28 @@ function SetPinContent() {
       const errorCode = err?.response?.data?.error?.code;
 
       if (errorCode === "AUTH-3003") {
-
-        setError("Pin lama salah, mohon input ulang pin.")
+        showToast({
+          type: "error",
+          title: "Error",
+          message: "Pin lama salah, mohon input ulang pin.",
+        })
         setStep("inputOldPin");
 
       } else if (errorCode === "AUTH-3002") {
+        showToast({
+          type: "error",
+          title: "Error",
+          message: "Pin baru terlalu lemah, mohon input ulang pin baru.",
+        })
 
-        setError("Pin baru terlalu lemah, mohon input ulang pin baru.")
         setStep("inputNewPin");
 
       } else {
-        setError(err?.response?.data?.error?.message);
+        showToast({
+          type: "error",
+          title: "Error",
+          message: err?.response?.data?.error?.message,
+        })
         setStep("inputNewPin");
 
       }
@@ -114,11 +133,6 @@ function SetPinContent() {
     submitPin();
   };
 
-  // const goBack = () => {
-  //   if (window.history.length > 1) navigate(-1);
-  //   else navigate("/login", { replace: true });
-  // };
-
   const getTitle = () => {
     if (step === "inputOldPin") return "Masukkan PIN Lama";
     if (step === "inputNewPin") return "Buat PIN Baru";
@@ -127,19 +141,14 @@ function SetPinContent() {
 
   return (
     <form className="pb-10">
-      {error && (
-        <p className="text-red-500 text-xs text-center mb-4">{error}</p>
-      )}
       <CenteredNumberInputPad
         value={pin}
         onChange={setPin}
         onConfirm={submitPin}
-        errorText={error}
         loading={loading}
         title={getTitle()}
         attemptKey={attempt}
         onBack={() => navigate("/app/account")}
-      // onClearError={() => setError("")}
 
       />
 

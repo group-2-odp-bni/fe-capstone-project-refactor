@@ -13,7 +13,6 @@ import { useCountdown } from "../../hooks/useCountdown";
 export default function TopUpConfirmationPage() {
   const { topupData } = useTopupContext();
   const navigate = useNavigate();
-  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const { secondsLeft } = useCountdown(86400);
 
@@ -24,8 +23,7 @@ export default function TopUpConfirmationPage() {
 
   // get topup status
   const handleGetTopupStatus = async () => {
-    +setError("");
-    +setLoading(true);
+    setLoading(true);
 
     try {
       const response = await api.get(
@@ -42,14 +40,21 @@ export default function TopUpConfirmationPage() {
       if (status === "PAID") {
         navigate("/app/topup/result");
       } else {
-        setError("Pembayaran belum dilakukan.");
+        showToast({
+          type: "error",
+          title: "Error",
+          message: "Pembayaran belum dilakukan.",
+        })
       }
     } catch (err) {
-      setError(
-        err.response?.data?.error?.message ||
+      showToast({
+        type: "error",
+        title: "Error",
+        message:
+          err.response?.data?.error?.message ||
           err.message ||
-          "Gagal memeriksa status."
-      );
+          "Gagal memeriksa status.",
+      })
     } finally {
       setLoading(false);
     }
@@ -86,10 +91,6 @@ export default function TopUpConfirmationPage() {
               initialSeconds={secondsLeft}
               className="mt-5 mb-5"
             />
-
-            {error && (
-              <p className="text-red-500 text-sm text-center mt-2">{error}</p>
-            )}
 
             {/* Done button */}
             <ConfirmButton
