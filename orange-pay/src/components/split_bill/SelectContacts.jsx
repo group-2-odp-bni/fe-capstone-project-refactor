@@ -2,6 +2,72 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import SearchInput from "../ui/SearchInput";
 import api from "../../lib/api";
+import Header from "../../components/Header";
+
+/**
+ * Small inline help screen (you can replace this with your own HelpScreen import)
+ */
+function HelpScreen({ onClose }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+      <div className="bg-white rounded-xl shadow-lg w-full max-w-lg p-6 m-4">
+        <div className="flex items-start justify-between gap-4">
+          <h2 className="text-lg font-semibold">Bantuan</h2>
+          <button
+            aria-label="Tutup bantuan"
+            onClick={onClose}
+            className="text-gray-600 hover:text-gray-800"
+          >
+            ✕
+          </button>
+        </div>
+        <div className="mt-3 text-sm text-gray-700 space-y-2">
+          <p>Petunjuk singkat untuk menggunakan layar ini:</p>
+          <ul className="list-disc ml-5">
+            <li>Gunakan kolom pencarian untuk menemukan kontak.</li>
+            <li>Ketuk kontak untuk memilih / menghapus pilihan.</li>
+            <li>Tekan Konfirmasi untuk melanjutkan.</li>
+          </ul>
+          <p className="text-xs text-gray-500 mt-3">
+            (Ganti komponen ini dengan komponen HelpScreen asli jika diperlukan.)
+          </p>
+        </div>
+        <div className="mt-5 flex justify-end">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 rounded-lg bg-gray-100 hover:bg-gray-200"
+          >
+            Tutup
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Help button — calls the provided onHelp handler
+ */
+function HelpButton({ onHelp }) {
+  return (
+    <button
+      onClick={onHelp}
+      className="w-5 h-5 rounded-full flex items-center justify-center hover:bg-gray-100 active:scale-95 transition-all duration-200"
+      aria-label="Bantuan"
+    >
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+        <circle cx="12" cy="12" r="10" stroke="#9CA3AF" strokeWidth="2" />
+        <path
+          d="M9.5 9a2.5 2.5 0 115 0c0 1.5-2.5 2-2.5 3.5"
+          stroke="#9CA3AF"
+          strokeWidth="2"
+          strokeLinecap="round"
+        />
+        <circle cx="12" cy="17" r="1" fill="#9CA3AF" />
+      </svg>
+    </button>
+  );
+}
 
 function formatPhoneE164(phone) {
   if (!phone) return null;
@@ -45,7 +111,7 @@ export default function SelectContacts({
   currentUser: currentUserProp,
   initialSelectedIds = [],
   onBack,
-  onHelp,
+  onHelp, // parent callback (optional)
   onConfirm,
 }) {
   const [query, setQuery] = useState("");
@@ -69,6 +135,16 @@ export default function SelectContacts({
   const [verifyName, setVerifyName] = useState("");
   const [verifying, setVerifying] = useState(false);
   const [verifyError, setVerifyError] = useState(null);
+
+  // --- showHelp state lives inside the component ---
+  const [showHelp, setShowHelp] = useState(false);
+  const handleOpenHelp = () => {
+    // call parent callback if provided
+    if (typeof onHelp === "function") onHelp();
+    setShowHelp(true);
+  };
+  const handleCloseHelp = () => setShowHelp(false);
+  // -----------------------------------------------
 
   useEffect(() => {
     const abort = new AbortController();
@@ -127,7 +203,7 @@ export default function SelectContacts({
     })();
 
     return () => abort.abort();
-  }, []);
+  }, [currentUserProp]);
 
   useEffect(() => {
     const q = (query || "").trim();
@@ -304,49 +380,12 @@ export default function SelectContacts({
   return (
     <div className="min-h-screen bg-white flex flex-col">
       <div className="bg-white border-b border-gray-200 px-4 pt-3 pb-2 sticky top-0 z-10 backdrop-blur-sm bg-white/95">
+        <Header
+          title="Pilih Anggota"
+          onBack={onBack}
+          right={<HelpButton onHelp={handleOpenHelp} />}
+        />
         <div className="w-full max-w-2xl mx-auto">
-          <div className="flex items-center justify-between">
-            <button
-              onClick={onBack}
-              className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-gray-100 active:scale-95 transition-all duration-200"
-              aria-label="Kembali"
-            >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                <path
-                  d="M15 18l-6-6 6-6"
-                  stroke="#1F2937"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </button>
-            <h1 className="text-base md:text-lg font-bold text-gray-900">
-              Pilih Anggota
-            </h1>
-            <button
-              onClick={onHelp}
-              className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-gray-100 active:scale-95 transition-all duration-200"
-              aria-label="Bantuan"
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                <circle
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="#9CA3AF"
-                  strokeWidth="2"
-                />
-                <path
-                  d="M9.5 9a2.5 2.5 0 115 0c0 1.5-2.5 2-2.5 3.5"
-                  stroke="#9CA3AF"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                />
-                <circle cx="12" cy="17" r="1" fill="#9CA3AF" />
-              </svg>
-            </button>
-          </div>
           <p className="text-xs text-gray-500 mt-1">
             {selectedCount} anggota dipilih
           </p>
@@ -431,19 +470,8 @@ export default function SelectContacts({
                     viewBox="0 0 24 24"
                     fill="none"
                   >
-                    <circle
-                      cx="11"
-                      cy="11"
-                      r="7"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                    />
-                    <path
-                      d="M20 20l-4-4"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                    />
+                    <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="2" />
+                    <path d="M20 20l-4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
                   </svg>
                 }
               />
@@ -547,9 +575,14 @@ export default function SelectContacts({
           onErrorClose={() => setVerifyError(null)}
         />
       )}
+
+      {/* Help modal */}
+      {showHelp && <HelpScreen onClose={handleCloseHelp} />}
     </div>
   );
 }
+
+/* ----------------------- helper subcomponents ----------------------- */
 
 function VerifyContactButton({ phone, onClick }) {
   return (
@@ -563,12 +596,8 @@ function VerifyContactButton({ phone, onClick }) {
           ?
         </div>
         <div className="min-w-0 flex-1">
-          <div className="text-sm font-medium text-blue-600">
-            Undang Teman Baru
-          </div>
-          <div className="text-xs text-gray-500 truncate">
-            Klik untuk verifikasi & tambah {phone}
-          </div>
+          <div className="text-sm font-medium text-blue-600">Undang Teman Baru</div>
+          <div className="text-xs text-gray-500 truncate">Klik untuk verifikasi & tambah {phone}</div>
         </div>
       </div>
       <div className="flex-shrink-0 ml-3">
@@ -596,9 +625,7 @@ function ContactRowWithCheck({ contact, checked, onToggle }) {
           {initial}
         </div>
         <div className="min-w-0 flex-1">
-          <div className="text-sm font-medium text-gray-900 truncate">
-            {name}
-          </div>
+          <div className="text-sm font-medium text-gray-900 truncate">{name}</div>
           <div className="text-xs text-gray-500 truncate">{phone}</div>
         </div>
       </div>
@@ -607,13 +634,7 @@ function ContactRowWithCheck({ contact, checked, onToggle }) {
         {checked ? (
           <div className="w-7 h-7 rounded-md bg-[#FF9A25] border-2 border-[#FF9A25] flex items-center justify-center shadow-sm">
             <svg className="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none">
-              <path
-                d="M5 13l4 4L19 7"
-                stroke="currentColor"
-                strokeWidth="3"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
+              <path d="M5 13l4 4L19 7" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </div>
         ) : (
@@ -631,31 +652,20 @@ function MemberCard({ name = "", phone = "", onRemove }) {
     <div className="flex-shrink-0 flex flex-col items-center">
       <div className="relative mb-2">
         <div className="w-16 h-16 md:w-[72px] md:h-[72px] rounded-full bg-gradient-to-br from-[#E5A45D] to-[#D89438] flex items-center justify-center shadow-md">
-          <span className="text-white text-2xl md:text-3xl font-bold">
-            {initial}
-          </span>
+          <span className="text-white text-2xl md:text-3xl font-bold">{initial}</span>
         </div>
         <button
           onClick={onRemove}
           className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-gray-200 hover:bg-gray-300 text-gray-600 flex items-center justify-center shadow transition-all duration-200 active:scale-90"
           aria-label="Hapus"
         >
-          <svg
-            width="10"
-            height="10"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="3"
-          >
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
             <path d="M18 6L6 18M6 6l12 12" />
           </svg>
         </button>
       </div>
       <div className="text-center max-w-[70px]">
-        <div className="text-xs font-semibold text-gray-900 truncate">
-          {name || "—"}
-        </div>
+        <div className="text-xs font-semibold text-gray-900 truncate">{name || "—"}</div>
         <div className="text-xs text-gray-500">{maskPhoneLast4(phone)}</div>
       </div>
     </div>
@@ -675,19 +685,13 @@ function VerifyContactDialog({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
       <div className="bg-white rounded-xl shadow-lg w-full max-w-sm m-4 p-6">
-        <h2 className="text-lg font-bold text-gray-900">
-          Verifikasi Kontak Baru
-        </h2>
+        <h2 className="text-lg font-bold text-gray-900">Verifikasi Kontak Baru</h2>
         <p className="text-sm text-gray-600 mt-2">
-          User <span className="font-semibold">{phone}</span> tidak ada di
-          kontak Anda. Masukkan nama untuk ditambahkan:
+          User <span className="font-semibold">{phone}</span> tidak ada di kontak Anda. Masukkan nama untuk ditambahkan:
         </p>
 
         <div className="mt-4">
-          <label
-            htmlFor="verify-name-input"
-            className="block text-sm font-medium text-gray-700 mb-1"
-          >
+          <label htmlFor="verify-name-input" className="block text-sm font-medium text-gray-700 mb-1">
             Nama Kontak
           </label>
           <input
@@ -710,21 +714,14 @@ function VerifyContactDialog({
         )}
 
         <div className="mt-6 flex justify-end gap-3">
-          <button
-            type="button"
-            onClick={onCancel}
-            disabled={loading}
-            className="px-4 py-2 rounded-lg bg-gray-100 text-gray-700 font-semibold hover:bg-gray-200 transition"
-          >
+          <button type="button" onClick={onCancel} disabled={loading} className="px-4 py-2 rounded-lg bg-gray-100 text-gray-700 font-semibold hover:bg-gray-200 transition">
             Batal
           </button>
           <button
             type="button"
             onClick={onConfirm}
             disabled={loading}
-            className={`px-4 py-2 rounded-lg font-semibold text-white transition ${
-              loading ? "bg-gray-400" : "bg-[#FF9A25] hover:bg-[#FF8800]"
-            }`}
+            className={`px-4 py-2 rounded-lg font-semibold text-white transition ${loading ? "bg-gray-400" : "bg-[#FF9A25] hover:bg-[#FF8800]"}`}
           >
             {loading ? "Memverifikasi..." : "Tambah Kontak"}
           </button>

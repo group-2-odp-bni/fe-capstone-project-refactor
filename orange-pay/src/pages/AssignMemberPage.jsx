@@ -8,7 +8,8 @@ import PendingRow from "../components/members/PendingRow.jsx";
 import ContactSearch from "../components/members/ContactSearch.jsx";
 import ConfirmDialog from "../components/members/ConfirmDialog.jsx";
 import api from "../lib/api.js";
-
+import View from "../components/view/View";
+import Header from "../components/Header";
 function parseJsonSafe(v, fb = {}) {
   if (v == null) return fb;
   if (typeof v === "object") return v;
@@ -326,7 +327,8 @@ export default function AssignMemberPage({ walletIdOverride }) {
           setBalance(mappedWallet.balance);
           setCurrentUser(meData);
           setCurrentUserId(meData.id);
-          setCurrentUserRole(myRoleData.role);
+          // set role string (e.g. "OWNER","ADMIN","SPENDER","VIEWER")
+          setCurrentUserRole(myRoleData?.role ?? null);
           setFavorites(favoritesData);
           setContacts(allContacts);
           setLoading(false);
@@ -375,6 +377,7 @@ export default function AssignMemberPage({ walletIdOverride }) {
     };
   }, [search]);
 
+  // Permission helpers
   const canInvite = currentUserRole === "OWNER" || currentUserRole === "ADMIN";
 
   const canRemoveMember = useCallback(
@@ -392,6 +395,19 @@ export default function AssignMemberPage({ walletIdOverride }) {
     },
     [currentUserRole, currentUserId]
   );
+
+  // --- NEW: guard route access for members page ---
+  useEffect(() => {
+    // run guard after initial load completes
+    if (loading) return;
+
+    // Only OWNER or ADMIN may access this page.
+    const role = (currentUserRole || "").toString().trim().toUpperCase();
+    if (role !== "OWNER" && role !== "ADMIN") {
+      // Redirect to wallet detail (replace history so back doesn't return here)
+      navigate(`/app/wallets/${walletId}`, { replace: true });
+    }
+  }, [loading, currentUserRole, navigate, walletId]);
 
   const handleAddFromContact = (contact) => {
     setRoleToInvite("SPENDER");
@@ -515,21 +531,8 @@ export default function AssignMemberPage({ walletIdOverride }) {
   }
 
   return (
-    <div className="page assign-page">
-      <div className="page-header">
-        <button
-          className="ghost-btn"
-          onClick={() => navigate(-1)}
-          aria-label="Back"
-        >
-          &larr;
-        </button>
-        <span>Add Member</span>
-        {canInvite && (
-          <button className="ghost-btn" aria-label="Add" disabled></button>
-        )}
-      </div>
-
+    <View>  
+      <Header title="Tambah Member"/>
       <WalletMiniCard
         balance={balance}
         name={walletDetails.walletName}
@@ -789,6 +792,6 @@ export default function AssignMemberPage({ walletIdOverride }) {
           )}
         </div>
       </ConfirmDialog>
-    </div>
+    </View>
   );
 }

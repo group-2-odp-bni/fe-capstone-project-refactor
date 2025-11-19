@@ -6,6 +6,7 @@ import SelectContacts from "./SelectContacts";
 import SplitBillConfirmation from "./SplitBillConfirmation";
 import UseContactApi from "../../hooks/api/useContactApi";
 import api from "../../lib/api";
+import Header from "../../components/Header";
 const formatIDR = (n) =>
   new Intl.NumberFormat("id-ID", {
     style: "currency",
@@ -329,27 +330,7 @@ export default function ReceiptResult({ receiptData, onBack, onConfirm }) {
     <>
       <div className="min-h-screen bg-white flex flex-col">
         <div className="bg-white border-b border-gray-200 px-4 py-3 sticky top-0 z-10">
-          <div className="max-w-2xl mx-auto flex items-center justify-between">
-            <button
-              onClick={onBack}
-              className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-gray-100 active:scale-95 transition"
-              aria-label="Kembali"
-            >
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                <path
-                  d="M15 18l-6-6 6-6"
-                  stroke="#1F2937"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </button>
-            <h1 className="text-base md:text-lg font-bold text-gray-900">
-              Split Bill
-            </h1>
-            <div className="w-10" />
-          </div>
+          <Header title="Split Bill"/>
         </div>
 
         <div className="flex-1 overflow-auto px-4 py-5">

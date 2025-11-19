@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Camera from "./CameraPage";
 import api from "../../lib/api";
+import Header from "../../components/Header";
 
 const formatIDR = (n) =>
   new Intl.NumberFormat("id-ID", {
@@ -636,6 +637,7 @@ export default function ReceiptUploadCard() {
 
   return (
     <>
+    <Header title="Split Bill"/>
       <div className="flex flex-col items-center justify-start py-4 space-y-6 px-2">
         <div className="w-full bg-gradient-to-br from-amber-400 to-orange-500 rounded-3xl p-6 text-white shadow-lg shadow-orange-200 relative overflow-hidden">
           {" "}
