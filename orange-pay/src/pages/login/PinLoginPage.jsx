@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import CenteredNumberInputPad from "../../components/register/CenteredNumberInputPad";
@@ -9,9 +9,7 @@ import { saveTokens } from "../../services/auth/authService";
 import { useLoginContext } from "../../context/LoginContext";
 import axios from "axios";
 import View from "../../components/view/View";
-
 const API_BASE = import.meta.env.VITE_API_BASE || "";
-const MAX_ATTEMPTS = 5; // ✅ Diubah jadi 5 kesempatan
 
 export default function PinLoginPage() {
   return (
@@ -32,54 +30,17 @@ function PinLoginContent() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [attempt, setAttempt] = useState(0);
-  const [failedAttempts, setFailedAttempts] = useState(0);
-  const [isLocked, setIsLocked] = useState(false);
-
-  // redirect auto setelah terkunci ke halaman root "/"
-  useEffect(() => {
-    if (isLocked) {
-      const timer = setTimeout(() => {
-        navigate("/", { replace: true }); // ✅ Redirect ke root path
-      }, 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [isLocked, navigate]);
 
   const submitPin = async () => {
     setAttempt((x) => x + 1);
 
-    // udah keburu ke-lock → jangan apa² lagi
-    if (isLocked) {
-      setError("Akun Anda telah terblokir. Mengalihkan ke halaman utama...");
-      return;
-    }
-
-    // panjang PIN
     if (pin.length !== 6) {
       setError("PIN harus 6 digit");
       return;
     }
 
-    // kalau stateToken nggak ada, tetap dianggap 1 percobaan login yang gagal
     if (!loginData?.stateToken) {
-      setFailedAttempts((prev) => {
-        const newFailed = prev + 1;
-
-        if (newFailed >= MAX_ATTEMPTS) {
-          setIsLocked(true);
-          setError(
-            "Akun Anda telah terblokir. Anda akan dialihkan ke halaman utama..."
-          );
-          setPin("");
-        } else {
-          const remaining = MAX_ATTEMPTS - newFailed;
-          setError(
-            `Anda masih punya kesempatan ${remaining} kali lagi.`
-          );
-        }
-
-        return newFailed;
-      });
+       setError("Sesi login tidak valid. Silakan coba lagi.");
       return;
     }
 
@@ -98,33 +59,12 @@ function PinLoginContent() {
       );
       const { accessToken, refreshToken } = res?.data?.data || {};
       saveTokens(accessToken, refreshToken);
-
-      // login sukses → reset counter
-      setFailedAttempts(0);
-      setIsLocked(false);
+ 
       navigate("/app/dashboard");
     } catch (err) {
-      const serverMsg =
-        err?.response?.data?.message || err?.message || "Something went wrong.";
-
-      setFailedAttempts((prev) => {
-        const newFailed = prev + 1;
-
-        if (newFailed >= MAX_ATTEMPTS) {
-          setIsLocked(true);
-          setError(
-            "Akun Anda telah terblokir. Anda akan dialihkan ke halaman utama..."
-          );
-          setPin("");
-        } else {
-          const remaining = MAX_ATTEMPTS - newFailed;
-          setError(
-            `Pin Anda Salah. Anda masih punya kesempatan ${remaining} kali lagi.`
-          );
-        }
-
-        return newFailed;
-      });
+      setError(
+        err?.response?.data?.message || err?.message || "Something went wrong."
+      );
     } finally {
       setLoading(false);
     }
@@ -143,9 +83,7 @@ function PinLoginContent() {
 
   const onFormSubmit = (e) => {
     e.preventDefault();
-    if (!isLocked) {
-      submitPin();
-    }
+    submitPin();
   };
 
   return (
@@ -155,25 +93,20 @@ function PinLoginContent() {
         onChange={setPin}
         onConfirm={submitPin}
         errorText={error}
-        loading={loading || isLocked}
+       loading={loading}
+        title="Masukkan PIN Anda"
         attemptKey={attempt}
         onClearError={() => setError("")}
-        onBack={goBack}
-        onForgot={handleForgotPin}
+        onBack={goBack} // ← aktif di login
+        onForgot={handleForgotPin} // ← aktif di login
       />
 
       {error && (
-        <p
-          className={`text-xs text-center mb-4 ${
-            isLocked ? "text-red-600 font-semibold" : "text-red-500"
-          }`}
-        >
-          {error}
-        </p>
+       <p className="text-red-500 text-xs text-center mb-4">{error}</p>
       )}
 
-      <FullSubmitButton disabled={loading || pin.length !== 6 || isLocked}>
-        {isLocked ? "Akun Terblokir" : loading ? "Memverifikasi..." : "Masuk"}
+       <FullSubmitButton disabled={loading || pin.length !== 6}>
+        {loading ? "Memverifikasi..." : "Masuk"}
       </FullSubmitButton>
     </form>
   );
