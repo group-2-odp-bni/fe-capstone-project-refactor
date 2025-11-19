@@ -1,5 +1,11 @@
 "use client";
-import React, { useEffect, useMemo, useState, useRef, useCallback } from "react";
+import React, {
+  useEffect,
+  useMemo,
+  useState,
+  useRef,
+  useCallback,
+} from "react";
 import html2canvas from "html2canvas";
 import { useToast } from "../../context/ToastContext";
 
@@ -30,7 +36,9 @@ async function saveBlob(blob, suggestedName) {
     try {
       const handle = await window.showSaveFilePicker({
         suggestedName,
-        types: [{ description: "PNG Image", accept: { "image/png": [".png"] } }],
+        types: [
+          { description: "PNG Image", accept: { "image/png": [".png"] } },
+        ],
       });
       const writable = await handle.createWritable();
       await writable.write(blob);
@@ -82,7 +90,15 @@ function PrintField({ label, value, mono, wide }) {
         padding: 12,
       }}
     >
-      <div style={{ fontSize: 9, color: "#64748B", fontWeight: 900, letterSpacing: 1.3, marginBottom: 6 }}>
+      <div
+        style={{
+          fontSize: 9,
+          color: "#64748B",
+          fontWeight: 900,
+          letterSpacing: 1.3,
+          marginBottom: 6,
+        }}
+      >
         {label}
       </div>
       <div
@@ -90,7 +106,9 @@ function PrintField({ label, value, mono, wide }) {
           fontSize: 13,
           fontWeight: 700,
           color: "#0F172A",
-          fontFamily: mono ? "ui-monospace, SFMono-Regular, Menlo, monospace" : "inherit",
+          fontFamily: mono
+            ? "ui-monospace, SFMono-Regular, Menlo, monospace"
+            : "inherit",
           wordBreak: "break-word",
           lineHeight: 1.4,
         }}
@@ -125,14 +143,17 @@ function DockingHighFive({ members = [], onDock }) {
   // 🎯 Badge positioning
   const badgeStyles = useMemo(() => {
     const isCentered = position === "center";
-    const topTarget = isCentered ? "50%" : `calc(env(safe-area-inset-top, 0px) + 24px)`;
+    const topTarget = isCentered
+      ? "50%"
+      : `calc(env(safe-area-inset-top, 0px) + 24px)`;
     const size = isCentered ? 160 : 128;
     const translateY = isCentered ? "-50%" : "0";
     const scale = isCentered ? 1 : 0.8;
 
-    const transition = frozen && dockingComplete
-      ? "none"
-      : "top 1000ms cubic-bezier(0.34,1.56,0.64,1), transform 1000ms cubic-bezier(0.34,1.56,0.64,1)";
+    const transition =
+      frozen && dockingComplete
+        ? "none"
+        : "top 1000ms cubic-bezier(0.34,1.56,0.64,1), transform 1000ms cubic-bezier(0.34,1.56,0.64,1)";
 
     return {
       position: "fixed",
@@ -216,7 +237,8 @@ function DockingHighFive({ members = [], onDock }) {
                 <div
                   className="absolute inset-0 rounded-full bg-green-400 opacity-10"
                   style={{
-                    animation: "pulse 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite",
+                    animation:
+                      "pulse 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite",
                   }}
                 />
               </>
@@ -236,13 +258,18 @@ function DockingHighFive({ members = [], onDock }) {
                 width="70"
                 height="70"
                 viewBox="0 0 24 24"
-                className={`${frozen && dockingComplete ? "" : "transition-all duration-500"} ${
+                className={`${
+                  frozen && dockingComplete ? "" : "transition-all duration-500"
+                } ${
                   stage >= 2 ? "scale-100 opacity-100" : "scale-75 opacity-0"
                 }`}
                 style={{
                   strokeDasharray: stage >= 2 ? 50 : 0,
                   strokeDashoffset: stage >= 2 ? 0 : 50,
-                  transition: frozen && dockingComplete ? "none" : "stroke-dashoffset 0.6s ease-out 0.3s",
+                  transition:
+                    frozen && dockingComplete
+                      ? "none"
+                      : "stroke-dashoffset 0.6s ease-out 0.3s",
                   filter: "drop-shadow(0 2px 4px rgba(22,163,74,0.2))",
                 }}
               >
@@ -263,8 +290,14 @@ function DockingHighFive({ members = [], onDock }) {
             className="relative z-[1] text-center mt-4 pointer-events-none"
             style={{
               opacity: stage >= 3 ? 1 : 0,
-              transform: stage >= 3 ? "translateY(0) scale(1)" : "translateY(-8px) scale(0.95)",
-              transition: frozen && dockingComplete ? "none" : "opacity 700ms ease-out, transform 700ms ease-out",
+              transform:
+                stage >= 3
+                  ? "translateY(0) scale(1)"
+                  : "translateY(-8px) scale(0.95)",
+              transition:
+                frozen && dockingComplete
+                  ? "none"
+                  : "opacity 700ms ease-out, transform 700ms ease-out",
             }}
           >
             <div
@@ -275,7 +308,8 @@ function DockingHighFive({ members = [], onDock }) {
                 letterSpacing: -0.3,
                 textShadow: "0 2px 4px rgba(0,0,0,0.08)",
                 lineHeight: "1.1",
-                transition: frozen && dockingComplete ? "none" : "font-size 400ms ease",
+                transition:
+                  frozen && dockingComplete ? "none" : "font-size 400ms ease",
               }}
             >
               Pembayaran
@@ -288,7 +322,8 @@ function DockingHighFive({ members = [], onDock }) {
                 letterSpacing: -0.3,
                 textShadow: "0 2px 4px rgba(0,0,0,0.08)",
                 lineHeight: "1.1",
-                transition: frozen && dockingComplete ? "none" : "font-size 400ms ease",
+                transition:
+                  frozen && dockingComplete ? "none" : "font-size 400ms ease",
               }}
             >
               Sukses!
@@ -305,7 +340,9 @@ function DockingHighFive({ members = [], onDock }) {
           inset: 0,
           zIndex: 10040,
           opacity: confettiOpacity,
-          transition: frozen ? "opacity 600ms ease-out" : "opacity 600ms ease-out",
+          transition: frozen
+            ? "opacity 600ms ease-out"
+            : "opacity 600ms ease-out",
           overflow: "hidden",
         }}
       >
@@ -341,7 +378,10 @@ function DockingHighFive({ members = [], onDock }) {
                   left: `${left}%`,
                   top: "-5%",
                   fontSize: `${size}px`,
-                  animation: frozen && dockingComplete ? "none" : `confetti-fall 3s ease-out ${delay}s forwards`,
+                  animation:
+                    frozen && dockingComplete
+                      ? "none"
+                      : `confetti-fall 3s ease-out ${delay}s forwards`,
                 }}
               >
                 {emoji}
@@ -354,9 +394,13 @@ function DockingHighFive({ members = [], onDock }) {
 }
 
 /** ---------- Main Component ---------- */
-export default function MemberPaymentSuccess({ open, onClose, ctx, onDownloadReceipt }) {
+export default function MemberPaymentSuccess({
+  open,
+  onClose,
+  ctx,
+  onDownloadReceipt,
+}) {
   const { showToast } = useToast();
-  if (!open || !ctx) return null;
 
   const {
     amount = 0,
@@ -366,11 +410,14 @@ export default function MemberPaymentSuccess({ open, onClose, ctx, onDownloadRec
     txType = "Bayar split bill",
     txDate = new Date(),
     currency = (n) =>
-      `Rp${new Intl.NumberFormat("id-ID", { maximumFractionDigits: 0 }).format(Number(n || 0))}`,
+      `Rp${new Intl.NumberFormat("id-ID", { maximumFractionDigits: 0 }).format(
+        Number(n || 0)
+      )}`,
     members = [],
   } = ctx;
 
-  const displayCurrency = typeof currency === "function" ? currency : (n) => `Rp${n}`;
+  const displayCurrency =
+    typeof currency === "function" ? currency : (n) => `Rp${n}`;
   const phoneDisplay = receiver.phone || receiver.phoneMasked;
 
   const [headerDocked, setHeaderDocked] = useState(false);
@@ -411,7 +458,8 @@ export default function MemberPaymentSuccess({ open, onClose, ctx, onDownloadRec
       } else {
         const newViewport = document.createElement("meta");
         newViewport.name = "viewport";
-        newViewport.content = "width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=10.0, user-scalable=yes, viewport-fit=cover";
+        newViewport.content =
+          "width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=10.0, user-scalable=yes, viewport-fit=cover";
         document.head.appendChild(newViewport);
       }
 
@@ -474,7 +522,13 @@ export default function MemberPaymentSuccess({ open, onClose, ctx, onDownloadRec
       await new Promise((r) => setTimeout(r, 250));
 
       const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
-      const scale = Math.min(3, Math.max(2, (typeof window !== "undefined" ? window.devicePixelRatio : 2) || 2));
+      const scale = Math.min(
+        3,
+        Math.max(
+          2,
+          (typeof window !== "undefined" ? window.devicePixelRatio : 2) || 2
+        )
+      );
       const width = isMobile ? 360 : 420;
 
       const canvas = await html2canvas(target, {
@@ -495,7 +549,9 @@ export default function MemberPaymentSuccess({ open, onClose, ctx, onDownloadRec
 
       const filename = `receipt-${transactionId}.png`;
 
-      let blob = await new Promise((resolve) => canvas.toBlob((b) => resolve(b), "image/png", 0.95));
+      let blob = await new Promise((resolve) =>
+        canvas.toBlob((b) => resolve(b), "image/png", 0.95)
+      );
       if (!blob) {
         const dataUrl = canvas.toDataURL("image/png", 0.95);
         blob = dataURLtoBlob(dataUrl);
@@ -504,14 +560,15 @@ export default function MemberPaymentSuccess({ open, onClose, ctx, onDownloadRec
       await saveBlob(blob, filename);
     } catch (e) {
       console.error("Error downloading receipt:", e);
-        showToast({
-    type: "error",
-    title: "Gagal mengunduh struk",
-    message: "Pastikan logo/gambar berasal dari domain yang sama (public/). Coba lagi setelah memastikan gambar ter-serve dengan benar.",
-  });
+      showToast({
+        type: "error",
+        title: "Gagal mengunduh struk",
+        message:
+          "Pastikan logo/gambar berasal dari domain yang sama (public/). Coba lagi setelah memastikan gambar ter-serve dengan benar.",
+      });
     }
   }, [transactionId, receiptPrintRef, receiptRef, downloading]);
-
+  if (!open || !ctx) return null;
   return (
     // ✅ FULL FIX: Kombinasi fixed + scrollable content + lock during animation
     <div
@@ -577,7 +634,14 @@ export default function MemberPaymentSuccess({ open, onClose, ctx, onDownloadRec
         >
           <div style={{ padding: "20px 18px 0 18px" }}>
             <div style={{ textAlign: "center", marginBottom: 6 }}>
-              <div style={{ fontSize: 20, fontWeight: 900, letterSpacing: -0.5, color: "#0F172A" }}>
+              <div
+                style={{
+                  fontSize: 20,
+                  fontWeight: 900,
+                  letterSpacing: -0.5,
+                  color: "#0F172A",
+                }}
+              >
                 {splitName || "Split Bill"}
               </div>
             </div>
@@ -593,7 +657,15 @@ export default function MemberPaymentSuccess({ open, onClose, ctx, onDownloadRec
           </div>
 
           <div style={{ padding: "18px 18px 12px 18px", textAlign: "center" }}>
-            <div style={{ fontSize: 12, color: "#9CA3AF", fontWeight: 900, marginBottom: 10, letterSpacing: 0.8 }}>
+            <div
+              style={{
+                fontSize: 12,
+                color: "#9CA3AF",
+                fontWeight: 900,
+                marginBottom: 10,
+                letterSpacing: 0.8,
+              }}
+            >
               TOTAL AMOUNT
             </div>
             <div
@@ -614,7 +686,15 @@ export default function MemberPaymentSuccess({ open, onClose, ctx, onDownloadRec
           </div>
 
           <div style={{ padding: "16px 18px 18px 18px" }}>
-            <div style={{ fontSize: 11, color: "#64748B", fontWeight: 900, marginBottom: 10, letterSpacing: 1 }}>
+            <div
+              style={{
+                fontSize: 11,
+                color: "#64748B",
+                fontWeight: 900,
+                marginBottom: 10,
+                letterSpacing: 1,
+              }}
+            >
               DIBAYARKAN KEPADA
             </div>
             <div style={{ display: "flex", gap: 12 }}>
@@ -623,7 +703,8 @@ export default function MemberPaymentSuccess({ open, onClose, ctx, onDownloadRec
                   width: 44,
                   height: 44,
                   borderRadius: "9999px",
-                  background: "linear-gradient(135deg, #FB923C 0%, #F97316 100%)",
+                  background:
+                    "linear-gradient(135deg, #FB923C 0%, #F97316 100%)",
                   color: "#fff",
                   fontWeight: 900,
                   display: "grid",
@@ -636,11 +717,22 @@ export default function MemberPaymentSuccess({ open, onClose, ctx, onDownloadRec
                 {(receiver?.name || "?").charAt(0).toUpperCase()}
               </div>
               <div style={{ minWidth: 0 }}>
-                <div style={{ fontSize: 14, fontWeight: 800, color: "#0F172A", marginBottom: 2 }}>
+                <div
+                  style={{
+                    fontSize: 14,
+                    fontWeight: 800,
+                    color: "#0F172A",
+                    marginBottom: 2,
+                  }}
+                >
                   {receiver?.name || "—"}
                 </div>
                 {!!phoneDisplay && (
-                  <div style={{ fontSize: 12, color: "#475569", fontWeight: 600 }}>{phoneDisplay}</div>
+                  <div
+                    style={{ fontSize: 12, color: "#475569", fontWeight: 600 }}
+                  >
+                    {phoneDisplay}
+                  </div>
                 )}
               </div>
             </div>
@@ -660,9 +752,29 @@ export default function MemberPaymentSuccess({ open, onClose, ctx, onDownloadRec
               <PrintField label="TYPE OF TRANSACTION" value={txType} wide />
             </div>
 
-            <div style={{ borderTop: "1px solid #EEF2F7", marginTop: 16, paddingTop: 14 }} />
-            <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-              <span style={{ fontSize: 11, color: "#64748B", fontWeight: 900, letterSpacing: 1.2 }}>
+            <div
+              style={{
+                borderTop: "1px solid #EEF2F7",
+                marginTop: 16,
+                paddingTop: 14,
+              }}
+            />
+            <div
+              style={{
+                display: "flex",
+                gap: 10,
+                alignItems: "center",
+                flexWrap: "wrap",
+              }}
+            >
+              <span
+                style={{
+                  fontSize: 11,
+                  color: "#64748B",
+                  fontWeight: 900,
+                  letterSpacing: 1.2,
+                }}
+              >
                 ID TRANSAKSI
               </span>
               <span
@@ -678,7 +790,13 @@ export default function MemberPaymentSuccess({ open, onClose, ctx, onDownloadRec
             </div>
           </div>
 
-          <div style={{ padding: "14px 18px 18px", display: "flex", justifyContent: "center" }}>
+          <div
+            style={{
+              padding: "14px 18px 18px",
+              display: "flex",
+              justifyContent: "center",
+            }}
+          >
             <img
               src="/Orangepay.svg"
               alt="OrangePay"
@@ -701,7 +819,9 @@ export default function MemberPaymentSuccess({ open, onClose, ctx, onDownloadRec
           justifyContent: "center",
           paddingLeft: "max(16px, env(safe-area-inset-left))",
           paddingRight: "max(16px, env(safe-area-inset-right))",
-          paddingTop: headerDocked ? `calc(${HEADER_HEIGHT}px + env(safe-area-inset-top, 0px) + 16px)` : "16px",
+          paddingTop: headerDocked
+            ? `calc(${HEADER_HEIGHT}px + env(safe-area-inset-top, 0px) + 16px)`
+            : "16px",
           paddingBottom: `max(32px, env(safe-area-inset-bottom))`,
           transition: "padding-top 1000ms cubic-bezier(0.34,1.56,0.64,1)",
           flex: 1,
@@ -712,7 +832,9 @@ export default function MemberPaymentSuccess({ open, onClose, ctx, onDownloadRec
           ref={receiptRef}
           className="w-full max-w-[440px] flex flex-col items-center space-y-4 transition-all duration-[1000ms] ease-[cubic-bezier(0.34,1.56,0.64,1)]"
           style={{
-            transform: receiptVisible ? "translateY(0) translate3d(0,0,0)" : "translateY(100%)",
+            transform: receiptVisible
+              ? "translateY(0) translate3d(0,0,0)"
+              : "translateY(100%)",
             opacity: receiptVisible ? 1 : 0,
             zIndex: 10020,
             willChange: "transform, opacity",
@@ -767,7 +889,9 @@ export default function MemberPaymentSuccess({ open, onClose, ctx, onDownloadRec
                       {receiver?.name || "—"}
                     </div>
                     {!!phoneDisplay && (
-                      <div className="text-[12px] text-gray-600 break-all font-semibold">{phoneDisplay}</div>
+                      <div className="text-[12px] text-gray-600 break-all font-semibold">
+                        {phoneDisplay}
+                      </div>
                     )}
                   </div>
                 </div>
@@ -828,7 +952,9 @@ export default function MemberPaymentSuccess({ open, onClose, ctx, onDownloadRec
         >
           <div
             className={`w-full grid grid-cols-2 gap-2 sm:gap-3.5 transition-all duration-600 ease-out pointer-events-auto relative max-w-[440px] px-0 ${
-              buttonsVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
+              buttonsVisible
+                ? "opacity-100 translate-y-0"
+                : "opacity-0 translate-y-8"
             }`}
           >
             <button
