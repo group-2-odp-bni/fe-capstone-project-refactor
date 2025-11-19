@@ -8,8 +8,9 @@ import api from "../../lib/api";
 import { useTopupContext } from "../../context/TopupContext";
 import { useNavigate } from "react-router-dom";
 import View from "../../components/view/View";
-import WhiteHeader from "../../components/register/WhiteHeader";
+import Header from "../../components/Header";
 import ContentBox from "../../components/common/ContentBox";
+import { useToast } from "../../context/ToastContext";
 
 export default function SetAmountPage() {
   const navigate = useNavigate();
@@ -20,6 +21,8 @@ export default function SetAmountPage() {
   const [selectedWallet, setSelectedWallet] = useState(null);
   const [amount, setAmount] = useState("");
   const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const [error, setError] = useState("");
+  const { showToast } = useToast();
 
   /** === Fetch Wallet List === */
   useEffect(() => {
@@ -41,18 +44,34 @@ export default function SetAmountPage() {
 
   /** === Handle Confirm === */
   const handleConfirmAmount = async () => {
-    if (!selectedWallet || !amount) {
-      return;
+    let hasError = false;
+
+    if (!selectedWallet) {
+      
+      showToast({
+        type: "error",
+        title: "Wallet belum dipilih",
+        message: "Silakan pilih wallet terlebih dahulu."
+      });
+
+
+      hasError = true;
+    } else {
+      setError(""); // clear error if valid
     }
 
-    // init topup
+    if (!amount) {
+      return; // You might add amount error later
+    }
+    if (hasError) return;
+
+    // --- your existing API call ---
     const response = await api.post("/api/v1/topup/initiate", {
       provider: "BNI_VA",
       amount: Number(amount),
       walletId: selectedWallet.id,
     });
 
-    // save data
     setTopupData({
       walletId: selectedWallet.id,
       walletName: selectedWallet.name,
@@ -72,7 +91,7 @@ export default function SetAmountPage() {
 
   return (
     <View>
-      <WhiteHeader title="Tambah Saldo" to="/app/topup" />
+      <Header title="Tambah Saldo"/>
       <ContentBox>
         <div className="flex flex-col">
           <div className=" pb-28 flex-1">
@@ -89,11 +108,15 @@ export default function SetAmountPage() {
             <div className="mt-6">
               <FormLabel>Masukkan Nominal : </FormLabel>
               <AmountInput
-                error={false}
+                error={error}
                 value={amount}
                 onChange={(val) => setAmount(val)}
               />
             </div>
+
+            {error && (
+              <p className="text-red-500 text-sm mt-4 text-center">{error}</p>
+            )}
 
             <div className="px-9 pt-8">
               {/* Footer */}
@@ -111,6 +134,7 @@ export default function SetAmountPage() {
                   onSelectWallet={(wallet) => {
                     setSelectedWallet(wallet);
                     handleCloseWalletPicker();
+                    setError("")
                   }}
                 />
               )}

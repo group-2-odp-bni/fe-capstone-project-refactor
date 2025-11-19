@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import ContentBox from "../../components/common/ContentBox";
-import WhiteHeader from "../../components/register/WhiteHeader";
+import Header from "../../components/Header";
 import { FullSubmitButton } from "../../components/button/FullSubmitButton";
 import RegisterTextContainer from "../../components/register/RegisterTextContainer";
 import OtpInputField from "../../components/input/OtpInputField";
@@ -19,7 +19,7 @@ export default function VerifyProfileDataPage() {
 
     return (
         <View>
-            <WhiteHeader title="" to="/app/editProfile" />
+            <Header title="" />
             <ContentBox>
                 <h2 className="text-2xl font-semibold text-center text-gray-800 mb-6">
                     {isEmail ? "Verifikasi Email" : "Verifikasi Nomor Telepon"}
@@ -42,14 +42,12 @@ function VerifyProfileContent({ verifyType }) {
 
     const [otpCode, setOtpCode] = useState("");
     const [loading, setLoading] = useState(false);
-    const [error, setError] = useState("");
 
     // Countdown state
     const { secondsLeft, reset } = useCountdown(60);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setError("");
         setLoading(true);
 
         try {
@@ -66,7 +64,11 @@ function VerifyProfileContent({ verifyType }) {
                 err.response?.data?.error?.message ||
                 "Kode OTP salah atau sudah kadaluarsa.";
 
-            setError(message);
+            showToast({
+                type: "error",
+                title: "Error",
+                message: message,
+            })
         } finally {
             setLoading(false);
         }
@@ -97,7 +99,6 @@ function VerifyProfileContent({ verifyType }) {
     // --------------------------
     const handleResendOtp = async (e) => {
         e.preventDefault();
-        setError("");
         setLoading(true);
 
         try {
@@ -113,7 +114,11 @@ function VerifyProfileContent({ verifyType }) {
         } catch (err) {
             const message =
                 err.response?.data?.error?.message || "Gagal mengirim ulang OTP.";
-            setError(message);
+            showToast({
+                type: "error",
+                title: "Error",
+                message: message,
+            })
         } finally {
             setLoading(false);
         }
@@ -139,9 +144,6 @@ function VerifyProfileContent({ verifyType }) {
                 initialSeconds={secondsLeft}
                 className="text-center"
             />
-
-            {/* Error */}
-            {error && <p className="text-red-500 text-xs">{error}</p>}
 
             {/* Show only when timer ends */}
             <ButtonLink

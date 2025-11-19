@@ -6,14 +6,13 @@ import VirtualAccountBox from "../../components/top-up/VirtualAccountBox";
 import CountdownTimer from "../../components/dashboard/CountdownTimer";
 import { useNavigate } from "react-router-dom";
 import View from "../../components/view/View";
-import WhiteHeader from "../../components/register/WhiteHeader";
+import Header from "../../components/Header";
 import api from "../../lib/api";
 import { useCountdown } from "../../hooks/useCountdown";
 
 export default function TopUpConfirmationPage() {
   const { topupData } = useTopupContext();
   const navigate = useNavigate();
-  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const { secondsLeft } = useCountdown(86400);
 
@@ -24,8 +23,7 @@ export default function TopUpConfirmationPage() {
 
   // get topup status
   const handleGetTopupStatus = async () => {
-    +setError("");
-    +setLoading(true);
+    setLoading(true);
 
     try {
       const response = await api.get(
@@ -42,14 +40,21 @@ export default function TopUpConfirmationPage() {
       if (status === "PAID") {
         navigate("/app/topup/result");
       } else {
-        setError("Pembayaran belum dilakukan.");
+        showToast({
+          type: "error",
+          title: "Error",
+          message: "Pembayaran belum dilakukan.",
+        })
       }
     } catch (err) {
-      setError(
-        err.response?.data?.error?.message ||
+      showToast({
+        type: "error",
+        title: "Error",
+        message:
+          err.response?.data?.error?.message ||
           err.message ||
-          "Gagal memeriksa status."
-      );
+          "Gagal memeriksa status.",
+      })
     } finally {
       setLoading(false);
     }
@@ -57,7 +62,7 @@ export default function TopUpConfirmationPage() {
 
   return (
     <View>
-      <WhiteHeader title="Konfirmasi Topup" />
+      <Header title="Konfirmasi Topup" />
       <div className="flex items-center justify-center px-4">
         {/* Card */}
         <div className="w-full max-w-sm rounded-[28px] border border-gray-200 shadow-sm min-h-[500px]">
@@ -86,10 +91,6 @@ export default function TopUpConfirmationPage() {
               initialSeconds={secondsLeft}
               className="mt-5 mb-5"
             />
-
-            {error && (
-              <p className="text-red-500 text-sm text-center mt-2">{error}</p>
-            )}
 
             {/* Done button */}
             <ConfirmButton

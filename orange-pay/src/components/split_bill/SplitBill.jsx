@@ -650,9 +650,9 @@ export default function ReceiptUploadCard() {
 
             <button
               onClick={() => setNext(true)}
-              className="flex items-center gap-3 bg-white text-orange-600 px-5 py-3 rounded-xl font-bold text-sm hover:bg-gray-50 active:scale-95 transition shadow-sm"
+              className="flex items-center gap-3 bg-white text-black px-5 py-3 rounded-xl font-semibold text-sm hover:bg-gray-50 active:scale-95 transition shadow-sm"
             >
-              <div className="w-6 h-6 bg-orange-100 rounded-full flex items-center justify-center">
+              <div className="w-6 h-6 bg-gray-50 rounded-full flex items-center justify-center">
                 <img src="/camera-icon.svg" alt="" className="w-3.5 h-3.5" />
               </div>
               Mulai Scan Struk
