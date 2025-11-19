@@ -7,13 +7,10 @@ on:
 
 jobs:
   enforce:
+    if: ${{ github.head_ref != 'dev-integration' }}
     runs-on: ubuntu-latest
     steps:
-      - name: Check PR source branch
+      - name: Fail if PR source is not dev-integration
         run: |
-          echo "PR Source: ${{ github.head_ref }}"
-          if [ "${{ github.head_ref }}" != "dev-integration" ]; then
-            echo "PR ke main hanya boleh dari dev-integration"
-            exit 1
-          fi
-          echo "Valid: PR dari dev-integration"
+          echo "PR ke main hanya boleh dari dev-integration (sekarang: ${{ github.head_ref }})"
+          exit 1
