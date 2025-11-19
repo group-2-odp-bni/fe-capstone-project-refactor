@@ -9,10 +9,12 @@ import H2Medium from "../../components/text/H2Medium";
 import ToggleSwitch from "../../components/button/ToggleSwitch";
 import NumberInputField from "../../components/input/NumberInputField";
 import { FullSubmitButton } from "../../components/button/FullSubmitButton";
+import { useToast } from "../../context/ToastContext";
 
 export default function TransactionLimitEditPage() {
   const navigate = useNavigate();
   const { limitData } = useTransactionLimitContext();
+  const { showToast } = useToast();
 
   // Initialize formData from limitData
   const [formData, setFormData] = useState({
@@ -35,13 +37,50 @@ export default function TransactionLimitEditPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    const dayLimit = Number(formData.dailyMaxRp);
+    const weekLimit = Number(formData.weeklyMaxRp);
+    const monthLimit = Number(formData.monthlyMaxRp);
+
+    if (dayLimit > weekLimit) {
+      showToast({
+        type: "error",
+        title: "Invalid Limit",
+        message: "Daily limit tidak boleh lebih besar dari Weekly limit.",
+      });
+      return;
+    }
+
+    if (weekLimit > monthLimit) {
+      showToast({
+        type: "error",
+        title: "Invalid Limit",
+        message: "Weekly limit tidak boleh lebih besar dari Monthly limit.",
+      });
+      return;
+    }
+
+    if (dayLimit > monthLimit) {
+      showToast({
+        type: "error",
+        title: "Invalid Limit",
+        message: "Daily limit tidak boleh lebih besar dari Monthly limit.",
+      });
+      return;
+    }
+
     try {
       await api.put("/api/v1/wallets/limits", formData);
       navigate(-1);
     } catch (error) {
-
+      showToast({
+        type: "error",
+        title: "Update Failed",
+        message: "Something went wrong while saving your limits.",
+      });
     }
   };
+
 
   return (
     <View>

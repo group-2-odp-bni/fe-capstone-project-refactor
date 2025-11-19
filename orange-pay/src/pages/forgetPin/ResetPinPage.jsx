@@ -31,10 +31,13 @@ function SetNewPinContent() {
 
     const submitPin = async () => {
         setAttempt((x) => x + 1);
-        setError("");
 
         if (pin.length !== 6) {
-            setError("PIN harus 6 digit");
+            showToast({
+                type: "error",
+                title: "Error",
+                message: "PIN harus 6 digit",
+            })
             return;
         }
 
@@ -48,7 +51,11 @@ function SetNewPinContent() {
 
         // Step 2 — Confirm
         if (pin !== firstPin) {
-            setError("PIN tidak cocok, silakan coba lagi.");
+            showToast({
+                type: "error",
+                title: "Error",
+                message: "PIN tidak cocok, silakan coba lagi.",
+            })
             setPin("");
             setFirstPin(null);
             setStep("create");
@@ -57,7 +64,11 @@ function SetNewPinContent() {
 
         // Step 3 — Send to backend
         if (!loginData?.stateToken) {
-            setError("Sesi registrasi tidak valid. Silakan ulangi.");
+            showToast({
+                type: "error",
+                title: "Error",
+                message: "Sesi registrasi tidak valid.Silakan ulangi.",
+            })
             return;
         }
 
@@ -75,7 +86,12 @@ function SetNewPinContent() {
             saveTokens(accessToken, refreshToken);
             navigate("/login");
         } catch (err) {
-            setError(err?.response?.data?.message || err?.message || "Terjadi kesalahan. Silakan coba lagi.");
+            const messege = err?.response?.data?.message || err?.message || "Terjadi kesalahan. Silakan coba lagi.";
+            showToast({
+                type: "error",
+                title: "Error",
+                message: messege,
+            })
             setPin("");
             setFirstPin(null);
             setStep("create");
@@ -100,19 +116,11 @@ function SetNewPinContent() {
                 value={pin}
                 onChange={setPin}
                 onConfirm={submitPin}
-                errorText={error}
                 loading={loading}
                 title={step === "create" ? "Buat PIN Anda" : "Konfirmasi PIN Anda"}
                 attemptKey={attempt}
-                onClearError={() => setError("")}
                 onBack={goBack}
             />
-
-            {error && <p className="text-red-500 text-xs text-center mb-4">{error}</p>}
-
-            <FullSubmitButton disabled={loading || pin.length !== 6}>
-                {loading ? "Menyimpan..." : step === "create" ? "Lanjutkan" : "Simpan"}
-            </FullSubmitButton>
         </form>
     );
 }

@@ -8,6 +8,7 @@ import WhiteCardContainer from "../../components/register/WhiteCardContainer";
 import { saveTokens } from "../../services/auth/authService";
 import View from "../../components/view/View";
 import axios from "axios";
+import { useToast } from "../../context/ToastContext";
 
 export default function SetPinPage() {
   return (
@@ -29,15 +30,17 @@ function SetPinContent() {
   const [firstPin, setFirstPin] = useState(null);
   const [step, setStep] = useState("create"); // "create" | "confirm"
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
   const [attempt, setAttempt] = useState(0);
 
   const submitPin = async () => {
     setAttempt((x) => x + 1);
-    setError("");
 
     if (pin.length !== 6) {
-      setError("PIN harus 6 digit");
+      showToast({
+        type: "error",
+        title: "Error",
+        message: "PIN harus 6 digit",
+      })
       return;
     }
 
@@ -51,7 +54,11 @@ function SetPinContent() {
 
     // Step 2 — Confirm
     if (pin !== firstPin) {
-      setError("PIN tidak cocok, silakan coba lagi.");
+      showToast({
+        type: "error",
+        title: "Error",
+        message: "PIN tidak cocok, silakan coba lagi.",
+      })
       setPin("");
       setFirstPin(null);
       setStep("create");
@@ -60,7 +67,11 @@ function SetPinContent() {
 
     // Step 3 — Send to backend
     if (!userData?.stateToken) {
-      setError("Sesi registrasi tidak valid. Silakan ulangi.");
+      showToast({
+        type: "error",
+        title: "Error",
+        message: "Sesi registrasi tidak valid. Silakan ulangi.",
+      })
       return;
     }
 
@@ -86,9 +97,17 @@ function SetPinContent() {
       const errorCode = err?.response?.data?.error?.code;
 
       if (errorCode === "AUTH-3002") {
-        setError("Pin yang dibuat terlalu lemah. Mohon buat ulang.");
+        showToast({
+          type: "error",
+          title: "Error",
+          message: "Pin yang dibuat terlalu lemah. Mohon buat ulang.",
+        })
       } else {
-        setError("Terjadi kesalahan. Silakan coba lagi.");
+        showToast({
+          type: "error",
+          title: "Error",
+          message: "Terjadi kesalahan. Silakan coba lagi.",
+        })
       }
 
       setPin("");
@@ -110,7 +129,6 @@ function SetPinContent() {
         value={pin}
         onChange={setPin}
         onConfirm={submitPin}
-        errorText={error}
         loading={loading}
         title={step === "create" ? "Buat PIN Anda" : "Konfirmasi PIN Anda"}
         attemptKey={attempt}

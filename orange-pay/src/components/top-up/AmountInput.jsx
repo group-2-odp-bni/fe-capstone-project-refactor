@@ -32,9 +32,9 @@ export default function AmountInput({
     if (Number.isNaN(numericValue)) {
       setError("Invalid number");
     } else if (min && numericValue < min) {
-      setError(`Minimum top-up is Rp${formatNumber(min)}`);
+      setError(`Minimum topup is Rp${formatNumber(min)}`);
     } else if (max && numericValue > max) {
-      setError(`Maximum top-up is Rp${formatNumber(max)}`);
+      setError(`Maximum topup is Rp${formatNumber(max)}`);
     } else {
       setError("");
     }
@@ -91,7 +91,7 @@ export default function AmountInput({
 
       {/* Error message */}
       {error && (
-        <p id={`${id}-error`} className="text-sm text-red-500 mt-1">
+        <p id={`${id}-error`} className="text-sm text-red-500 mt-4 text-center">
           {error}
         </p>
       )}
