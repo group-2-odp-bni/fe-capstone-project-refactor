@@ -3,10 +3,13 @@ import { useParams, useNavigate } from "react-router-dom";
 import html2canvas from "html2canvas";
 import { useBillMember } from "../hooks/useSplitbill";
 import PaymentModal from "../components/ui/transfer/PaymentSplitBillModal";
+import { useToast } from "../context/ToastContext";
+
 export default function SplitBillMemberPage() {
   const { id: splitId, memberId } = useParams();
   const navigate = useNavigate();
   const receiptRef = useRef(null);
+  const { showToast } = useToast();
 
   const [isPaymentOpen, setIsPaymentOpen] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
@@ -47,7 +50,13 @@ export default function SplitBillMemberPage() {
       document.body.removeChild(link);
     } catch (err) {
       console.error("Gagal download struk:", err);
-      alert("Gagal mengunduh struk.");
+
+            showToast({
+        type: "error",
+        title: "Gagal mengunduh struk",
+        message: "Error 404. Silakan dicoba kembali"
+      });
+
     } finally {
       setDownloading(false);
     }

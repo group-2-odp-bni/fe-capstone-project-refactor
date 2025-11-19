@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import api from "../lib/api";
+import { useToast } from "../context/ToastContext";
 import LoadingSpinner from "../components/common/LoadingSpinner";
 import {
   EnvelopeIcon,
@@ -24,7 +25,7 @@ export default function InviteClaimPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const token = searchParams.get("token");
-
+  const { showToast } = useToast();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [inviteDetails, setInviteDetails] = useState(null);
@@ -122,7 +123,14 @@ export default function InviteClaimPage() {
       await api.post(
         `/api/v1/wallets/${walletId}/invites/accept?token=${finalToken}`
       );
-      alert("Undangan diterima! Anda akan diarahkan ke dashboard.");
+      
+            // 🎉 Toast sukses
+      showToast({
+        type: "success",
+        title: "Undangan berhasil diterima",
+        message: "Anda telah bergabung ke wallet. Mengarahkan ke dashboard...",
+      });
+
       navigate("/app/dashboard");
     } catch (e) {
       console.error("Gagal menerima undangan:", e);

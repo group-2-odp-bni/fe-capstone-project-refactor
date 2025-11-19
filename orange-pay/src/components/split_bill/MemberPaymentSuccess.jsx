@@ -1,6 +1,7 @@
 "use client";
 import React, { useEffect, useMemo, useState, useRef, useCallback } from "react";
 import html2canvas from "html2canvas";
+import { useToast } from "../../context/ToastContext";
 
 // ===== Konstanta layout =====
 const HEADER_HEIGHT = 140;
@@ -354,6 +355,7 @@ function DockingHighFive({ members = [], onDock }) {
 
 /** ---------- Main Component ---------- */
 export default function MemberPaymentSuccess({ open, onClose, ctx, onDownloadReceipt }) {
+  const { showToast } = useToast();
   if (!open || !ctx) return null;
 
   const {
@@ -502,7 +504,11 @@ export default function MemberPaymentSuccess({ open, onClose, ctx, onDownloadRec
       await saveBlob(blob, filename);
     } catch (e) {
       console.error("Error downloading receipt:", e);
-      alert("Gagal mengunduh struk. Pastikan logo/gambar dari domain yang sama (public/) & coba lagi.");
+        showToast({
+    type: "error",
+    title: "Gagal mengunduh struk",
+    message: "Pastikan logo/gambar berasal dari domain yang sama (public/). Coba lagi setelah memastikan gambar ter-serve dengan benar.",
+  });
     }
   }, [transactionId, receiptPrintRef, receiptRef, downloading]);
 
