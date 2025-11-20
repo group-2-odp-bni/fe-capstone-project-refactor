@@ -1,15 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import api from "../../../lib/api";
+import generateIdempotencyKey from "../../../lib/generateIdempotencyKey";
 const fmtIDR = (n) =>
   `Rp${Number(n || 0).toLocaleString("id-ID", {
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   })}`;
-
-const genIdempotencyKey = () =>
-  globalThis.crypto && crypto.randomUUID
-    ? crypto.randomUUID()
-    : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 
 export default function PaymentModal({
   isOpen,
@@ -80,7 +76,7 @@ export default function PaymentModal({
     setError(null);
 
     try {
-      const idempotencyKey = genIdempotencyKey();
+      const idempotencyKey = generateIdempotencyKey();
 
       const initiatePayload = {
         billId,

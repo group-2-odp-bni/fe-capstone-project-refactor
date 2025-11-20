@@ -10,6 +10,7 @@ import WalletNameField from "../components/add_wallet/WalletNameField";
 import CreateButton from "../components/add_wallet/CreateButton";
 import Header from "../components/Header";
 
+import { useToast } from "../context/ToastContext";
 
 import api from "../lib/api";
 import { v4 as uuidv4 } from "uuid";
@@ -29,6 +30,7 @@ export default function AddWalletPage() {
   const [submitting, setSubmitting] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+  const { showToast } = useToast();
 
   const handleBack = () => {
     // If we're at the first step, clear flow and go back to dashboard
@@ -73,7 +75,13 @@ export default function AddWalletPage() {
       const from = location.state?.from?.pathname || location.state?.from;
       navigate(from || "/app/dashboard", { replace: true });
     } catch (e) {
-      alert(e.message || "Failed to create wallet");
+      
+    showToast({
+      type: "success",
+      title: "Gagal membuat wallet",
+      message: e?.message || "Wallet tidak boleh duplikat.",
+    });
+
     } finally {
       setSubmitting(false);
     }

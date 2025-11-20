@@ -3,8 +3,10 @@
 import { useState, useEffect } from "react";
 import Scanning from "./Scanning";
 import { useOCRImage } from "../../hooks/api/useOCRImage";
+import { useToast } from "../../context/ToastContext";
 
 export default function NextStep({ image, onRetake, onConfirm }) {
+  const { showToast } = useToast();
   const [confirmed, setConfirmed] = useState(false);
   const [imageAspect, setImageAspect] = useState(9 / 16);
 
@@ -43,8 +45,11 @@ export default function NextStep({ image, onRetake, onConfirm }) {
     } catch (error) {
       // 4. API Gagal.
       console.error("OCR error:", error);
-      // (Opsional) Tampilkan alert dan kembali ke preview
-      alert(`Gagal memproses gambar: ${error.message}`);
+            showToast({
+        type: "error",
+        title: "Gagal memproses gambar",
+        message: `Terjadi kesalahan saat memproses gambar : ${error.message}`
+      });
       setConfirmed(false); // Sembunyikan lagi layar <Scanning />
     }
   };

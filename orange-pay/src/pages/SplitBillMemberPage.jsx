@@ -12,6 +12,7 @@ export default function SplitBillMemberPage() {
   const { id: splitId, memberId } = useParams();
   const navigate = useNavigate();
   const receiptRef = useRef(null);
+  const { showToast } = useToast();
 
   const [isPaymentOpen, setIsPaymentOpen] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
