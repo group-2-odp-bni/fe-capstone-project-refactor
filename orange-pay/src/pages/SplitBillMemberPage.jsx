@@ -7,6 +7,7 @@ import PaymentModal from "../components/ui/transfer/PaymentSplitBillModal";
 import { applyWatermarkPattern } from "../util/createStuck/applyWatermark";
 import { downloadCanvas } from "../util/createStuck/downloadCanvas";
 import { htmlToCanvas } from "../util/createStuck/htmlToCanvas";
+import { useToast } from "../context/ToastContext";
 
 export default function SplitBillMemberPage() {
   const { id: splitId, memberId } = useParams();
