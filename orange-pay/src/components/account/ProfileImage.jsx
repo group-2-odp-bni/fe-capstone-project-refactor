@@ -1,8 +1,11 @@
 import { useRef, useState, useEffect } from "react";
 import { Camera } from "lucide-react";
+import { useToast } from "../../context/ToastContext";
 
 export default function ProfileImage({ onImageSelected, unhoverable = false, src }) {
+    
     const fileInputRef = useRef(null);
+    const { showToast } = useToast();
     const [preview, setPreview] = useState(
         src || "https://randomuser.me/api/portraits/women/44.jpg"
     );
@@ -19,7 +22,13 @@ export default function ProfileImage({ onImageSelected, unhoverable = false, src
         if (!file) return;
 
         if (!file.type.startsWith("image/")) {
-            alert("Please select an image file");
+            
+            showToast({
+            type: "error",
+            title: "Format file tidak didukung",
+            message: "Silakan pilih file gambar dengan format .jpg, .png, atau .jpeg."
+        });
+
             return;
         }
 
