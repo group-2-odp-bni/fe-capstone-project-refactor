@@ -1,19 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 
-/**
- * Reusable header
- *
- * Props:
- *  - title: string (main title)
- *  - subtitle: string (optional subtitle)
- *  - showBack: boolean (show back button)
- *  - onBack: function (custom back handler)
- *  - right: React node (right-side element, e.g. icon/button)
- *  - className: string (extra classes for container)
- *  - centerTitle: boolean (center title)
- *  - backAriaLabel: string (aria label for back button)
- */
 export default function Header({
   title = "",
   subtitle = "",
@@ -26,25 +13,33 @@ export default function Header({
 }) {
   const navigate = useNavigate();
 
-  const handleBack = () => {
+  const handleBack = (e) => {
+    // defensive: avoid interfering with other handlers
+    if (e && typeof e.preventDefault === "function") e.preventDefault();
     if (typeof onBack === "function") return onBack();
     navigate(-1);
   };
 
   return (
     <header
-      className={`sticky top-0 z-20 bg-white ${className}`}
+      className={`sticky top-0 z-50 bg-white ${className}`} // bumped z-index
       role="banner"
+      style={{ pointerEvents: "auto", WebkitTapHighlightColor: "transparent" }}
     >
-      <div className="px-4 py-3 pt-5 flex ">
-        {/* left: back button or placeholder */}  
+      <div className="px-4 py-3 pt-5 flex items-center">
+        {/* left: back button or placeholder */}
         <div className="w-10 flex justify-start">
           {showBack ? (
             <button
+              type="button"
               onClick={handleBack}
+              className="relative w-14 h-14 flex items-center justify-center"
               aria-label={backAriaLabel}
-              className="p-1 rounded-full hover:bg-gray-100 active:scale-95 transition"
             >
+              {/* invisible hitbox */}
+              <span className="absolute inset-0" />
+
+              {/* visible icon */}
               <svg
                 width="22"
                 height="18"
@@ -52,9 +47,10 @@ export default function Header({
                 fill="none"
                 xmlns="http://www.w3.org/2000/svg"
                 className="text-gray-900"
+                style={{ pointerEvents: "none" }} // svg won't steal taps
               >
                 <path
-                  d="M1.3999 9H20.5999M1.3999 9L9.3999 1M1.3999 9L9.3999 17"
+                  d="M1.4 9H20.6M1.4 9L9.4 1M1.4 9L9.4 17"
                   stroke="currentColor"
                   strokeWidth="2"
                   strokeLinecap="round"
@@ -65,6 +61,7 @@ export default function Header({
           ) : (
             <div aria-hidden="true" />
           )}
+
         </div>
 
         {/* center: title & subtitle */}
@@ -79,7 +76,7 @@ export default function Header({
           ) : null}
         </div>
 
-        {/* right: custom node (kept with fixed width to balance layout) */}
+        {/* right: custom node */}
         <div className="w-10 flex items-center justify-end">
           {right ? <div>{right}</div> : <div aria-hidden="true" />}
         </div>

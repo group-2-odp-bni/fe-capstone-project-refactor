@@ -4,6 +4,7 @@ import { useParams } from "react-router-dom";
 import { ClipboardIcon, CheckIcon, ShareIcon } from "@heroicons/react/24/outline";
 // import * as htmlToImage from "html-to-image"; // now dynamically imported
 import { useReceiptById } from "../../hooks/api/useHistory";
+import View from "../view/View";
 
 const formatIDR = (n) =>
   new Intl.NumberFormat("id-ID", {
@@ -225,8 +226,7 @@ export default function ReceiptCard({ trx, externalShareRef = null, hideInlineSh
   }
 
   return (
-    <div className="p-4">
-      <div ref={cardRef} className="relative rounded-2xl border border-gray-200 bg-white p-6">
+    <View>
         <div className="flex flex-col items-center gap-2">
           <img src="/Orangepay.svg" alt="logo" className="h-17 w-60" crossOrigin="anonymous" />
           <p className="text-sm font-semibold">Transfer</p>
@@ -277,7 +277,6 @@ export default function ReceiptCard({ trx, externalShareRef = null, hideInlineSh
             </div>
           )}
         </div>
-      </div>
-    </div>
+    </View>
   );
 }

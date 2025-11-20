@@ -591,10 +591,6 @@ export default function ReceiptResult({ receiptData, onBack, onConfirm }) {
         </div>
       )}
       {showImagePopup && receiptImage && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm"
-          onClick={handleClosePopup}
-        >
           <div
             className="relative max-w-4xl max-h-[90vh] mx-4"
             onClick={(e) => e.stopPropagation()}
@@ -619,7 +615,6 @@ export default function ReceiptResult({ receiptData, onBack, onConfirm }) {
               className="max-w-full max-h-[90vh] object-contain rounded-2xl shadow-2xl"
             />
           </div>
-        </div>
       )}
     </>
   );
