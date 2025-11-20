@@ -3,9 +3,9 @@ export default function Toast({ toast }) {
   const isSuccess = toast.type === "success";
 
   return (
-    <div
-      className={`fixed top-6 left-0 right-0 z-[100] flex justify-center px-4 transition-all duration-500 ease-in-out pointer-events-none
-        ${toast.show ? "translate-y-0 opacity-100" : "-translate-y-12 opacity-0"}
+     <div
+      className={`fixed top-0 left-0 right-0 z-[100] flex justify-center px-4 transition-all duration-500 ease-in-out pointer-events-none
+        ${toast.show ? "translate-y-6 opacity-100" : "-translate-y-12 opacity-0"}
       `}
     >
       <div
