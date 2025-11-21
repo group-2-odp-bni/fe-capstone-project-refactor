@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import Header from "../../components/Header";
 import ContentBox from "../../components/common/ContentBox";
 import { FullActionButton } from "../../components/button/FullActionButton";
 import { clearTokens } from "../../services/auth/authService";
@@ -17,7 +18,7 @@ export default function AccountLandingPage() {
 
     return (
         <View>
-            <WhiteHeader title="Akun" to="/app/dashboard" />
+            <Header title="Akun"/>
             <ContentBox className="border border-gray-300">
                 <div className="">
 
