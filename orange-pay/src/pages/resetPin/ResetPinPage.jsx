@@ -84,11 +84,15 @@ function SetPinContent() {
         currentPin: oldPin,
       });
 
-      const { accessToken, refreshToken } = response.data?.data || {};
-      if (!accessToken) throw new Error("Access token tidak ditemukan");
+      if (response.status === 200) {
+        navigate("/app/dashboard", {
+          state: {
+            type: "success",
+            message: "Success Reset Pin",
+          }
+        });
+      }
 
-      saveTokens(accessToken, refreshToken);
-      navigate("/app/dashboard");
 
     } catch (err) {
       const errorCode = err?.response?.data?.error?.code;
