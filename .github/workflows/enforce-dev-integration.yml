@@ -1,0 +1,16 @@
+name: Enforce PR source branch
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  enforce:
+    if: ${{ github.head_ref != 'dev-integration' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fail if PR source is not dev-integration
+        run: |
+          echo "PR ke main hanya boleh dari dev-integration (sekarang: ${{ github.head_ref }})"
+          exit 1

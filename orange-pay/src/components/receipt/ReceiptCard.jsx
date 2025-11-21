@@ -227,6 +227,7 @@ export default function ReceiptCard({ trx, externalShareRef = null, hideInlineSh
 
   return (
     <View>
+      <div ref={cardRef} className="relative rounded-2xl border border-gray-200 bg-white p-6">
         <div className="flex flex-col items-center gap-2">
           <img src="/Orangepay.svg" alt="logo" className="h-17 w-60" crossOrigin="anonymous" />
           <p className="text-sm font-semibold">Transfer</p>
@@ -277,6 +278,7 @@ export default function ReceiptCard({ trx, externalShareRef = null, hideInlineSh
             </div>
           )}
         </div>
+      </div>
     </View>
   );
 }

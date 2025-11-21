@@ -1,6 +1,9 @@
 import { useState, useRef } from "react";
 import { toPng } from "html-to-image";
 import { useNavigate } from "react-router-dom";
+import Header from "../Header";
+import View from "../view/View";
+
 export default function SplitBillConfirmed({
   data,
   onRefresh,
@@ -98,7 +101,7 @@ export default function SplitBillConfirmed({
     totalAmount > 0 ? Math.round((paidAmount / totalAmount) * 100) : 0;
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col relative">
+    <View>
       <div
         className={`fixed top-6 left-0 right-0 z-[100] flex justify-center px-4 transition-all duration-500 ease-in-out pointer-events-none ${
           toast.show ? "translate-y-0 opacity-100" : "-translate-y-12 opacity-0"
@@ -208,27 +211,8 @@ export default function SplitBillConfirmed({
         </div>
       )}
 
-      <div className="bg-white px-4 py-3 border-b border-gray-200 sticky top-0 z-10 flex items-center justify-between">
-        <button
-          onClick={onBackToHome}
-          className="p-2 rounded-full hover:bg-gray-100 active:scale-95 transition"
-        >
-          <svg
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-          >
-            <path d="M19 12H5M12 19l-7-7 7-7" />
-          </svg>
-        </button>
-        <h1 className="font-bold text-gray-800">Rincian Tagihan</h1>
-        <div className="w-10"></div>
-      </div>
+      <Header title ="Rincian Tagihan"/>
 
-      {/* Main Content */}
       <div className="flex-1 p-4 overflow-y-auto pb-24">
         <div className="max-w-md mx-auto space-y-5">
           <div
@@ -433,6 +417,6 @@ export default function SplitBillConfirmed({
           </button>
         </div>
       </div>
-    </div>
+    </View>
   );
 }

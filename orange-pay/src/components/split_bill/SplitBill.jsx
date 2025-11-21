@@ -637,7 +637,9 @@ export default function ReceiptUploadCard() {
 
   return (
     <>
-    <Header title="Split Bill"/>
+    <Header title="Split Bill" 
+    onBack={() => navigate("/app/dashboard", { replace: true })} 
+    />
       <div className="flex flex-col items-center justify-start py-4 space-y-6 px-2">
         <div className="w-full bg-gradient-to-br from-amber-400 to-orange-500 rounded-3xl p-6 text-white shadow-lg shadow-orange-200 relative overflow-hidden">
           {" "}

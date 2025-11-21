@@ -17,10 +17,10 @@ export default function SplashPage() {
   }, [navigate]);
 
   return (
-    <div className="min-h-dvh w-full bg-slate-100 flex items-center justify-center p-4">
+    <div className="min-h-dvh w-full bg-slate-100 flex items-center justify-center">
       <div
-        className={`relative w-full h-dvh max-w-[393px] max-h-[852px]
-                    rounded-[28px] shadow-[0_20px_60px_rgba(2,6,23,.18)]
+        className={`relative w-full h-dvh
+                    shadow-[0_20px_60px_rgba(2,6,23,.18)]
                     ring-1 ring-black/10 overflow-hidden
                     transition-opacity duration-700 ${
                       fadeOut ? "opacity-0" : "opacity-100"

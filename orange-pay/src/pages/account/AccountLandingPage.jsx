@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { replace, useNavigate } from "react-router-dom";
 import Header from "../../components/Header";
 import ContentBox from "../../components/common/ContentBox";
 import { FullActionButton } from "../../components/button/FullActionButton";
@@ -17,12 +17,10 @@ export default function AccountLandingPage() {
 
     return (
         <View>
-            <Header title="Akun"/>
+            <Header title="Akun"
+            onBack={() => navigate("/app/dashboard", {replace:true})}/>
             <ContentBox className="border border-gray-300">
                 <div className="">
-
-
-
                     <div className="space-y-6">
                         <H2Medium>Akun Saya</H2Medium>
                         <AccountButtonLink

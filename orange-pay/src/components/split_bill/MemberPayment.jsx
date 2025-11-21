@@ -18,8 +18,6 @@ import MemberPaymentSuccess from "./MemberPaymentSuccess";
  * - onPay?: (ctx) => void
  */
 export default function MemberPayment({ open, onClose, ctx, onPay }) {
-  if (!open || !ctx) return null;
-
   const {
     amount = 0,
     receiver = {},
@@ -138,7 +136,7 @@ export default function MemberPayment({ open, onClose, ctx, onPay }) {
     setShowSuccess(false);
     onClose?.();
   };
-
+  if (!open || !ctx) return null;
   return (
     <>
       {/* Main Payment Modal */}
@@ -229,8 +227,6 @@ export default function MemberPayment({ open, onClose, ctx, onPay }) {
 
               {/* Text content */}
               <div className="text-xs md:text-[13px] text-gray-800 flex items-center flex-wrap mx-7 gap-x-1.5 gap-y-0.5">
-
-
                 {receiver?.name && (
                   <>
                     <span className="text-gray-300">•</span>
@@ -275,7 +271,6 @@ export default function MemberPayment({ open, onClose, ctx, onPay }) {
                     </div>
                   )}
                 </div>
-
               </div>
             </div>
 
@@ -324,7 +319,8 @@ export default function MemberPayment({ open, onClose, ctx, onPay }) {
 
             {/* FOOTER NOTE */}
             <div className="text-[11px] text-gray-600 text-center pb-4">
-              Member ID: <span className="font-mono text-gray-700">{memberId}</span>
+              Member ID:{" "}
+              <span className="font-mono text-gray-700">{memberId}</span>
             </div>
           </div>
         </div>

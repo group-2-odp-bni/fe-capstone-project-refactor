@@ -379,14 +379,14 @@ export default function SelectContacts({
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
-      <div className="bg-white border-b border-gray-200 px-4 pt-3 pb-2 sticky top-0 z-10 backdrop-blur-sm bg-white/95">
+      <div>
         <Header
           title="Pilih Anggota"
           onBack={onBack}
           right={<HelpButton onHelp={handleOpenHelp} />}
         />
         <div className="w-full max-w-2xl mx-auto">
-          <p className="text-xs text-gray-500 mt-1">
+          <p className="text-xs text-gray-500 mt-1 px-4">
             {selectedCount} anggota dipilih
           </p>
         </div>

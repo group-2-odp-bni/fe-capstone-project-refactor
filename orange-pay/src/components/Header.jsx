@@ -14,9 +14,16 @@ export default function Header({
   const navigate = useNavigate();
 
   const handleBack = (e) => {
-    // defensive: avoid interfering with other handlers
-    if (e && typeof e.preventDefault === "function") e.preventDefault();
-    if (typeof onBack === "function") return onBack();
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  
+    if (typeof onBack === "function") {
+      onBack();
+      return;
+    }
+  
     navigate(-1);
   };
 

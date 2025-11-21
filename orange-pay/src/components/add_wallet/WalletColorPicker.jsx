@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 
 /** Fallback bawaan */
 const FALLBACK_COLORS = [
-  { key: "green",  css: "linear-gradient(101.06deg,#2F5755 23.71%,#1A3A38 60.76%,#041D1C 97.82%)", label: "Green" },
+  { key: "yellow",  css: "linear-gradient(101.06deg,#FFFF00 23.71%,#C5A94A 60.76%,#B8860B 97.82%)", label: "Yellow" },
   { key: "olive",  css: "linear-gradient(101.06deg,#3F6C2F 23.71%,#254818 60.76%,#0C2004 97.82%)", label: "Olive" },
   { key: "blue",   css: "linear-gradient(101.06deg,#135B82 23.71%,#0F435F 60.76%,#0F2835 97.82%)", label: "Blue" },
   { key: "indigo", css: "linear-gradient(101.06deg,#3D46A3 23.71%,#2E3276 60.76%,#181B44 97.82%)", label: "Indigo" },

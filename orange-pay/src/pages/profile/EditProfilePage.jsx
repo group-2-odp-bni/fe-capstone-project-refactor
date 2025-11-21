@@ -19,6 +19,10 @@ export default function EditProfilePage() {
     const [uploading, setUploading] = useState(false);
 
     useEffect(() => {
+        window.history.replaceState(null, "", location.pathname + location.search);
+      }, [location.pathname, location.search]);
+      
+    useEffect(() => {
         const getUserProfile = async () => {
             try {
                 const response = await api.get("/api/v1/user/me");
@@ -83,12 +87,15 @@ export default function EditProfilePage() {
             const phoneChanged = changedFields.hasOwnProperty("phoneNumber");
 
             if (emailChanged) {
-                navigate("/app/verify", { state: { type: "email", email: changedFields.email } });
-            } else if (phoneChanged) {
-                navigate("/app/verify", { state: { type: "phone" } });
-            } else {
-                navigate("/app/profile");
-            }
+                navigate("/app/verify", {
+                  state: { type: "email", email: changedFields.email },
+                  replace: true,         
+                });
+              } else if (phoneChanged) {
+                navigate("/app/verify", { state: { type: "phone" }, replace: true });
+              } else {
+                navigate("/app/profile", { replace: true });
+              }
 
         } catch (err) {
             setError("Gagal menyimpan perubahan. Silakan coba lagi.");

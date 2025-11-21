@@ -595,24 +595,31 @@ export default function SplitBillConfirmation({
         </div>
       )}
 
-      <div className="bg-white border-b border-gray-200 px-4 py-3 sticky top-0 z-10">
-        {/* sticky header area — keep Header component unchanged */}
-          <div className="w-full max-w-3xl mx-auto relative">
+      <div>
+          <div>
             {/* original Header (unchanged) - pass simple help button into right */}
             <Header
               title="Pembagian split bill"
-              subtitle={splitName || "Rincian Split Bill"}
-              centerTitle={false}
+              // subtitle={splitName || "Rincian Split Bill"}
+              centerTitle={true}
               onBack={onBack}
-              right={
+              right={ 
                 <button
-                  type="button"
-                  aria-label="Bantuan"
-                  className="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-gray-500 hover:bg-gray-50"
-                  onClick={handleOpenHelp}
-                >
-                  ?
-                </button>
+                onClick={handleOpenHelp}
+                className="w-5 h-5 rounded-full flex items-center justify-center hover:bg-gray-100 active:scale-95 transition-all duration-200"
+                aria-label="Bantuan"
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                  <circle cx="12" cy="12" r="10" stroke="#9CA3AF" strokeWidth="2" />
+                  <path
+                    d="M9.5 9a2.5 2.5 0 115 0c0 1.5-2.5 2-2.5 3.5"
+                    stroke="#9CA3AF"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                  />
+                  <circle cx="12" cy="17" r="1" fill="#9CA3AF" />
+                </svg>
+              </button>
               }
             />
 
@@ -628,7 +635,7 @@ export default function SplitBillConfirmation({
             </div>
 
             {/* the small subtitle line below header */}
-            <div className="mt-1 text-xs text-gray-500">
+            <div className="mt-1 text-xs text-gray-500 px-4">
               {selectedCount} anggota dipilih
             </div>
           </div>
