@@ -8,7 +8,6 @@ import { useLoginContext } from "../../context/LoginContext";
 import axios from "axios";
 
 
-
 export default function ResetPinPage() {
 
     return (
@@ -29,6 +28,7 @@ function SetNewPinContent() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
     const [attempt, setAttempt] = useState(0);
+    const API_BASE = import.meta.env.VITE_API_BASE || "";
 
     const submitPin = async () => {
         setAttempt((x) => x + 1);
@@ -91,12 +91,8 @@ function SetNewPinContent() {
 
             if (pinRes.status === 200) {
                 navigate("/login");
-                throw new Error("Logic Error");
+                return
             }
-
-            // const { accessToken, refreshToken } = pinRes.data?.data || {};
-            // if (!accessToken) throw new Error("Access token tidak ditemukan");
-            // saveTokens(accessToken, refreshToken);
 
         } catch (err) {
             const messege = err?.response?.data?.message || err?.message || "Terjadi kesalahan. Silakan coba lagi.";
