@@ -8,7 +8,6 @@ import { useLoginContext } from "../../context/LoginContext";
 import axios from "axios";
 
 
-
 export default function ResetPinPage() {
 
     return (
@@ -29,6 +28,7 @@ function SetNewPinContent() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
     const [attempt, setAttempt] = useState(0);
+    const API_BASE = import.meta.env.VITE_API_BASE || "";
 
     const submitPin = async () => {
         setAttempt((x) => x + 1);
