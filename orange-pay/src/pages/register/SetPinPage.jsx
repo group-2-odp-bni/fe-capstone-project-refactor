@@ -12,12 +12,12 @@ import { useToast } from "../../context/ToastContext";
 
 export default function SetPinPage() {
   return (
-    <View>
+    <div>
       <PageHeader className="mt-5 mb-5">Input Pin</PageHeader>
       <WhiteCardContainer>
         <SetPinContent />
       </WhiteCardContainer>
-    </View>
+    </div>
   );
 }
 const API_BASE = import.meta.env.VITE_API_BASE || "";

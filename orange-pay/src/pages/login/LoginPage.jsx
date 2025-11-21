@@ -28,9 +28,9 @@ export default function LoginPage() {
         appendTo: "body",
       }}
     >
-      <View>
+      {/* <View> */}
         <LoginContextContent />
-      </View>
+      {/* </View> */}
     </GoogleReCaptchaProvider>
   );
 }
@@ -209,7 +209,7 @@ function LoginContextContent() {
           <FullSubmitButton disabled={loading}>
             {loading ? "Mengirim OTP..." : "Kirim OTP via WhatsApp"}
           </FullSubmitButton>
-          <div className="text-center text-xs">
+          <div className="text-center text-xs mt-4">
             <span className="text-gray-500">Belum punya akun? </span>
             <Link
               to="/register"

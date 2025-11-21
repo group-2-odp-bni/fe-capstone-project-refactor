@@ -26,9 +26,9 @@ export default function RegisterPage() {
         appendTo: "body",
       }}
     >
-      <View>
+      {/* <View> */}
         <RegisterContent />
-      </View>
+      {/* </View> */}
     </GoogleReCaptchaProvider>
   );
 }
