@@ -5,6 +5,7 @@ import { FullSubmitButton } from "../../components/button/FullSubmitButton";
 import api from "../../lib/api";
 import CenteredNumberInputPad from "../../components/register/CenteredNumberInputPad";
 import { useLoginContext } from "../../context/LoginContext";
+import axios from "axios";
 
 
 
@@ -74,17 +75,29 @@ function SetNewPinContent() {
 
         setLoading(true);
         try {
-            const pinRes = await api.post(
-                "/api/v1/pin/reset/confirm",
+            const pinRes = await axios.post(
+                `${API_BASE}/api/v1/pin/reset/confirm`,
                 {
                     newPin: pin,
+                },
+                {
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${loginData.stateToken}`,
+                    },
+
                 }
             );
 
-            const { accessToken, refreshToken } = pinRes.data?.data || {};
-            if (!accessToken) throw new Error("Access token tidak ditemukan");
-            saveTokens(accessToken, refreshToken);
-            navigate("/login");
+            if (pinRes.status === 200) {
+                navigate("/login");
+                throw new Error("Logic Error");
+            }
+
+            // const { accessToken, refreshToken } = pinRes.data?.data || {};
+            // if (!accessToken) throw new Error("Access token tidak ditemukan");
+            // saveTokens(accessToken, refreshToken);
+
         } catch (err) {
             const messege = err?.response?.data?.message || err?.message || "Terjadi kesalahan. Silakan coba lagi.";
             showToast({
