@@ -15,7 +15,7 @@ import { useCountdown } from "../../hooks/useCountdown";
 
 export default function OtpRegisterPage() {
   return (
-    <View>
+    <div>
       <OrangeHeader />
       <WhiteCardContainer>
         <OrangePayLogo />
@@ -25,7 +25,7 @@ export default function OtpRegisterPage() {
         </RegisterTextContainer>
         <SetOtpContent />
       </WhiteCardContainer>
-    </View>
+    </div>
   );
 }
 const API_BASE = import.meta.env.VITE_API_BASE || "";

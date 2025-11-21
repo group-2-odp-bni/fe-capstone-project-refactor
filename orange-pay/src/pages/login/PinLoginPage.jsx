@@ -13,12 +13,12 @@ const API_BASE = import.meta.env.VITE_API_BASE || "";
 
 export default function PinLoginPage() {
   return (
-    <View>
+    <div>
       <PageHeader className="mt-5 mb-5">Masukkan PIN</PageHeader>
       <WhiteCardContainer>
         <PinLoginContent />
       </WhiteCardContainer>
-    </View>
+    </div>
   );
 }
 
