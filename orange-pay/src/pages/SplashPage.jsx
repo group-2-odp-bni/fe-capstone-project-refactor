@@ -26,19 +26,14 @@ export default function SplashPage() {
                       fadeOut ? "opacity-0" : "opacity-100"
                     }`}
       >
-        <div
-          className="absolute inset-0 bg-gradient-to-b from-[#FF9A25] to-[#ff8f0e]
-                        flex items-center justify-center
-                        px-6 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]"
-        >
-          <div className="w-full text-center">
-            <SplashLogo />
-            <div className="mt-6 h-1 w-full overflow-hidden rounded-full bg-white/25">
-              <div className="h-full bg-white/90 animate-splash-progress" />
-            </div>
+        <div className="w-full text-center">
+          <SplashLogo />
+          <div className="mt-6 h-1 w-full overflow-hidden rounded-full bg-white/25">
+            <div className="h-full bg-white/90 animate-splash-progress" />
           </div>
         </div>
       </div>
     </div>
   );
+
 }

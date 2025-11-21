@@ -44,35 +44,6 @@ function SetOtpContent() {
     const [error, setError] = useState("");
     const { secondsLeft } = useCountdown(30);
 
-    useEffect(() => {
-
-        // get new state token
-        const getNewStateToken = async () => {
-            try {
-                const response = await axios.post(
-                    `${API_BASE}/api/v1/pin/reset/request`,
-                    {
-                        "phoneNumber": loginData.phoneNumber,
-                        "captchaToken": localStorage.getItem("_grecaptcha")
-                    }
-                )
-                // set new state token
-                loginData.stateToken = response?.data?.data?.stateToken;
-            }
-            catch (err) {
-                setError(
-                    err.response.error.messege ||
-                    "Network Error"
-                )
-            }
-        }
-
-        getNewStateToken();
-
-    }, [])
-
-
-
 
     const handleSubmit = async (e) => {
         e.preventDefault();

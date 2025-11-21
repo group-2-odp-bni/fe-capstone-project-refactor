@@ -13,7 +13,7 @@ export default function ProfilePage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { profileData, setProfileData } = useProfileContext();
-
+  
   useEffect(() => {
     const getUserProfile = async () => {
       try {
@@ -70,7 +70,7 @@ export default function ProfilePage() {
           >
             Ubah Data
           </FullActionButton>
-        </div>  
+        </div>
       </ContentBox>
     </View>
   );

@@ -217,6 +217,7 @@ export default function ReceiptResult({ receiptData, onBack, onConfirm }) {
         title: splitName,
         destinationWalletId: selectedWalletId,
         imageUrl: receiptImage,
+        creator_name: currentUser?.name,
         items: editableData.items,
         fees: {
           tax: Number(pajak || 0),
@@ -446,7 +447,7 @@ export default function ReceiptResult({ receiptData, onBack, onConfirm }) {
                         <div className="font-semibold text-sm text-gray-900">
                           {wallet.name || "Wallet"}
                         </div>
-                        <div className="text-xs text-gray-600">{wallet.id}</div>
+                        {/* <div className="text-xs text-gray-600">{wallet.id}</div> */}
                       </div>
                       <div className="text-right">
                         <div className="text-sm font-bold text-gray-900">

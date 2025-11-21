@@ -5,9 +5,9 @@ import { FullSubmitButton } from "../../components/button/FullSubmitButton";
 import ProfileImage from "../../components/account/ProfileImage";
 import { useProfileContext } from "../../context/ProfileContext";
 import View from "../../components/view/View";
-import Header from "../../components/Header";
 import ContentBox from "../../components/common/ContentBox";
 import api from "../../lib/api";
+import WhiteHeader from "../../components/register/WhiteHeader";
 
 export default function EditProfilePage() {
     const navigate = useNavigate();
@@ -127,7 +127,7 @@ export default function EditProfilePage() {
 
     return (
         <View>
-            <Header title="Edit Akun"/>
+            <WhiteHeader title="Edit Akun" to="/app/profile"/>
             <ContentBox>
                 <ProfileImage src={profileData.profileImageUrl} onImageSelected={setImageFile} />
 
