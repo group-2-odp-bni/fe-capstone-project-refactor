@@ -581,19 +581,34 @@ export default function SplitBillConfirmation({
       )}
 
       {showEqualAlert && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 animate-in zoom-in-95 duration-200">
+        // inline style zIndex ensures this overlay sits above Header (and everything)
+        <div
+          className="fixed inset-0 flex items-center justify-center p-4"
+          style={{ zIndex: 99999, backgroundColor: "rgba(107,114,128,0.45)" }} // gray overlay (tailwind gray-500/45)
+        >
+          <div className="z-[100000] bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 animate-in zoom-in-95 duration-200">
             <h3 className="text-lg font-bold text-gray-900">Bagi Rata Semuanya?</h3>
             <p className="text-sm text-gray-600 mt-2 mb-6">
               Ini akan menetapkan semua pesanan untuk dibagi rata ke semua anggota. Pilihan yang sudah Anda buat akan di-reset.
             </p>
             <div className="flex gap-3">
-              <button onClick={() => setShowEqualAlert(false)} className="w-full px-4 py-2.5 rounded-lg bg-gray-100 text-gray-800 font-semibold text-sm">Batal</button>
-              <button onClick={() => { includeAll(); setShowEqualAlert(false); }} className="w-full px-4 py-2.5 rounded-lg bg-orange-500 text-white font-semibold text-sm">Ya, Bagi Rata</button>
+              <button
+                onClick={() => setShowEqualAlert(false)}
+                className="w-full px-4 py-2.5 rounded-lg bg-gray-100 text-gray-800 font-semibold text-sm"
+              >
+                Batal
+              </button>
+              <button
+                onClick={() => { includeAll(); setShowEqualAlert(false); }}
+                className="w-full px-4 py-2.5 rounded-lg bg-orange-500 text-white font-semibold text-sm"
+              >
+                Ya, Bagi Rata
+              </button>
             </div>
           </div>
         </div>
       )}
+
 
       <div>
           <div>
@@ -622,21 +637,23 @@ export default function SplitBillConfirmation({
               </button>
               }
             />
+            <div className="flex items-center justify-between px-4 mt-1">
+              {/* small subtitle */}
+              <div className="text-xs text-gray-500">
+                {selectedCount} anggota dipilih
+              </div>
 
-            {/* large Edit button: placed absolutely on the right of the same container */}
-            <div className="absolute right-0 top-1/2 transform -translate-y-1/2">
-              <button onClick={onEditMembers} className="ml-1 inline-flex items-center gap-1.5 text-[11px] sm:text-xs font-semibold text-[#B45309] bg-white px-3 py-2 rounded-full border border-gray-200 shadow-[inset_0_-2px_0_rgba(0,0,0,0.04)] hover:bg-[#FFF7ED] active:scale-95 transition">
+              {/* Edit button */}
+              <button
+                onClick={onEditMembers}
+                className="ml-1 inline-flex items-center gap-1.5 text-[11px] sm:text-xs font-semibold text-[#B45309] bg-white px-3 py-2 rounded-full border border-gray-200 shadow-[inset_0_-2px_0_rgba(0,0,0,0.04)] hover:bg-[#FFF7ED] active:scale-95 transition"
+              >
                 <svg width="14" height="14" viewBox="0 0 24 24" className="text-[#F59E0B]">
                   <path d="M12 20h9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
                   <path d="M16.5 3.5l4 4-9.5 9.5L7 13l9.5-9.5z" stroke="currentColor" strokeWidth="2" fill="none" />
                 </svg>
                 Ubah Anggota
               </button>
-            </div>
-
-            {/* the small subtitle line below header */}
-            <div className="mt-1 text-xs text-gray-500 px-4">
-              {selectedCount} anggota dipilih
             </div>
           </div>
       </div>

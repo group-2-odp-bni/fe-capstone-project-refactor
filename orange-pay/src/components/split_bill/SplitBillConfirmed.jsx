@@ -211,7 +211,7 @@ export default function SplitBillConfirmed({
         </div>
       )}
 
-      <Header title ="Rincian Tagihan"/>
+      <Header title ="Rincian Tagihan" onBack={() => navigate("/app/splitbill")} />
 
       <div className="flex-1 p-4 overflow-y-auto pb-24">
         <div className="max-w-md mx-auto space-y-5">
