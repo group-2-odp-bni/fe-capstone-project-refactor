@@ -3,8 +3,8 @@ import React, { useEffect, useState } from "react";
 export default function TemplatePin({
   title = "Enter your PIN",
   dots = { length: 6, filled: 0, danger: false, shaking: false },
-  onBack,                 // ← opsional
-  onForgot,               // ← opsional
+  onBack, // ← opsional
+  onForgot, // ← opsional
   onDigit,
   onConfirm,
   onDelete,
@@ -101,7 +101,11 @@ export default function TemplatePin({
         <div
           key={shakingKey}
           className="mt-4 flex items-center justify-center gap-3"
-          style={shaking ? { animation: "pin-shake 0.5s ease forwards" } : { animation: "pin-pop 180ms ease forwards" }}
+          style={
+            shaking
+              ? { animation: "pin-shake 0.5s ease forwards" }
+              : { animation: "pin-pop 180ms ease forwards" }
+          }
           aria-label="PIN progress"
         >
           {Array.from({ length }).map((_, i) => {
@@ -115,8 +119,8 @@ export default function TemplatePin({
                       ? "bg-red-500 border-red-500"
                       : "border-red-300 bg-white"
                     : isFilled
-                      ? "bg-[#FF9A25] border-[#FF9A25]"
-                      : "border-gray-300 bg-white"
+                    ? "bg-[#FF9A25] border-[#FF9A25]"
+                    : "border-gray-300 bg-white"
                 }`}
               />
             );
@@ -153,12 +157,19 @@ export default function TemplatePin({
 
       {/* Keypad */}
       <div className="w-full mx-auto max-w-[560px] px-[var(--pin-pad-x)] pb-24">
-        <div className="grid grid-cols-3 justify-items-center animate-[pin-up_260ms_ease]" style={{ gap: "var(--pin-gap)" }}>
+        <div
+          className="grid grid-cols-3 justify-items-center animate-[pin-up_260ms_ease]"
+          style={{ gap: "var(--pin-gap)" }}
+        >
           <div className="contents">
             {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => (
               <NumKey key={n} label={n} onClick={() => onDigit(String(n))} />
             ))}
-            <ActionKey type="check" onClick={onConfirm} disabled={!canConfirm} />
+            <ActionKey
+              type="check"
+              onClick={onConfirm}
+              disabled={!canConfirm}
+            />
             <NumKey label={0} onClick={() => onDigit("0")} />
             <DeleteKey onClick={onDelete} disabled={!canDelete} />
           </div>
@@ -166,7 +177,9 @@ export default function TemplatePin({
 
         {errorText ? (
           <div className="mt-4 px-4 py-2.5 rounded-lg bg-red-50 border border-red-200 animate-[pin-up_220ms_ease]">
-            <p className="text-sm text-red-800 font-medium text-center">{errorText}</p>
+            <p className="text-sm text-red-800 font-medium text-center">
+              {errorText}
+            </p>
           </div>
         ) : null}
       </div>
@@ -223,7 +236,13 @@ function ActionKey({ type, onClick, disabled }) {
         style={{ width: "var(--pin-key)", height: "var(--pin-key)" }}
         aria-label="Confirm PIN"
       >
-        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <svg
+          width="30"
+          height="30"
+          viewBox="0 0 24 24"
+          fill="none"
+          aria-hidden="true"
+        >
           <path
             d="M20 6L9 17l-5-5"
             stroke="currentColor"
@@ -262,7 +281,13 @@ function DeleteKey({ onClick, disabled }) {
     >
       <span className="absolute inset-0 rounded-full pointer-events-none bg-gradient-to-b from-white/60 to-transparent" />
       <span className="relative flex items-center justify-center">
-        <img src="/public/del_pin.svg" alt="delete" width="39" height="29" style={{ display: "block" }} />
+        <img
+          src="/del_pin.svg"
+          alt="delete"
+          width="39"
+          height="29"
+          style={{ display: "block" }}
+        />
       </span>
     </button>
   );
