@@ -6,7 +6,7 @@ export default function WhiteHeader({ title = "Title", to }) {
             <div className="w-full pt-[env(safe-area-inset-top)] px-4">
                 <div className="flex items-center justify-between">
                     <BackButton to={to} />
-                    <h1 className="text-lg font-semibold text-gray-900 text-center flex-1">
+                    <h1 className="text-xl font-semibold text-gray-900 text-center flex-1">
                         {title}
                     </h1>
                     {/* Invisible spacer to keep title centered */}
