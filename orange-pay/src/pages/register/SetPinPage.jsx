@@ -31,6 +31,7 @@ function SetPinContent() {
   const [step, setStep] = useState("create"); // "create" | "confirm"
   const [loading, setLoading] = useState(false);
   const [attempt, setAttempt] = useState(0);
+  const { showToast } = useToast();
 
   const submitPin = async () => {
     setAttempt((x) => x + 1);
@@ -133,6 +134,7 @@ function SetPinContent() {
         title={step === "create" ? "Buat PIN Anda" : "Konfirmasi PIN Anda"}
         attemptKey={attempt}
         onBack={() => navigate("/register")}
+        onForgot={() => { }}
       />
     </form>
   );

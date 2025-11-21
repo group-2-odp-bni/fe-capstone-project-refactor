@@ -72,7 +72,25 @@ function PinLoginContent() {
     else navigate("/login", { replace: true });
   };
 
-  const handleForgotPin = () => {
+  const handleForgotPin = async() => {
+
+    try {
+      const response = await axios.post(
+        `${API_BASE}/api/v1/pin/reset/request`,
+        {
+          "phoneNumber": loginData.phoneNumber,
+          "captchaToken": localStorage.getItem("_grecaptcha")
+        }
+      )
+
+    }
+    catch (err) {
+      setError(
+        err.response.error.messege ||
+        "Network Error"
+      )
+    }
+
     navigate("/login/forget-pin/otp", {
       state: { phone: loginData?.phone ?? null },
     });
