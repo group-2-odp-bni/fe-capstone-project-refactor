@@ -6,7 +6,7 @@ import ProfileImage from "../../components/account/ProfileImage";
 import { FullActionButton } from "../../components/button/FullActionButton";
 import { useProfileContext } from "../../context/ProfileContext";
 import View from "../../components/view/View";
-import Header from "../../components/Header";
+import WhiteHeader from "../../components/register/WhiteHeader";
 import ContentBox from "../../components/common/ContentBox";
 import api from "../../lib/api";
 
@@ -44,7 +44,7 @@ export default function ProfilePage() {
 
   return (
     <View>
-      <Header title="Akun Saya"/>
+      <WhiteHeader title="Akun Saya" to="/app/account" />
       <ContentBox>
         <ProfileImage
           src={profileData.profileImageUrl}
@@ -64,6 +64,9 @@ export default function ProfilePage() {
         <div className="mt-6">
           <FullActionButton onClick={() => navigate("/app/editProfile")}>
             Ubah Data
+          </FullActionButton>
+          <FullActionButton onClick={() => navigate("/app/dashboard")}>
+            Kembali Dashboard
           </FullActionButton>
         </div>
 
