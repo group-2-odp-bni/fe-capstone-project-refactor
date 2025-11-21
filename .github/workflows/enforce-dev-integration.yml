@@ -6,11 +6,12 @@ on:
       - main
 
 jobs:
-  enforce:
-    if: ${{ github.head_ref != 'dev-integration' }}
+  enforce-dev-integration:
     runs-on: ubuntu-latest
     steps:
-      - name: Fail if PR source is not dev-integration
+      - name: Fail if source is not dev-integration
+        if: github.head_ref != 'dev-integration'
         run: |
-          echo "PR ke main hanya boleh dari dev-integration (sekarang: ${{ github.head_ref }})"
+          echo "ERROR: Violation detected."
+          echo "Targeting main is only allowed from dev-integration."
           exit 1
