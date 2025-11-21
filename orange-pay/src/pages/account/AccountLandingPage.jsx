@@ -6,6 +6,7 @@ import { clearTokens } from "../../services/auth/authService";
 import AccountButtonLink from "../../components/button/AccountButtonLink";
 import View from "../../components/view/View";
 import H2Medium from "../../components/text/H2Medium";
+import WhiteHeader from "../../components/register/WhiteHeader";
 
 
 export default function AccountLandingPage() {

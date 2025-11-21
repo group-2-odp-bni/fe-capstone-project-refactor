@@ -1,0 +1,17 @@
+name: Enforce PR source branch
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  enforce-dev-integration:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fail if source is not dev-integration
+        if: github.head_ref != 'dev-integration'
+        run: |
+          echo "ERROR: Violation detected."
+          echo "Targeting main is only allowed from dev-integration."
+          exit 1

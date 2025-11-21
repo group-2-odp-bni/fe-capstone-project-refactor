@@ -12,12 +12,12 @@ import { useToast } from "../../context/ToastContext";
 
 export default function SetPinPage() {
   return (
-    <View>
+    <div>
       <PageHeader className="mt-5 mb-5">Input Pin</PageHeader>
       <WhiteCardContainer>
         <SetPinContent />
       </WhiteCardContainer>
-    </View>
+    </div>
   );
 }
 const API_BASE = import.meta.env.VITE_API_BASE || "";
@@ -31,6 +31,7 @@ function SetPinContent() {
   const [step, setStep] = useState("create"); // "create" | "confirm"
   const [loading, setLoading] = useState(false);
   const [attempt, setAttempt] = useState(0);
+  const { showToast } = useToast();
 
   const submitPin = async () => {
     setAttempt((x) => x + 1);
@@ -133,6 +134,7 @@ function SetPinContent() {
         title={step === "create" ? "Buat PIN Anda" : "Konfirmasi PIN Anda"}
         attemptKey={attempt}
         onBack={() => navigate("/register")}
+        onForgot={() => { }}
       />
     </form>
   );

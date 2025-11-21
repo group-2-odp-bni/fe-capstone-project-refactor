@@ -1,12 +1,19 @@
 import { useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import html2canvas from "html2canvas";
 import { useBillMember } from "../hooks/useSplitbill";
 import PaymentModal from "../components/ui/transfer/PaymentSplitBillModal";
+
+// create struck
+import { applyWatermarkPattern } from "../util/createStuck/applyWatermark";
+import { downloadCanvas } from "../util/createStuck/downloadCanvas";
+import { htmlToCanvas } from "../util/createStuck/htmlToCanvas";
+import { useToast } from "../context/ToastContext";
+
 export default function SplitBillMemberPage() {
   const { id: splitId, memberId } = useParams();
   const navigate = useNavigate();
   const receiptRef = useRef(null);
+  const { showToast } = useToast();
 
   const [isPaymentOpen, setIsPaymentOpen] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
@@ -27,31 +34,24 @@ export default function SplitBillMemberPage() {
       maximumFractionDigits: 0,
     }).format(n || 0);
 
+
   const handleDownloadStruk = async () => {
-    if (!receiptRef.current || downloading) return;
     setDownloading(true);
-    try {
-      await new Promise((resolve) => setTimeout(resolve, 300));
-      const canvas = await html2canvas(receiptRef.current, {
-        backgroundColor: "#ffffff",
-        scale: 2,
-        useCORS: true,
-        logging: false,
-      });
-      const url = canvas.toDataURL("image/png");
-      const link = document.createElement("a");
-      link.download = `Invoice-${invoice?.memberProfile?.name || "Member"}.png`;
-      link.href = url;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    } catch (err) {
-      console.error("Gagal download struk:", err);
-      alert("Gagal mengunduh struk.");
-    } finally {
-      setDownloading(false);
-    }
+    // init struck canvas
+    const canvas = await htmlToCanvas(receiptRef.current);
+
+    // apply pattern
+    await applyWatermarkPattern(
+      canvas,
+      "/Orangepay.svg"
+    );
+
+    // download
+    downloadCanvas(canvas, "struk.png");
+    setDownloading(false);
   };
+
+
   const handleFinish = () => {
     navigate("/app/splitbill");
   };
@@ -203,8 +203,9 @@ export default function SplitBillMemberPage() {
           )}
 
           <div
+            id="capture"
             ref={receiptRef}
-            className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100"
+            className="bg-white p-6 border border-dashed border-gray-100 rounded-lg"
             style={{
               backgroundColor: "#ffffff",
               color: "#1f2937",
@@ -256,8 +257,8 @@ export default function SplitBillMemberPage() {
                     <span className="font-semibold text-gray-900">
                       {currency(
                         item.line_subtotal_rp ||
-                          item.total ||
-                          item.price * (item.qty || 1)
+                        item.total ||
+                        item.price * (item.qty || 1)
                       )}
                     </span>
                   </div>

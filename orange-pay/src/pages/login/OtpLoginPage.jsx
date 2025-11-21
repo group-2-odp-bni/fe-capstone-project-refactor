@@ -13,10 +13,11 @@ import ButtonLink from "../../components/button/ButtonLink";
 import CountdownTimer from "../../components/dashboard/CountdownTimer";
 import View from "../../components/view/View";
 import { useCountdown } from "../../hooks/useCountdown";
+// import Header from "../../components/common/HeaderOrange";
 
 export default function OtpLoginPage() {
   return (
-    <View>
+    <div>
       <OrangeHeader />
       <WhiteCardContainer>
         <OrangePayLogo />
@@ -26,7 +27,7 @@ export default function OtpLoginPage() {
         </RegisterTextContainer>
         <SetOtpContent />
       </WhiteCardContainer>
-    </View>
+    </div>
   );
 }
 const API_BASE = import.meta.env.VITE_API_BASE || "";
