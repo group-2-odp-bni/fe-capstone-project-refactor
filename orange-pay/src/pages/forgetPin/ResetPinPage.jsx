@@ -91,12 +91,8 @@ function SetNewPinContent() {
 
             if (pinRes.status === 200) {
                 navigate("/login");
-                throw new Error("Logic Error");
+                return
             }
-
-            // const { accessToken, refreshToken } = pinRes.data?.data || {};
-            // if (!accessToken) throw new Error("Access token tidak ditemukan");
-            // saveTokens(accessToken, refreshToken);
 
         } catch (err) {
             const messege = err?.response?.data?.message || err?.message || "Terjadi kesalahan. Silakan coba lagi.";
