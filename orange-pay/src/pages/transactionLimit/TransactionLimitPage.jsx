@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import ContentBox from "../../components/common/ContentBox";
-import WhiteHeader from "../../components/register/WhiteHeader";
+import WhiteHeader from "../../components/Header";
 import View from "../../components/view/View";
 import api from "../../lib/api";
 import { useTransactionLimitContext } from "../../context/TransactionLimitContext";
@@ -39,7 +39,7 @@ export default function TransactionLimitPage() {
 
   return (
     <View>
-      <WhiteHeader title="Limit Transaksi" to="/app/account" />
+      <WhiteHeader title="Limit Transaksi" />
       <ContentBox>
         <div className="space-y-5">
           <div className="flex items-center justify-between">

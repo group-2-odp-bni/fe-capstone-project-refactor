@@ -5,6 +5,7 @@ import { ShareIcon } from "@heroicons/react/24/outline";   // ← use Heroicons
 import { getTrxById } from "../hooks/api/useHistoryTrx";
 import ReceiptCard from "../components/receipt/ReceiptCard";
 import Header from "../components/Header";
+import View from "../components/view/View";
 
 export default function ReceiptPage() {
   const { trxId } = useParams();
@@ -34,7 +35,7 @@ export default function ReceiptPage() {
   );
 
   return (
-    <div className="p-6">
+    <View>
       <Header
         title="Transfer History"
         onBack={() => navigate(-1)}
@@ -54,6 +55,6 @@ export default function ReceiptPage() {
       ) : (
         <ReceiptCard trx={trx} externalShareRef={shareRef} hideInlineShare />
       )}
-    </div>
+    </View>
   );
 }

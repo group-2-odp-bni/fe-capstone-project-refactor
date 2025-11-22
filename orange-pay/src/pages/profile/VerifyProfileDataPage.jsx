@@ -90,7 +90,7 @@ function VerifyProfileContent({ verifyType }) {
         } catch {
             // backend already sends proper response, ignore
         } finally {
-            navigate("/app/editProfile");
+            navigate("/app/editProfile", {replace:true});
         }
     };
 

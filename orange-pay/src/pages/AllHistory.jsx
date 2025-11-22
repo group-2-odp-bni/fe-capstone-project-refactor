@@ -2,6 +2,7 @@ import React from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import TransactionList from "../components/history_transaksi/AllHistory";
 import Header from "../components/Header";
+import View from "../components/view/View";
 
 export default function HistoryTransactionPage() {
   const { walletId } = useParams();
@@ -20,9 +21,8 @@ export default function HistoryTransactionPage() {
   };
 
   return (
-    <div className="min-h-screen bg-white p-6">
-      <Header title="Riwayat Transaksi" subtitle="" showBack />
-
+    <View>
+      <Header title="Riwayat Transaksi" subtitle="" />
       <main>
         <div className="mb-4">
           <h2 className="pl-3 pt-3 text-black text-l font-bold">
@@ -35,6 +35,6 @@ export default function HistoryTransactionPage() {
           onTransactionClick={handleTransactionClick}
         />
       </main>
-    </div>
+    </View>
   );
 }

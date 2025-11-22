@@ -8,6 +8,8 @@ import { applyWatermarkPattern } from "../util/createStuck/applyWatermark";
 import { downloadCanvas } from "../util/createStuck/downloadCanvas";
 import { htmlToCanvas } from "../util/createStuck/htmlToCanvas";
 import { useToast } from "../context/ToastContext";
+import Header from "../components/Header";
+import View from "../components/view/View";
 
 export default function SplitBillMemberPage() {
   const { id: splitId, memberId } = useParams();
@@ -99,6 +101,7 @@ export default function SplitBillMemberPage() {
   });
 
   return (
+    <View>
     <div className="min-h-screen bg-gradient-to-b from-orange-50 to-white flex flex-col relative">
       {showSuccess && (
         <div className="fixed inset-0 z-[99] bg-white flex flex-col items-center justify-center p-6 animate-in fade-in zoom-in duration-300">
@@ -146,31 +149,7 @@ export default function SplitBillMemberPage() {
         invoice={invoice}
       />
 
-      <div className="bg-white border-b border-gray-200 px-4 py-3 sticky top-0 z-10 shadow-sm">
-        <div className="max-w-md mx-auto flex items-center gap-2">
-          <button
-            onClick={() => navigate("/")}
-            className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-gray-100 active:scale-95 transition"
-          >
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-              <path
-                d="M15 18l-6-6 6-6"
-                stroke="#1F2937"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </button>
-          <div className="flex-1 text-center">
-            <div className="text-sm text-gray-900 font-semibold">
-              Invoice Personal
-            </div>
-          </div>
-          <div className="w-10" />
-        </div>
-      </div>
-
+      <Header title="Invoice Personal"/>
       <div className="flex-1 flex flex-col items-center px-4 py-6 pb-24">
         {" "}
         <div className="max-w-md w-full space-y-6">
@@ -349,5 +328,6 @@ export default function SplitBillMemberPage() {
         invoice={invoice}
       />
     </div>
+    </View>
   );
 }
