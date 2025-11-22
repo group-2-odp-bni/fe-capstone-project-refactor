@@ -1,10 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "../../components/Header";
 import { useAddBalanceContext } from "../../context/AddBalanceContext";
 import useBalanceCards from "../../hooks/api/useCardBalances";
 import api from "../../lib/api";
 import generateIdempotencyKey from "../../lib/generateIdempotencyKey";
+import LoadingSpinner from "../../components/common/LoadingSpinner";
 
 const formatRp = (n) => `Rp${(n || 0).toLocaleString("id-ID")}`;
 const InfoRow = ({ label, value }) => (
@@ -21,16 +22,54 @@ export default function ConfirmAddBalancePage() {
 
   const { items } = useBalanceCards();
   const destinationWallet = items.find(
-    (w) => w.id === addBalanceData.destinationWalletId
+    (w) => w.id === addBalanceData?.destinationWalletId
   );
   const sourceWallet = items.find(
-    (w) => w.id === addBalanceData.sourceWalletId
+    (w) => w.id === addBalanceData?.sourceWalletId
   );
 
   const [errorMessage, setErrorMessage] = useState(""); // 🧠 store error message
 
   const fee = 0;
-  const total = addBalanceData.amount + fee;
+  const total = (addBalanceData?.amount || 0) + fee;
+
+  // Role guard states
+  const [roleLoading, setRoleLoading] = useState(true);
+  const [myRole, setMyRole] = useState(null);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        setRoleLoading(true);
+        const resp = await api.get("/api/v1/user/me");
+        const data = resp?.data?.data || resp?.data || {};
+        const roleFromApi =
+          (typeof data.role === "string" && data.role) ||
+          (Array.isArray(data.roles) && data.roles[0]) ||
+          null;
+        const resolvedRole = roleFromApi ? String(roleFromApi).trim().toLowerCase() : null;
+        if (!mounted) return;
+        setMyRole(resolvedRole);
+
+        if (resolvedRole === "viewer") {
+          // Redirect viewer away — back to wallet detail if available, otherwise dashboard
+          const dest = addBalanceData?.destinationWalletId
+            ? `/app/wallets/${addBalanceData.destinationWalletId}`
+            : "/app/dashboard";
+          navigate(dest, { replace: true });
+        }
+      } catch (err) {
+        // Be tolerant on API failure — allow access but log
+        console.error("Role guard failed to fetch user role:", err);
+      } finally {
+        if (mounted) setRoleLoading(false);
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, [navigate, addBalanceData]);
 
   const handleConfirm = async () => {
     try {
@@ -68,6 +107,23 @@ export default function ConfirmAddBalancePage() {
     }
   };
 
+  // While role guard is loading, show a centered spinner
+  if (roleLoading) {
+    return (
+      <div className="min-h-screen flex flex-col bg-gray-50">
+        <Header
+          title="Confirm Add Balance"
+          onBack={() => navigate(-1)}
+          showBack
+          centerTitle
+        />
+        <main className="flex-1 p-6 flex items-center justify-center">
+          <LoadingSpinner />
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       <Header
@@ -95,7 +151,7 @@ export default function ConfirmAddBalancePage() {
         <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 mt-6">
           <h3 className="text-sm font-bold text-gray-900 mb-2">Add Balance</h3>
           <div className="divide-y divide-gray-100">
-            <InfoRow label="Nominal" value={formatRp(addBalanceData.amount)} />
+            <InfoRow label="Nominal" value={formatRp(addBalanceData?.amount || 0)} />
             <InfoRow label="Biaya Transaksi" value={formatRp(fee)} />
           </div>
         </div>

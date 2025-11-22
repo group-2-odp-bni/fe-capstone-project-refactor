@@ -180,17 +180,18 @@ export default function HistoryTransactionPage() {
   const isSpender = normalizedRole === "spender";
   const isViewer = normalizedRole === "viewer";
 
-  // CHANGED: allow navigation for all roles except viewer.
+  // CHANGED: Add balance visibility should be OWNER, ADMIN, or SPENDER only.
+  const canSeeAddBalance = isAdminOrOwner || isSpender;
+
+  // CHANGED: allow navigation for all roles to members (assign) — removed role guard
   const handleAddBalanceFromWallet = () => {
-    // defensive: block viewer explicitly (we will enforce fuller checks in AddBalancePage)
-    if (isViewer) return;
+    // defensive: only allow owner/admin/spender to proceed
+    if (!canSeeAddBalance) return;
     navigate(`/app/wallets/${walletId}/add`);
   };
 
-  // CHANGED: allow navigation for all roles except viewer.
+  // CHANGED: allow navigation for all roles to members
   const handleViewPeople = () => {
-    // defensive: block viewer explicitly (we will enforce fuller checks in AssignMemberPage)
-    if (isViewer) return;
     navigate(`/app/wallets/${walletId}/members`);
   };
 
@@ -250,7 +251,7 @@ export default function HistoryTransactionPage() {
     }
   };
 
-  // ----- render states -----
+  // ----- render states ----- 
   if (walletsLoading) {
     return (
       <View>
@@ -312,50 +313,29 @@ export default function HistoryTransactionPage() {
             ref={buttonGroupRef}
             className="button-group flex justify-center gap-3 mt-3 md:mt-4 relative z-10"
           >
-            {/* CHANGED: Add balance - allowed for all roles except VIEWER.
-                Role checks for the actual operation remain inside AddBalancePage */}
-            <button
-              onClick={handleAddBalanceFromWallet}
-              disabled={roleLoading || isViewer}
-              className={`w-10 h-10 flex items-center justify-center rounded-xl shadow-md active:scale-95 transition
-                ${
-                  roleLoading
-                    ? "opacity-60 cursor-wait bg-gray-100 text-gray-400"
-                    : !isViewer
-                    ? "bg-orange-400 text-white"
-                    : "bg-white text-gray-300 border border-gray-200 cursor-not-allowed"
-                }`}
-              title={
-                roleLoading
-                  ? "Checking permissions..."
-                  : !isViewer
-                  ? "Add balance"
-                  : "You don't have permission to add balance"
-              }
-            >
-              <PlusIcon className="w-5 h-5" />
-            </button>
+            {/* ADD BALANCE: visible ONLY to OWNER, ADMIN, SPENDER */}
+            {canSeeAddBalance ? (
+              <button
+                onClick={handleAddBalanceFromWallet}
+                disabled={roleLoading}
+                className={`w-10 h-10 flex items-center justify-center rounded-xl shadow-md active:scale-95 transition
+                  ${
+                    roleLoading
+                      ? "opacity-60 cursor-wait bg-gray-100 text-gray-400"
+                      : "bg-orange-400 text-white"
+                  }`}
+                title={roleLoading ? "Checking permissions..." : "Add balance"}
+              >
+                <PlusIcon className="w-5 h-5" />
+              </button>
+            ) : null}
 
-            {/* Icon Person (view members) only for Shared wallet AND NOT VIEWER */}
+            {/* Icon Person (view members) - allow ALL roles to view members for Shared wallet */}
             {wallet.type === "Shared" && (
               <button
                 onClick={handleViewPeople}
-                disabled={roleLoading || isViewer}
-                className={`w-10 h-10 flex items-center justify-center rounded-xl border shadow-sm active:scale-95 transition
-                  ${
-                    roleLoading
-                      ? "opacity-60 cursor-wait border-gray-200 text-gray-300 bg-white"
-                      : !isViewer
-                      ? "border-orange-400 text-[#FF9A25] bg-white"
-                      : "border-gray-200 text-gray-300 bg-white cursor-not-allowed"
-                  }`}
-                title={
-                  roleLoading
-                    ? "Checking permissions..."
-                    : !isViewer
-                    ? "View members"
-                    : "You don't have permission to view members"
-                }
+                className="w-10 h-10 flex items-center justify-center rounded-xl border shadow-sm active:scale-95 transition border-orange-400 text-[#FF9A25] bg-white"
+                title="View members"
               >
                 <UserIcon className="w-5 h-5" />
               </button>

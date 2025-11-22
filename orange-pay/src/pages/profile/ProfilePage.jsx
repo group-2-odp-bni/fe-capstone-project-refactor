@@ -13,7 +13,7 @@ export default function ProfilePage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { profileData, setProfileData } = useProfileContext();
-  
+
   useEffect(() => {
     const getUserProfile = async () => {
       try {
@@ -69,6 +69,9 @@ export default function ProfilePage() {
             }
           >
             Ubah Data
+          </FullActionButton>
+          <FullActionButton onClick={() => navigate("/app/dashboard")}>
+            Kembali Dashboard
           </FullActionButton>
         </div>
       </ContentBox>

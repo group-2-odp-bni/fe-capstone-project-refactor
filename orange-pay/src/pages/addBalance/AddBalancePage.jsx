@@ -11,6 +11,7 @@ import {
   GradientCardShell,
   BalanceRow,
 } from "../../components/ui/BalanceCardUI";
+import api from "../../lib/api"; // <-- added
 
 export default function AddBalancePage() {
   const navigate = useNavigate();
@@ -35,6 +36,10 @@ export default function AddBalancePage() {
   const [errorMsg, setErrorMsg] = useState("");
   const [isHidden, setIsHidden] = useState(false);
 
+  // Role guard states
+  const [roleLoading, setRoleLoading] = useState(true);
+  const [myRole, setMyRole] = useState(null);
+
   // Clip exclusions to match AtomicBalanceCard visuals
   const EXCLUDE = {
     sm: { bottom: 64, right: 120 },
@@ -51,6 +56,41 @@ export default function AddBalancePage() {
       setFromWalletId(fromWalletOptions[0].id);
     }
   }, [allWallets, toWalletId, fromWalletOptions, loading]);
+
+  // --- Role guard: prevent 'viewer' from accessing this page ---
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        setRoleLoading(true);
+        const resp = await api.get("/api/v1/user/me");
+        const data = resp?.data?.data || resp?.data || {};
+        const roleFromApi =
+          (typeof data.role === "string" && data.role) ||
+          (Array.isArray(data.roles) && data.roles[0]) ||
+          null;
+        const resolvedRole = roleFromApi ? String(roleFromApi).trim().toLowerCase() : null;
+        if (!mounted) return;
+        setMyRole(resolvedRole);
+
+        if (resolvedRole === "viewer") {
+          // Redirect viewer away — back to wallet detail if available, otherwise dashboard
+          const dest = toWalletId ? `/app/wallets/${toWalletId}` : "/app/dashboard";
+          // optional: you can show a small alert here instead of window.alert
+          // window.alert("You don't have permission to add balance.");
+          navigate(dest, { replace: true });
+        }
+      } catch (err) {
+        // If API fails, be tolerant: allow access but log
+        console.error("Role guard failed to fetch user role:", err);
+      } finally {
+        if (mounted) setRoleLoading(false);
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, [navigate, toWalletId]);
 
   const handleAmountChange = (e) => {
     const raw = e.target.value.replace(/\D/g, "");
@@ -96,6 +136,18 @@ export default function AddBalancePage() {
   const displayAmount = Number(
     toWallet?.displayBalance ?? toWallet?.balance ?? toWallet?.initialBalance ?? 0
   );
+
+  // While role guard is loading, show a short loading state
+  if (roleLoading) {
+    return (
+      <div className="min-h-screen flex flex-col bg-white">
+        <Header title="Add Balance" onBack={() => navigate(-1)} showBack centerTitle />
+        <main className="flex-1 p-5 flex items-center justify-center">
+          <LoadingSpinner />
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-white">

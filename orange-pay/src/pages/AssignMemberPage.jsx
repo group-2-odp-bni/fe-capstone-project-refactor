@@ -10,6 +10,7 @@ import ConfirmDialog from "../components/members/ConfirmDialog.jsx";
 import api from "../lib/api.js";
 import View from "../components/view/View";
 import Header from "../components/Header";
+
 function parseJsonSafe(v, fb = {}) {
   if (v == null) return fb;
   if (typeof v === "object") return v;
@@ -378,6 +379,7 @@ export default function AssignMemberPage({ walletIdOverride }) {
   }, [search]);
 
   // Permission helpers
+  // allow viewing for everyone; only OWNER/ADMIN can invite
   const canInvite = currentUserRole === "OWNER" || currentUserRole === "ADMIN";
 
   const canRemoveMember = useCallback(
@@ -396,20 +398,16 @@ export default function AssignMemberPage({ walletIdOverride }) {
     [currentUserRole, currentUserId]
   );
 
-  // --- NEW: guard route access for members page ---
-  useEffect(() => {
-    // run guard after initial load completes
-    if (loading) return;
-
-    // Only OWNER or ADMIN may access this page.
-    const role = (currentUserRole || "").toString().trim().toUpperCase();
-    if (role !== "OWNER" && role !== "ADMIN") {
-      // Redirect to wallet detail (replace history so back doesn't return here)
-      navigate(`/app/wallets/${walletId}`, { replace: true });
-    }
-  }, [loading, currentUserRole, navigate, walletId]);
+  // NOTE: removed the route guard here so ANY role can open this page.
+  // Spender/Viewer will not see the invite UI because `canInvite` is false.
 
   const handleAddFromContact = (contact) => {
+    // only allow invite flow when current role allows it
+    if (!canInvite) {
+      // optional: you could show a message / toast here instead
+      console.warn("User role cannot invite members:", currentUserRole);
+      return;
+    }
     setRoleToInvite("SPENDER");
     setInviteTarget(contact);
   };
@@ -521,6 +519,9 @@ export default function AssignMemberPage({ walletIdOverride }) {
     }
   };
 
+  // --- NEW: show a single overlay when any dialog that should dim the page is open ---
+  const anyOverlayOpen = !!removeTarget || !!inviteTarget || !!verifyTarget;
+
   if (loading || !walletDetails) {
     return (
       <div className="page assign-page">
@@ -531,8 +532,16 @@ export default function AssignMemberPage({ walletIdOverride }) {
   }
 
   return (
-    <View>  
-      <Header title="Tambah Member"/>
+    <View>
+      {/* global overlay that dims the whole page (including Header) */}
+      {anyOverlayOpen && (
+        <div
+          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[999]"
+          aria-hidden="true"
+        />
+      )}
+
+      <Header title="Tambah Member" />
       <WalletMiniCard
         balance={balance}
         name={walletDetails.walletName}
@@ -573,6 +582,7 @@ export default function AssignMemberPage({ walletIdOverride }) {
         </section>
       )}
 
+      {/* Only OWNER / ADMIN will see the invite UI */}
       {canInvite && (
         <section className="section">
           <div className="section-title">Undang Member Baru</div>
@@ -688,110 +698,123 @@ export default function AssignMemberPage({ walletIdOverride }) {
         </section>
       )}
 
-      <ConfirmDialog
-        open={!!removeTarget}
-        title="Konfirmasi Hapus"
-        message={`Apakah Anda yakin ingin menghapus ${removeTarget?.name} dari wallet?`}
-        confirmText="Ya, Hapus"
-        cancelText="Tidak"
-        onConfirm={confirmRemove}
-        onClose={closeDialog}
-        loading={removing}
-      />
-
-      <ConfirmDialog
-        open={!!inviteTarget}
-        title="Konfirmasi Invite"
-        message={`Pilih role untuk meng-invite ${inviteTarget?.name}:`}
-        confirmText="Ya, Invite"
-        cancelText="Tidak"
-        onConfirm={confirmInvite}
-        onClose={cancelInvite}
-        loading={inviting}
-      >
-        <div style={{ margin: "16px 0" }}>
-          <label
-            htmlFor="role-select"
-            style={{
-              display: "block",
-              marginBottom: "8px",
-              color: "#555",
-            }}
-          >
-            Pilih Peran sebagai:
-          </label>
-          <select
-            id="role-select"
-            value={roleToInvite}
-            onChange={(e) => setRoleToInvite(e.target.value)}
-            style={{
-              width: "100%",
-              padding: "10px",
-              borderRadius: "8px",
-              border: "1px solid #ccc",
-            }}
-          >
-            {currentUserRole === "OWNER" && (
-              <option value="ADMIN">Admin</option>
-            )}
-            <option value="SPENDER">Spender</option>
-            <option value="VIEWER">Viewer</option>
-          </select>
-        </div>
-      </ConfirmDialog>
-
-      <ConfirmDialog
-        open={!!verifyTarget}
-        title="Verifikasi Kontak Baru"
-        message={`User ${verifyTarget?.phone} tidak ada di kontak Anda. Masukkan nama untuk ditambahkan:`}
-        confirmText="Tambah Kontak"
-        cancelText="Batal"
-        onConfirm={confirmVerifyAndInvite}
-        onClose={cancelVerify}
-        loading={verifying}
-      >
-        <div style={{ margin: "16px 0" }}>
-          <label
-            htmlFor="verify-name-input"
-            style={{
-              display: "block",
-              marginBottom: "8px",
-              color: "#555",
-            }}
-          >
-            Nama Kontak:
-          </label>
-          <input
-            id="verify-name-input"
-            type="text"
-            value={verifyName}
-            onChange={(e) => {
-              setVerifyName(e.target.value);
-              setVerifyError(null);
-            }}
-            placeholder="Masukkan nama"
-            style={{
-              width: "100%",
-              padding: "10px",
-              boxSizing: "border-box",
-              borderRadius: "8px",
-              border: "1px solid #ccc",
-            }}
+      {/* ConfirmDialog popouts: each rendered above the overlay so they stay bright */}
+      {removeTarget && (
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center pointer-events-auto">
+          <ConfirmDialog
+            open={!!removeTarget}
+            title="Konfirmasi Hapus"
+            message={`Apakah Anda yakin ingin menghapus ${removeTarget?.name} dari wallet?`}
+            confirmText="Ya, Hapus"
+            cancelText="Tidak"
+            onConfirm={confirmRemove}
+            onClose={closeDialog}
+            loading={removing}
           />
-          {verifyError && (
-            <p
-              style={{
-                color: "red",
-                fontSize: "14px",
-                marginTop: "10px",
-                marginBottom: "0",
-              }}
-            >
-              {verifyError}
-            </p>
-          )}
         </div>
-      </ConfirmDialog>
+      )}
+
+      {inviteTarget && (
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center pointer-events-auto">
+          <ConfirmDialog
+            open={!!inviteTarget}
+            title="Konfirmasi Invite"
+            message={`Pilih role untuk meng-invite ${inviteTarget?.name}:`}
+            confirmText="Ya, Invite"
+            cancelText="Tidak"
+            onConfirm={confirmInvite}
+            onClose={cancelInvite}
+            loading={inviting}
+          >
+            <div style={{ margin: "16px 0" }}>
+              <label
+                htmlFor="role-select"
+                style={{
+                  display: "block",
+                  marginBottom: "8px",
+                  color: "#555",
+                }}
+              >
+                Pilih Peran sebagai:
+              </label>
+              <select
+                id="role-select"
+                value={roleToInvite}
+                onChange={(e) => setRoleToInvite(e.target.value)}
+                style={{
+                  width: "100%",
+                  padding: "10px",
+                  borderRadius: "8px",
+                  border: "1px solid #ccc",
+                }}
+              >
+                {currentUserRole === "OWNER" && (
+                  <option value="ADMIN">Admin</option>
+                )}
+                <option value="SPENDER">Spender</option>
+                <option value="VIEWER">Viewer</option>
+              </select>
+            </div>
+          </ConfirmDialog>
+        </div>
+      )}
+
+      {verifyTarget && (
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center pointer-events-auto">
+          <ConfirmDialog
+            open={!!verifyTarget}
+            title="Verifikasi Kontak Baru"
+            message={`User ${verifyTarget?.phone} tidak ada di kontak Anda. Masukkan nama untuk ditambahkan:`}
+            confirmText="Tambah Kontak"
+            cancelText="Batal"
+            onConfirm={confirmVerifyAndInvite}
+            onClose={cancelVerify}
+            loading={verifying}
+          >
+            <div style={{ margin: "16px 0" }}>
+              <label
+                htmlFor="verify-name-input"
+                style={{
+                  display: "block",
+                  marginBottom: "8px",
+                  color: "#555",
+                }}
+              >
+                Nama Kontak:
+              </label>
+              <input
+                id="verify-name-input"
+                type="text"
+                value={verifyName}
+                onChange={(e) => {
+                  setVerifyName(e.target.value);
+                  setVerifyError(null);
+                }}
+                placeholder="Masukkan nama"
+                style={{
+                  width: "100%",
+                  padding: "10px",
+                  boxSizing: "border-box",
+                  borderRadius: "8px",
+                  border: "1px solid #ccc",
+                }}
+              />
+              {verifyError && (
+                <p
+                  style={{
+                    color: "red",
+                    fontSize: "14px",
+                    marginTop: "10px",
+                    marginBottom: "0",
+                  }}
+                >
+                  {verifyError}
+                </p>
+              )}
+            </div>
+          </ConfirmDialog>
+        </div>
+      )}
     </View>
   );
 }
