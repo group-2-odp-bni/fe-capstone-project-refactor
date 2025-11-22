@@ -5,9 +5,9 @@ import { FullSubmitButton } from "../../components/button/FullSubmitButton";
 import ProfileImage from "../../components/account/ProfileImage";
 import { useProfileContext } from "../../context/ProfileContext";
 import View from "../../components/view/View";
+import Header from "../../components/Header";
 import ContentBox from "../../components/common/ContentBox";
 import api from "../../lib/api";
-import WhiteHeader from "../../components/register/WhiteHeader";
 
 export default function EditProfilePage() {
     const navigate = useNavigate();
@@ -18,6 +18,10 @@ export default function EditProfilePage() {
     const [imageFile, setImageFile] = useState(null);
     const [uploading, setUploading] = useState(false);
 
+    useEffect(() => {
+        window.history.replaceState(null, "", location.pathname + location.search);
+      }, [location.pathname, location.search]);
+      
     useEffect(() => {
         const getUserProfile = async () => {
             try {
@@ -83,12 +87,15 @@ export default function EditProfilePage() {
             const phoneChanged = changedFields.hasOwnProperty("phoneNumber");
 
             if (emailChanged) {
-                navigate("/app/verify", { state: { type: "email", email: changedFields.email } });
-            } else if (phoneChanged) {
-                navigate("/app/verify", { state: { type: "phone" } });
-            } else {
-                navigate("/app/profile");
-            }
+                navigate("/app/verify", {
+                  state: { type: "email", email: changedFields.email },
+                  replace: true,         
+                });
+              } else if (phoneChanged) {
+                navigate("/app/verify", { state: { type: "phone" }, replace: true });
+              } else {
+                navigate("/app/profile", { replace: true });
+              }
 
         } catch (err) {
             setError("Gagal menyimpan perubahan. Silakan coba lagi.");
@@ -120,7 +127,7 @@ export default function EditProfilePage() {
 
     return (
         <View>
-            <WhiteHeader title="Edit Akun" to="/app/profile"/>
+            <Header title="Edit Akun"/>
             <ContentBox>
                 <ProfileImage src={profileData.profileImageUrl} onImageSelected={setImageFile} />
 

@@ -110,7 +110,13 @@ export default function HistoryTransactionPage() {
     [allWallets, walletId]
   );
 
+  // detect the main wallet (if any)
+  const mainWallet = useMemo(() => allWallets.find((w) => w.isMain), [allWallets]);
+
   const isMainCard = wallet?.isMain || false;
+
+  // whether this wallet's balance would be sent into the main card
+  const willSendToMain = !!(wallet && mainWallet && !wallet.isMain && mainWallet.id && mainWallet.id !== wallet.id);
 
   const [buttonGroupY, setButtonGroupY] = useState(null);
   const buttonGroupRef = useRef(null);
@@ -174,21 +180,26 @@ export default function HistoryTransactionPage() {
   const isSpender = normalizedRole === "spender";
   const isViewer = normalizedRole === "viewer";
 
+  // CHANGED: Add balance visibility should be OWNER, ADMIN, or SPENDER only.
+  const canSeeAddBalance = isAdminOrOwner || isSpender;
+
+  // CHANGED: allow navigation for all roles to members (assign) — removed role guard
   const handleAddBalanceFromWallet = () => {
-    // permission guard (defensive): Admin/Owner and Spender can add
-    if (!(isAdminOrOwner || isSpender)) return;
+    // defensive: only allow owner/admin/spender to proceed
+    if (!canSeeAddBalance) return;
     navigate(`/app/wallets/${walletId}/add`);
   };
 
+  // CHANGED: allow navigation for all roles to members
   const handleViewPeople = () => {
-    // only Admin/Owner can view/manage members
-    if (!isAdminOrOwner) return;
     navigate(`/app/wallets/${walletId}/members`);
   };
 
-  // ----- Header menu action handlers -----
+  // ----- Header menu action handlers ----- 
   const handleRename = async (newName) => {
     if (!newName || !walletId) return;
+    // Do not allow renaming main wallet
+    if (isMainCard) return;
     // only Admin/Owner may rename
     if (!isAdminOrOwner) return;
     try {
@@ -206,6 +217,8 @@ export default function HistoryTransactionPage() {
 
   const handleDelete = async () => {
     if (!walletId) return;
+    // Do not allow deleting main wallet
+    if (isMainCard) return;
     // only Admin/Owner may delete
     if (!isAdminOrOwner) return;
 
@@ -238,7 +251,7 @@ export default function HistoryTransactionPage() {
     }
   };
 
-  // ----- render states -----
+  // ----- render states ----- 
   if (walletsLoading) {
     return (
       <View>
@@ -263,20 +276,20 @@ export default function HistoryTransactionPage() {
 
   return (
     <View>
-      {/* NOTE: removed inline overflow:hidden so popouts/modals can render/click properly.
-          If you must keep overflow:hidden here for layout, use the portal-based HeaderMenu
-          (renders menu into document.body) and keep overflow:hidden. */}
       <div className="space-y-4 md:space-y-6">
         <PageHeader
           title={pageTitle}
-          // only show HeaderMenu for Admin/Owner (can do everything)
+          // only show HeaderMenu for Admin/Owner (can do everything) AND when the wallet is NOT main
           right={
-            isAdminOrOwner ? (
+            isAdminOrOwner && !isMainCard ? (
               <HeaderMenu
                 currentName={wallet?.title}
                 onRename={handleRename}
                 onDelete={handleDelete}
                 loading={actionLoading}
+                willSendToMain={willSendToMain}
+                mainCardTitle={mainWallet?.title}
+                balanceToSend={wallet?.balance}
               />
             ) : null
           }
@@ -300,37 +313,29 @@ export default function HistoryTransactionPage() {
             ref={buttonGroupRef}
             className="button-group flex justify-center gap-3 mt-3 md:mt-4 relative z-10"
           >
-            {/* Add balance: allowed for Admin/Owner and Spender */}
-            <button
-              onClick={handleAddBalanceFromWallet}
-              disabled={roleLoading || !(isAdminOrOwner || isSpender)}
-              className={`w-10 h-10 flex items-center justify-center rounded-xl shadow-md active:scale-95 transition
-                ${roleLoading ? "opacity-60 cursor-wait bg-gray-100 text-gray-400" : isAdminOrOwner || isSpender ? "bg-orange-400 text-white" : "bg-white text-gray-300 border border-gray-200 cursor-not-allowed"}`}
-              title={
-                roleLoading
-                  ? "Checking permissions..."
-                  : isAdminOrOwner || isSpender
-                  ? "Add balance"
-                  : "You don't have permission to add balance"
-              }
-            >
-              <PlusIcon className="w-5 h-5" />
-            </button>
+            {/* ADD BALANCE: visible ONLY to OWNER, ADMIN, SPENDER */}
+            {canSeeAddBalance ? (
+              <button
+                onClick={handleAddBalanceFromWallet}
+                disabled={roleLoading}
+                className={`w-10 h-10 flex items-center justify-center rounded-xl shadow-md active:scale-95 transition
+                  ${
+                    roleLoading
+                      ? "opacity-60 cursor-wait bg-gray-100 text-gray-400"
+                      : "bg-orange-400 text-white"
+                  }`}
+                title={roleLoading ? "Checking permissions..." : "Add balance"}
+              >
+                <PlusIcon className="w-5 h-5" />
+              </button>
+            ) : null}
 
-            {/* Icon Person (view members) only for Shared wallet AND Admin/Owner */}
+            {/* Icon Person (view members) - allow ALL roles to view members for Shared wallet */}
             {wallet.type === "Shared" && (
               <button
                 onClick={handleViewPeople}
-                disabled={roleLoading || !isAdminOrOwner}
-                className={`w-10 h-10 flex items-center justify-center rounded-xl border shadow-sm active:scale-95 transition
-                  ${roleLoading ? "opacity-60 cursor-wait border-gray-200 text-gray-300 bg-white" : isAdminOrOwner ? "border-orange-400 text-[#FF9A25] bg-white" : "border-gray-200 text-gray-300 bg-white cursor-not-allowed"}`}
-                title={
-                  roleLoading
-                    ? "Checking permissions..."
-                    : isAdminOrOwner
-                    ? "View members"
-                    : "You don't have permission to view members"
-                }
+                className="w-10 h-10 flex items-center justify-center rounded-xl border shadow-sm active:scale-95 transition border-orange-400 text-[#FF9A25] bg-white"
+                title="View members"
               >
                 <UserIcon className="w-5 h-5" />
               </button>

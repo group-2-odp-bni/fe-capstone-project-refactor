@@ -1,23 +1,22 @@
-// src/pages/ProfilePage.jsx
 import React, { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import UserInfoCard from "../../components/account/UserInfoCard";
 import ProfileImage from "../../components/account/ProfileImage";
 import { FullActionButton } from "../../components/button/FullActionButton";
 import { useProfileContext } from "../../context/ProfileContext";
 import View from "../../components/view/View";
-import WhiteHeader from "../../components/register/WhiteHeader";
+import Header from "../../components/Header";
 import ContentBox from "../../components/common/ContentBox";
 import api from "../../lib/api";
 
 export default function ProfilePage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { profileData, setProfileData } = useProfileContext();
 
   useEffect(() => {
     const getUserProfile = async () => {
       try {
-
         const response = await api.get("/api/v1/user/me", {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
@@ -35,21 +34,21 @@ export default function ProfilePage() {
           profileImageUrl: user.profileImageUrl,
         });
       } catch (error) {
-
+        // ignore / handle
       }
     };
 
     getUserProfile();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
     <View>
-      <WhiteHeader title="Akun Saya" to="/app/account" />
+      <Header title="Akun Saya" 
+      onBack={() => navigate("/app/account")}
+      />
       <ContentBox>
-        <ProfileImage
-          src={profileData.profileImageUrl}
-          unhoverable={true}
-        />
+        <ProfileImage src={profileData.profileImageUrl} unhoverable={true} />
 
         <UserInfoCard
           name={profileData.name}
@@ -62,17 +61,20 @@ export default function ProfilePage() {
         />
 
         <div className="mt-6">
-          <FullActionButton onClick={() => navigate("/app/editProfile")}>
+          <FullActionButton
+            onClick={() =>
+              navigate("/app/editProfile", {
+                state: { from: location },
+              })
+            }
+          >
             Ubah Data
           </FullActionButton>
           <FullActionButton onClick={() => navigate("/app/dashboard")}>
             Kembali Dashboard
           </FullActionButton>
         </div>
-
       </ContentBox>
-
     </View>
-
   );
 }

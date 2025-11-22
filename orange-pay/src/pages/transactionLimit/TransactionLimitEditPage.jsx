@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import ContentBox from "../../components/common/ContentBox";
-import WhiteHeader from "../../components/register/WhiteHeader";
+import WhiteHeader from "../../components/Header";
 import View from "../../components/view/View";
 import api from "../../lib/api";
 import { useTransactionLimitContext } from "../../context/TransactionLimitContext";
@@ -84,7 +84,7 @@ export default function TransactionLimitEditPage() {
 
   return (
     <View>
-      <WhiteHeader title="Ubah Limit Transaksi" to="/app/transactionLimit" />
+      <WhiteHeader title="Ubah Limit Transaksi"/>
       <ContentBox>
         <form onSubmit={handleSubmit} className="space-y-5">
           {/* DAILY LIMIT */}

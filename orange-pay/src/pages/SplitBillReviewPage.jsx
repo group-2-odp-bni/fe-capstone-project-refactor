@@ -1,7 +1,7 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import ReceiptResult from "../components/split_bill/ReceiptResult";
 import { useEffect } from "react";
-
+import View from "../components/view/View";
 export default function SplitBillReviewPage() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -32,10 +32,12 @@ export default function SplitBillReviewPage() {
   }
 
   return (
-    <ReceiptResult
-      receiptData={ocrResult}
-      onBack={handleBack}
-      onConfirm={handleConfirm}
-    />
+    <View>
+      <ReceiptResult
+        receiptData={ocrResult}
+        onBack={handleBack}
+        onConfirm={handleConfirm}
+      />
+    </View>
   );
 }
