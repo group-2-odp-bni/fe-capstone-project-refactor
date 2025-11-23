@@ -1,7 +1,7 @@
-// src/pages/SplashPage.jsx
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import SplashLogo from "../components/splash/SplashLogo";
+import { getAccessToken } from "../services/auth/authService";
 
 export default function SplashPage() {
   const navigate = useNavigate();
@@ -9,7 +9,16 @@ export default function SplashPage() {
 
   useEffect(() => {
     const fadeTimer = setTimeout(() => setFadeOut(true), 2300);
-    const goTimer = setTimeout(() => navigate("/app/dashboard"), 3000);
+    const goTimer = setTimeout(() => {
+      const token = getAccessToken();
+
+      if (token) {
+        navigate("/app/dashboard");
+      } else {
+        navigate("/welcome");
+      }
+    }, 3000);
+    // const goTimer = setTimeout(() => navigate("/app/dashboard"), 3000);
     return () => {
       clearTimeout(fadeTimer);
       clearTimeout(goTimer);

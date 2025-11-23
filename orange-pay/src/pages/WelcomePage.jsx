@@ -1,12 +1,19 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import BrandLogo from "../components/common/BrandLogo";
 import Button from "../components/common/Button";
 import View from "../components/view/View";
+import { getAccessToken } from "../services/auth/authService";
 
 export default function WelcomePage() {
   const navigate = useNavigate();
+  useEffect(() => {
+    const token = getAccessToken();
 
+    if (token) {
+      navigate("/app/dashboard", { replace: true });
+    }
+  }, [navigate]);
   return (
     <View>
       <div className="bg-white flex items-center justify-center h-full">
@@ -43,7 +50,6 @@ export default function WelcomePage() {
             </Link>
           </p>
         </div>
-
       </div>
     </View>
   );
