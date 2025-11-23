@@ -18,6 +18,7 @@ import {
 import View from "../../components/view/View";
 import TermsModal from "../TermsAndPrivacy";
 import useTrack from "../../hooks/useTrack";
+
 export default function LoginPage() {
   return (
     <GoogleReCaptchaProvider
@@ -28,9 +29,7 @@ export default function LoginPage() {
         appendTo: "body",
       }}
     >
-      {/* <View> */}
-        <LoginContextContent />
-      {/* </View> */}
+      <LoginContextContent />
     </GoogleReCaptchaProvider>
   );
 }
@@ -66,6 +65,36 @@ function LoginContextContent() {
 
     // Update state utama
     setFormData((prev) => ({ ...prev, phoneNumber: v }));
+  };
+
+  const extractErrorInfo = (err) => {
+    // Default message
+    let friendlyMessage =
+      err?.message || "Terjadi kesalahan saat mengirim OTP. Silakan coba lagi.";
+    let code = undefined;
+    const resp = err?.response?.data;
+
+    if (resp) {
+      const apiMessage =
+        resp?.error?.message || resp?.error?.detail || resp?.message || null;
+      if (apiMessage) friendlyMessage = apiMessage;
+
+      code = resp?.error?.code || resp?.code || undefined;
+    }
+
+    if (err?.code === "ECONNABORTED" || err?.message?.includes("timeout")) {
+      friendlyMessage = "Permintaan timeout. Silakan periksa koneksi dan coba lagi.";
+    } else if (!err?.response) {
+      // likely network error
+      friendlyMessage =
+        "Tidak dapat terhubung ke server. Periksa koneksi internet Anda.";
+    }
+
+    return {
+      friendlyMessage,
+      code,
+      raw: err,
+    };
   };
 
   /** Handle form submit */
@@ -158,20 +187,57 @@ function LoginContextContent() {
         showConfirmButton: false,
       });
 
+      track("otp_sent", { phone: fullPhone, status: "success" });
       navigate("/login/otp");
     } catch (err) {
-      Swal.fire({
-        icon: "error",
-        title: "Gagal Mengirim OTP",
-        text:
-          err.response?.data?.message ||
-          err.message ||
-          "Terjadi kesalahan saat mengirim OTP.",
-      });
+      const { friendlyMessage, code } = extractErrorInfo(err);
+
+      // Specific handling for user-not-found AUTH-1001
+      if (code === "AUTH-1001" || /user not found/i.test(friendlyMessage)) {
+        track("otp_failed_user_not_found", { phone: fullPhone, code });
+        const result = await Swal.fire({
+          icon: "error",
+          title: "Nomor tidak terdaftar",
+          text:
+            "Nomor yang Anda masukkan belum terdaftar. Ingin mendaftar sekarang?",
+          showCancelButton: true,
+          confirmButtonText: "Daftar",
+          cancelButtonText: "Periksa Nomor",
+          confirmButtonColor: "#1C6C79",
+        });
+
+        if (result.isConfirmed) {
+          // Direct user to registration flow, pre-fill number if you want
+          navigate("/register", { state: { prefillPhone: fullPhone } });
+        } else {
+          // Let user correct phone number
+          // keep on page; maybe focus input
+          inputRef.current?.focus?.();
+        }
+      } else {
+        // Generic error dialog with retry option
+        track("otp_failed", { phone: fullPhone, code, error: err?.message });
+        const res = await Swal.fire({
+          icon: "error",
+          title: "Gagal Mengirim OTP",
+          text: friendlyMessage,
+          showCancelButton: true,
+          confirmButtonText: "Coba Lagi",
+          cancelButtonText: "Batal",
+          confirmButtonColor: "#f97316",
+        });
+
+        if (res.isConfirmed) {
+          // retry: call submit again programmatically or simply focus for user to press button
+          // We'll focus input to allow user to resubmit
+          inputRef.current?.focus?.();
+        }
+      }
     } finally {
       setLoading(false);
     }
   };
+
   const openTerms = () => {
     setIsModalOpen(true);
     track("terms_modal_opened");
