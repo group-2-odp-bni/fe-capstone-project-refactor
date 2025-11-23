@@ -19,12 +19,15 @@ export default function SplashPage() {
   return (
     <div className="min-h-dvh w-full bg-slate-100 flex items-center justify-center">
       <div
-        className={`relative w-full h-dvh
-                    shadow-[0_20px_60px_rgba(2,6,23,.18)]
-                    ring-1 ring-black/10 overflow-hidden
-                    transition-opacity duration-700 ${
-                      fadeOut ? "opacity-0" : "opacity-100"
-                    }`}
+        className={`absolute inset-0 
+                  flex items-center justify-center
+                  px-6 pt-[env(safe-area-inset-top)]
+                  pb-[env(safe-area-inset-bottom)]
+                  transition-opacity duration-700
+                  ${fadeOut ? "opacity-0" : "opacity-100"}`}
+        style={{
+          background: "linear-gradient(to bottom, #FF9A25, #FF8F0E)",
+        }}
       >
         <div className="w-full text-center">
           <SplashLogo />
@@ -35,5 +38,4 @@ export default function SplashPage() {
       </div>
     </div>
   );
-
 }
