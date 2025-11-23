@@ -81,7 +81,7 @@ export default function SelectContacts({
             params: { page: 0, size: 200 },
             signal: abort.signal,
           }),
-          api.get(`/quick-transfers/top`, {
+          api.get(`/api/v1/quick-transfers/top`, {
             params: { limit: 10 },
             signal: abort.signal,
           }),
