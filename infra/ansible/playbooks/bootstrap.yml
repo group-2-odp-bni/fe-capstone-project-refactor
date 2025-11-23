@@ -4,4 +4,5 @@
     domain_name: app.orangebybni.my.id
   roles:
     - common
-    - nginx
+    # - nginx
+    - { role: nginx, tags: nginx }
