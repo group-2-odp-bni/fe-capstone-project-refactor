@@ -20,12 +20,14 @@ export default function SplashPage() {
     <div className="fixed inset-0 w-full h-full">
       <div
         className={`absolute inset-0 
-                  bg-gradient-to-b from-[#FF9A25] to-[#ff8f0e]
                   flex items-center justify-center
                   px-6 pt-[env(safe-area-inset-top)]
                   pb-[env(safe-area-inset-bottom)]
                   transition-opacity duration-700
                   ${fadeOut ? "opacity-0" : "opacity-100"}`}
+        style={{
+          background: "linear-gradient(to bottom, #FF9A25, #FF8F0E)",
+        }}
       >
         <div className="w-full text-center">
           <SplashLogo />
@@ -36,5 +38,4 @@ export default function SplashPage() {
       </div>
     </div>
   );
-
 }
