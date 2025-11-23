@@ -17,7 +17,7 @@ export default function SplashPage() {
   }, [navigate]);
 
   return (
-    <div className="fixed inset-0 w-full h-full">
+    <div className="min-h-dvh w-full bg-slate-100 flex items-center justify-center">
       <div
         className={`absolute inset-0 
                   flex items-center justify-center

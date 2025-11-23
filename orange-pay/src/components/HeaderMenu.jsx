@@ -3,7 +3,17 @@ import React, { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { EllipsisVerticalIcon } from "@heroicons/react/24/outline";
 
-export default function HeaderMenu({ currentName = "", onRename, onDelete }) {
+export default function HeaderMenu({
+  currentName = "",
+  onRename,
+  onDelete,
+  // NEW props:
+  willSendToMain = false,
+  mainCardTitle = "",
+  // number (raw) of the balance that will be sent (optional)
+  balanceToSend = null,
+  loading: externalLoading = false,
+}) {
   const [open, setOpen] = useState(false);
   const [showRename, setShowRename] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
@@ -47,19 +57,12 @@ export default function HeaderMenu({ currentName = "", onRename, onDelete }) {
 
     const onDoc = (e) => {
       const target = e.target;
-      // if clicked the header ellipsis button, ignore
       if (btnRef.current && btnRef.current.contains(target)) return;
-      // if clicked inside the menu popout, ignore
       if (menuRef.current && menuRef.current.contains(target)) return;
-      // if clicked inside the rename modal, ignore
       if (renameRef.current && renameRef.current.contains(target)) return;
-      // if clicked inside the delete modal, ignore
       if (deleteRef.current && deleteRef.current.contains(target)) return;
 
-      // otherwise, close: this ensures clicking the menu buttons works because
-      // their mousedown/click occur inside menuRef and will be ignored here.
       if (showRename) {
-        // keep rename open if modal is shown (but this branch won't run if clicked inside rename)
         setShowRename(false);
       } else if (showDelete) {
         setShowDelete(false);
@@ -116,6 +119,16 @@ export default function HeaderMenu({ currentName = "", onRename, onDelete }) {
     }
   };
 
+  // helper formatter for Rupiah
+  const fmtRupiah = (n) => {
+    try {
+      const num = Number(n || 0);
+      return `Rp ${num.toLocaleString("id-ID")}`;
+    } catch {
+      return "-";
+    }
+  };
+
   // Portal nodes
   const menuNode = open ? (
     <div
@@ -135,7 +148,6 @@ export default function HeaderMenu({ currentName = "", onRename, onDelete }) {
         <button
           type="button"
           onClick={() => {
-            // open rename modal; don't close menu immediately to avoid event race
             setShowRename(true);
           }}
           className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50"
@@ -195,12 +207,31 @@ export default function HeaderMenu({ currentName = "", onRename, onDelete }) {
     </div>
   ) : null;
 
+  // DELETE modal now includes optional hint about main card destination and amount
   const deleteNode = showDelete ? (
     <div className="fixed inset-0 z-[10000] flex items-center justify-center" aria-modal="true" role="dialog">
       <div className="absolute inset-0 bg-black/30" onClick={() => !loading && setShowDelete(false)} />
       <div ref={deleteRef} className="relative bg-white rounded-lg w-[92%] max-w-xs p-5 shadow-lg text-center">
         <h3 className="text-sm font-semibold mb-2">Konfirmasi</h3>
-        <p className="text-sm text-gray-700 mb-4">Apakah Anda yakin untuk menghapus wallet ini?</p>
+
+        <p className="text-sm text-gray-700 mb-2">Apakah Anda yakin untuk menghapus wallet ini?</p>
+
+        {/* NEW: show helper text if deleting will cause balance to be sent to main */}
+        {willSendToMain && (
+          <div className="text-left text-sm text-gray-700 mb-3">
+            <div className="text-xs text-gray-500 mb-1">Saldo akan dikirim ke:</div>
+            <div className="flex items-baseline gap-2">
+              <span className="font-medium">{mainCardTitle || "kartu utama"}</span>
+              {typeof balanceToSend !== "undefined" && balanceToSend !== null && (
+                <span className="text-sm text-gray-600"> — {fmtRupiah(balanceToSend)}</span>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* if not willSendToMain, keep spacing consistent with existing layout */}
+        {!willSendToMain && <div className="mb-4" />}
+
         <div className="flex gap-3 justify-center">
           <button
             type="button"

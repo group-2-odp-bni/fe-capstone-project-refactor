@@ -4,7 +4,7 @@ import { useParams } from "react-router-dom";
 import { ClipboardIcon, CheckIcon, ShareIcon } from "@heroicons/react/24/outline";
 // import * as htmlToImage from "html-to-image"; // now dynamically imported
 import { useReceiptById } from "../../hooks/api/useHistory";
-import { useToast } from "../../context/ToastContext";
+import View from "../view/View";
 
 const formatIDR = (n) =>
   new Intl.NumberFormat("id-ID", {
@@ -58,7 +58,6 @@ function useTrxIdFromParams() {
 
 export default function ReceiptCard({ trx, externalShareRef = null, hideInlineShare = true }) {
   // If trx is passed, skip fetching; otherwise take it from URL
-  const { showToast } = useToast();
   const trxIdFromUrl = useTrxIdFromParams();
   const shouldFetch = !trx && !!trxIdFromUrl;
   const { trx: fetchedTrx, loading: hookLoading, error: hookError } = useReceiptById(
@@ -120,19 +119,9 @@ export default function ReceiptCard({ trx, externalShareRef = null, hideInlineSh
       try {
         await navigator.clipboard.writeText(`Ref: ${refId}`);
         // lightweight user fallback
-
-              showToast({
-        type: "error",
-        title: "Berbagi gambar tidak tersedia",
-        message: "Fitur berbagi gambar tidak dapat diakses saat ini. Referensi transaksi telah disalin ke clipboard Anda."
-      });
-
+        alert("Receipt image sharing is unavailable — reference copied to clipboard.");
       } catch {
-                      showToast({
-        type: "error",
-        title: "Berbagi gambar tidak tersedia",
-        message: "Fitur berbagi gambar tidak dapat diakses saat ini."
-      });
+        alert("Receipt image sharing is unavailable.");
       }
       return;
     }
@@ -182,18 +171,9 @@ export default function ReceiptCard({ trx, externalShareRef = null, hideInlineSh
       // Helpful hint for CORS issues
       const message = String(err || "").toLowerCase();
       if (message.includes("tainted") || message.includes("security") || message.includes("cross-origin")) {
-                      showToast({
-        type: "error",
-        title: "Gagal mengekspor gambar struk",
-        message: "Struk tidak dapat diekspor karena memuat konten dari sumber lain (CORS). Pastikan logo dan gambar dimuat dari domain yang sama atau sudah mengizinkan akses cross-origin."
-      });
-
+        alert("Cannot export image due to cross-origin resources (CORS). Ensure images are served with Access-Control-Allow-Origin headers or inline the SVG.");
       } else {
-        showToast({
-        type: "error",
-        title: "Gagal membuat atau berbagi gambar struk",
-        message: "Terjadi kesalahan saat membuat atau membagikan gambar struk."
-      });
+        alert("Failed to create or share receipt image. See console for details.");
       }
     }
   }, [refId]);
@@ -246,7 +226,7 @@ export default function ReceiptCard({ trx, externalShareRef = null, hideInlineSh
   }
 
   return (
-    <div className="p-4">
+    <View>
       <div ref={cardRef} className="relative rounded-2xl border border-gray-200 bg-white p-6">
         <div className="flex flex-col items-center gap-2">
           <img src="/Orangepay.svg" alt="logo" className="h-17 w-60" crossOrigin="anonymous" />
@@ -299,6 +279,6 @@ export default function ReceiptCard({ trx, externalShareRef = null, hideInlineSh
           )}
         </div>
       </div>
-    </div>
+    </View>
   );
 }
