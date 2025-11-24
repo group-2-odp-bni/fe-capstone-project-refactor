@@ -19,25 +19,26 @@ export default function DashboardPage() {
   // put on top so name and image can execute first
   useEffect(() => {
     const getUser = async () => {
-      const response = await api.get("/api/v1/user/me");
-      const u = response?.data?.data ?? {};
-      setEmailVerified(Boolean(u?.emailVerified));
-      setPhoneVerified(Boolean(u?.phoneVerified));
+      try {
+        const response = await api.get("/api/v1/user/me");
+        const u = response?.data?.data ?? {};
+        setEmailVerified(Boolean(u?.emailVerified));
+        setPhoneVerified(Boolean(u?.phoneVerified));
 
-      setProfileData({
-        name: u.name,
-        profileImageUrl: u.profileImageUrl,
-      })
-
-
+        setProfileData({
+          name: u.name,
+          profileImageUrl: u.profileImageUrl,
+        });
+      } catch (err) {
+        // optional: handle error silently (keep skeleton)
+        console.error("Failed to load profile", err);
+      }
     };
     getUser();
   }, []);
 
-
   /* ===== Global, centered toast/modal ===== */
   function GlobalToast({ show, onClose, onPrimary }) {
-
     // close on ESC
     useEffect(() => {
       if (!show) return;
@@ -164,11 +165,37 @@ export default function DashboardPage() {
     window.location.assign("/app/profile");
   };
 
+  // ---------- HEADER SKELETON ----------
+  // show skeleton when name or avatar not yet loaded
+  const headerNotReady = !profileData?.name && !profileData?.profileImageUrl;
+
+  function HeaderSectionSkeleton() {
+    return (
+      <div className="flex items-center gap-4 mb-6">
+        {/* avatar skeleton */}
+        <div className="w-16 h-16 rounded-full bg-slate-200 animate-pulse border-4 border-white shadow-md" />
+
+        {/* text skeletons */}
+        <div className="flex-1 min-w-0">
+          <div className="h-4 rounded-full bg-slate-200 w-40 animate-pulse mb-2" />
+          <div className="h-3 rounded-full bg-slate-200 w-32 animate-pulse" />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <View className="pt-8 pr-3 pl-3">
-      <HeaderSection
-        name={profileData.name}
-        avatarSrc={profileData.profileImageUrl} />
+      {/* Use skeleton while profile is loading, otherwise show real header */}
+      {headerNotReady ? (
+        <HeaderSectionSkeleton />
+      ) : (
+        <HeaderSection
+          name={profileData.name}
+          avatarSrc={profileData.profileImageUrl}
+        />
+      )}
+
       {/* Make sure your BalanceCard forwards `onBlocked` to CTASection */}
       <BalanceCard disableActions={disableActions} onBlocked={handleBlocked} />
       <QuickTransfer />
