@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from "react";
+import React, { createContext, useContext, useState, useCallback } from "react";
 
 const ProfileContext = createContext();
 
@@ -9,21 +9,32 @@ export const useProfileContext = () => {
 };
 
 export const ProfileProvider = ({ children }) => {
-  const [profileData, setProfileData] = useState({
+  const [profileData, setProfileDataState] = useState({
     name: "",
     email: "",
     phoneNumber: "",
-    phoneVerified:false,
-    emailVerified:false,
+    phoneVerified: false,
+    emailVerified: false,
     profileImageUrl: "",
   });
 
-  const updateProfileData = (data) => {
-    setProfileData((prev) => ({ ...prev, ...data }));
-  };
+  // Merge setter (optional, but keep it)
+  const updateProfileData = useCallback((data) => {
+    setProfileDataState((prev) => ({ ...prev, ...data }));
+  }, []);
 
   return (
-    <ProfileContext.Provider value={{ profileData, setProfileData: updateProfileData }}>
+    <ProfileContext.Provider
+      value={{
+        profileData,
+
+        // EXPOSE the REAL setter (for controlled inputs)
+        setProfileData: setProfileDataState,
+
+        // OPTIONAL merge helper (use only when you need merging)
+        updateProfileData,
+      }}
+    >
       {children}
     </ProfileContext.Provider>
   );
