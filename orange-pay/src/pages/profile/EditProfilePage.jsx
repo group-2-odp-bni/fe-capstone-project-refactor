@@ -46,9 +46,70 @@ export default function EditProfilePage() {
     getUserProfile();
   }, []);
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setProfileData((prev) => ({ ...prev, [name]: value }));
+  // Generic handler kept for backwards compatibility if needed
+  const handleChange = (eOrName, maybeValue) => {
+    // Case A: native event
+    if (eOrName && eOrName.target && typeof eOrName.target.name === "string") {
+      const { name, value } = eOrName.target;
+      setProfileData((prev) => ({ ...prev, [name]: value }));
+      return;
+    }
+
+    // Case B: onChange(name, value)
+    if (typeof eOrName === "string" && typeof maybeValue !== "undefined") {
+      const name = eOrName;
+      const value = maybeValue;
+      setProfileData((prev) => ({ ...prev, [name]: value }));
+      return;
+    }
+
+    // Case C: payload is value only (string/number)
+    if (typeof eOrName === "string" || typeof eOrName === "number") {
+      // Not enough info to pick a key — caller should use forwardChange(field)
+      return;
+    }
+
+    // Case D: payload is { name, value } or { value }
+    if (eOrName && typeof eOrName === "object") {
+      const name = eOrName.name || eOrName.id;
+      const value = eOrName.value ?? eOrName?.target?.value;
+      if (name) {
+        setProfileData((prev) => ({ ...prev, [name]: value }));
+      }
+      return;
+    }
+  };
+
+  // --- New helper: create a per-field onChange that normalizes payloads ---
+  const forwardChange = (field) => (payload, maybeValue) => {
+    // 1) Native event: e.target.name & e.target.value
+    if (payload && payload.target && typeof payload.target.name === "string") {
+      const { name, value } = payload.target;
+      setProfileData((prev) => ({ ...prev, [name]: value }));
+      return;
+    }
+
+    // 2) (name, value) style: sometimes component calls onChange(name, value)
+    if (typeof payload === "string" && typeof maybeValue !== "undefined") {
+      setProfileData((prev) => ({ ...prev, [payload]: maybeValue }));
+      return;
+    }
+
+    // 3) direct value passed (common if InputField calls onChange(value))
+    if (typeof payload === "string" || typeof payload === "number") {
+      setProfileData((prev) => ({ ...prev, [field]: payload }));
+      return;
+    }
+
+    // 4) object shape { name, value } or { value }
+    if (payload && typeof payload === "object") {
+      const name = payload.name || payload.id || field;
+      const value = payload.value ?? payload?.target?.value ?? "";
+      setProfileData((prev) => ({ ...prev, [name]: value }));
+      return;
+    }
+
+    // otherwise do nothing
   };
 
   const handleSave = async (e) => {
@@ -105,7 +166,7 @@ export default function EditProfilePage() {
     }
   };
 
-  // ---- New: improved upload handler with specific error handling ----
+  // ---- Upload handler with specific error handling ----
   const handleSaveProfilePicture = async () => {
     try {
       setError("");
@@ -150,9 +211,6 @@ export default function EditProfilePage() {
       console.error("Upload profile image failed:", err);
     } finally {
       setUploading(false);
-      // clear local imageFile so UI reflects the final state if needed
-      // keep it if you want to allow retry with same file
-      // setImageFile(null);
     }
   };
 
@@ -163,16 +221,28 @@ export default function EditProfilePage() {
         <ProfileImage src={profileData.profileImageUrl} onImageSelected={setImageFile} />
 
         <form onSubmit={handleSave}>
-          <InputField id="name" name="name" label="Nama:" value={profileData.name} onChange={handleChange} />
+          <InputField
+            id="name"
+            name="name"
+            label="Nama:"
+            value={profileData.name}
+            onChange={forwardChange("name")}
+          />
 
-          <InputField id="email" name="email" label="Email:" value={profileData.email} onChange={handleChange} />
+          <InputField
+            id="email"
+            name="email"
+            label="Email:"
+            value={profileData.email}
+            onChange={forwardChange("email")}
+          />
 
           <InputField
             id="phone"
             name="phoneNumber"
             label="Nomor Telepon:"
             value={profileData.phoneNumber}
-            onChange={handleChange}
+            onChange={forwardChange("phoneNumber")}
           />
 
           {error && <p className="text-red-500 text-sm text-center mt-2">{error}</p>}
